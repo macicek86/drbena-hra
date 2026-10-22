@@ -80,8 +80,16 @@ const LANDMARKS = new Set<Kind>(["houses", "castle", "greenhouse", "pond"]);
 const DECOR = new Set<Kind>(["bush", "lamp", "tree", "bench", "column", "church", "school", "info"]);
 
 const LINES: Record<string, string[]> = {
-  fence: ["Drběna chtěla zjistit, co se povídá za plotem. Teď má plot obtisknutý na čele!"],
-  pot: ["Drběna zakopla o jablka z Drahorazi. Než se zvedla, všechna je snědla!"],
+  fence: [
+    "Drběna chtěla zjistit, co se povídá za plotem. Teď má plot obtisknutý na čele!",
+    "Za kopidlenským plotem se něco šuškalo. Drběna nastražila uši, ale zapomněla zabrzdit!",
+    "V Kopidlně se drby šíří přes plot. Drběna vyzkoušela expresní doručení. Čelem!",
+  ],
+  pot: [
+    "Drběna zakopla o jablka z Drahorazi. Než se zvedla, všechna je snědla!",
+    "V Drahorazi se rozsypala jablka. Drběna snědla všechny důkazy dřív, než se z toho stal drb!",
+    "Drběna šla po stopě šťavnatého drbu. Zbyl po ní jen prázdný košík a hromada ohryzků!",
+  ],
   dog: [
     "Drběna se chtěla zeptat, co je nového. Husa spustila takový povyk, že už to ví celé Kopidlno!",
     "Husa měla žhavý drb z Kopidlna. Drběna ale zjistila jen to, že husa neumí šeptat!",
@@ -92,7 +100,11 @@ const LINES: Record<string, string[]> = {
     "Drběna se zeptala sousedky, co je nového v Kopidlně. Sousedka začala rokem 1998!",
     "Sousedka slíbila jeden krátký drb. Než ho dopověděla, mohl z něj být nový díl kopidlenské kroniky!",
   ],
-  car: ["Drběna se chtěla podělit o drby. Kráva jen přežvykovala. Tak si rozuměly!"],
+  car: [
+    "Drběna se chtěla podělit o drby. Kráva jen přežvykovala. Tak si rozuměly!",
+    "Drběna se krávy zeptala, co je nového v Kopidlně. Ta jen zabučela. Zpráva se prý ještě ověřuje!",
+    "Drběna chtěla od krávy tajný drb. Ta ho třikrát přežvýkala a nakonec spolkla!",
+  ],
   branch: [
     "Drběna zahlédla na jabloni krásné listí. Jenže než se stihla zakousnout, zamotaly se jí do větví rohy!",
     "Drběna zaslechla v sadu šustění. Myslela, že někdo drbe. Byly to jen její rohy zamotané ve větvích!",
