@@ -1,4 +1,5 @@
 import { Sfx } from "@/game/audio";
+import { reportLongPlay } from "@/game/plays";
 import { publicUrl } from "@/lib/public-url";
 import {
   BIOME_LEN,
@@ -187,6 +188,8 @@ export class Runner {
   private lock = 0;
   private anim = 0;
   private time = 0;
+  private played = 0;
+  private playCounted = false;
   private invuln = 0;
   private shake = 0;
   private flash = 0;
@@ -316,6 +319,8 @@ export class Runner {
     this.newBest = false;
     this.coachJump = false;
     this.coachDuck = false;
+    this.played = 0;
+    this.playCounted = false;
     this.fillWorld();
     this.pushHud(true);
   }
@@ -562,6 +567,13 @@ export class Runner {
     this.speed = speed;
     this.camera += speed * dt;
     if (this.phase === "play") this.run += speed * dt;
+    if (this.phase === "play") {
+      this.played += dt;
+      if (!this.playCounted && this.played >= 20) {
+        this.playCounted = true;
+        reportLongPlay(this.played);
+      }
+    }
 
     if (this.phase === "play") this.simPlayer(dt);
     else {

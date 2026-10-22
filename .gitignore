@@ -4,3 +4,5 @@ node_modules/
 .env
 .env.*
 pages-dist/
+cloudflare/wrangler.json
+

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Heart, Pause, Play, RotateCcw, Share2, Volume2, VolumeX } from "lucide-react";
 import { Runner, emptyHud, type Hud } from "@/game/runner";
+import { fetchPlays, playLabel } from "@/game/plays";
 import { publicUrl } from "@/lib/public-url";
 
 export function GameApp() {
@@ -8,6 +9,7 @@ export function GameApp() {
   const gameRef = useRef<Runner | null>(null);
   const [hud, setHud] = useState<Hud>(emptyHud);
   const [copied, setCopied] = useState(false);
+  const [plays, setPlays] = useState<number | null>(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -15,7 +17,18 @@ export function GameApp() {
     const game = new Runner(canvas, setHud);
     gameRef.current = game;
     game.start();
-    return () => game.destroy();
+    const onPlays = (event: Event) => {
+      const count = (event as CustomEvent<number>).detail;
+      if (typeof count === "number") setPlays(count);
+    };
+    window.addEventListener("drbena-plays", onPlays);
+    void fetchPlays().then((count) => {
+      if (count != null) setPlays(count);
+    });
+    return () => {
+      window.removeEventListener("drbena-plays", onPlays);
+      game.destroy();
+    };
   }, []);
 
   async function share() {
@@ -177,6 +190,9 @@ export function GameApp() {
                 {hud.bestGossips > 0 ? ` · ${hud.bestGossips} drbů` : ""}
               </p>
             )}
+            {plays != null && (
+              <p className="mt-1 text-sm font-extrabold text-cream [text-shadow:0_1px_0_#241c16]">{playLabel(plays)}</p>
+            )}
           </section>
         </div>
       )}
@@ -268,6 +284,7 @@ export function GameApp() {
               {hud.gossips} drbů
               {hud.newBest ? " · nový rekord" : hud.best > 0 ? ` · rekord ${hud.best}` : ""}
             </p>
+            {plays != null && <p className="mt-2 text-sm font-extrabold text-ink-soft">{playLabel(plays)}</p>}
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button
                 type="button"
