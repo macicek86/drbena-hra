@@ -60,7 +60,7 @@ export function GameApp() {
 
       {(hud.phase === "loading" || hud.phase === "splash") && (
         <div
-          className="absolute inset-0 z-20 flex cursor-pointer items-center justify-center overflow-hidden"
+          className={`absolute inset-0 z-20 flex items-center justify-center overflow-hidden ${hud.ready ? "cursor-pointer" : "cursor-wait"}`}
           onClick={() => gameRef.current?.continueSplash()}
         >
           <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,#3f8ec4_0%,#8ecae6_34%,#f6d7a0_72%,#f3e0b8_100%)]" />
@@ -153,7 +153,15 @@ export function GameApp() {
               alt="www.kopidlenskadrbna.org"
               className="z-20 -mt-[9%] w-[84%] rotate-1 drop-shadow-[0_8px_12px_rgba(36,28,22,0.3)]"
             />
-            <p className="mt-3 text-sm font-extrabold tracking-wide text-[#3d2c22]/75">Klepni a pokračuj</p>
+            {hud.ready ? (
+              <p className="mt-3 text-sm font-extrabold tracking-wide text-[#3d2c22]/75">Klepni a pokračuj</p>
+            ) : (
+              <div className="mt-4 w-44" aria-label="Načítání">
+                <div className="h-3 overflow-hidden rounded-full border-2 border-[#3d2c22] bg-[#fff6e8]">
+                  <div className="h-full bg-[#e4577a]" style={{ width: `${Math.round(hud.progress * 100)}%` }} />
+                </div>
+              </div>
+            )}
             <p className="mt-2 text-[11px] font-extrabold tracking-wide text-[#3d2c22]/55">© Kopidlenská drbna | Camledian</p>
           </div>
         </div>

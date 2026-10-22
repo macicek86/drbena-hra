@@ -30,6 +30,8 @@ export type Hud = {
   coach: boolean;
   line: string;
   showTale: boolean;
+  ready: boolean;
+  progress: number;
 };
 
 type Kind =
@@ -153,11 +155,6 @@ async function loadImage(src: string): Promise<HTMLImageElement | null> {
   }
 }
 
-async function loadFrames(name: string): Promise<HTMLImageElement[]> {
-  const frames = await Promise.all([0, 1, 2, 3].map((i) => loadImage(publicUrl(`/game/${name}/${i}.webp`))));
-  return frames.filter((frame): frame is HTMLImageElement => frame !== null);
-}
-
 export function emptyHud(): Hud {
   return {
     phase: "loading",
@@ -175,6 +172,8 @@ export function emptyHud(): Hud {
     coach: true,
     line: "",
     showTale: false,
+    ready: false,
+    progress: 0,
   };
 }
 
@@ -245,6 +244,9 @@ export class Runner {
   private nextChunk = 0;
   private lastHazard: Kind | null = null;
   private hitKind: Kind | null = null;
+  private loaded = 0;
+  private loadTotal = 1;
+  private ready = false;
   private tale = "";
   private taleLife = 0;
   private lastTale: Partial<Record<Kind, number>> = {};
@@ -381,11 +383,15 @@ export class Runner {
       "info",
       "dog",
     ] as const;
+    const frames = ["jump", "duck", "gossip", "run", "idle"] as const;
+    this.loaded = 0;
+    this.loadTotal = names.length + frames.length * 4;
+    this.ready = false;
     const rest = Promise.all([
-      loadFrames("jump"),
-      loadFrames("duck"),
-      loadFrames("gossip"),
-      ...names.map((name) => loadImage(publicUrl(`/game/${name}.webp`))),
+      this.loadFramesCounted("jump"),
+      this.loadFramesCounted("duck"),
+      this.loadFramesCounted("gossip"),
+      ...names.map((name) => this.loadCounted(publicUrl(`/game/${name}.webp`))),
     ]).then((loaded) => {
       if (!this.alive) return;
       const [jump, duck, gossip, ...singles] = loaded;
@@ -396,7 +402,7 @@ export class Runner {
         this.art[name] = singles[i] ?? null;
       });
     });
-    const hero = Promise.all([loadFrames("run"), loadFrames("idle")]).then(([run, idle]) => {
+    const hero = Promise.all([this.loadFramesCounted("run"), this.loadFramesCounted("idle")]).then(([run, idle]) => {
       if (!this.alive) return;
       this.art.run = run;
       this.art.idle = idle;
@@ -404,6 +410,20 @@ export class Runner {
     if (!this.alive) return;
     this.openMenu();
     await Promise.all([hero, rest]);
+  }
+
+  private loadCounted(src: string) {
+    return loadImage(src).finally(() => {
+      this.loaded += 1;
+      if (this.loaded >= this.loadTotal) this.ready = true;
+      this.pushHud(true);
+    });
+  }
+
+  private loadFramesCounted(name: string) {
+    return Promise.all([0, 1, 2, 3].map((i) => this.loadCounted(publicUrl(`/game/${name}/${i}.webp`)))).then((frames) =>
+      frames.filter((frame): frame is HTMLImageElement => frame !== null),
+    );
   }
 
   private openMenu() {
@@ -422,7 +442,7 @@ export class Runner {
   }
 
   continueSplash() {
-    if (this.phase !== "splash") return;
+    if (this.phase !== "splash" || !this.ready) return;
     this.unlock();
     this.phase = "menu";
     this.pushHud(true);
@@ -1229,6 +1249,8 @@ export class Runner {
       coach: this.phase === "play" && !this.taleLife && (!this.coachJump || !this.coachDuck) && this.run < 1400,
       line: this.tale,
       showTale: this.taleLife > 0 && this.phase === "play",
+      ready: this.ready,
+      progress: Math.min(1, this.loaded / this.loadTotal),
     });
   }
 
