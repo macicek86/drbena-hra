@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Heart, Pause, Play, RotateCcw, Share2, Volume2, VolumeX } from "lucide-react";
 import { Runner, emptyHud, type Hud } from "@/game/runner";
-import { fetchPlays, playLabel } from "@/game/plays";
+import { fetchStats, playLabel, saveName, savedName, type BoardRow } from "@/game/plays";
 import { publicUrl } from "@/lib/public-url";
 
 export function GameApp() {
@@ -10,6 +10,8 @@ export function GameApp() {
   const [hud, setHud] = useState<Hud>(emptyHud);
   const [copied, setCopied] = useState(false);
   const [plays, setPlays] = useState<number | null>(null);
+  const [board, setBoard] = useState<BoardRow[]>([]);
+  const [name, setName] = useState(savedName);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -17,16 +19,19 @@ export function GameApp() {
     const game = new Runner(canvas, setHud);
     gameRef.current = game;
     game.start();
-    const onPlays = (event: Event) => {
-      const count = (event as CustomEvent<number>).detail;
-      if (typeof count === "number") setPlays(count);
+    const onStats = (event: Event) => {
+      const stats = (event as CustomEvent<{ plays?: number; board?: BoardRow[] }>).detail;
+      if (typeof stats?.plays === "number") setPlays(stats.plays);
+      if (Array.isArray(stats?.board)) setBoard(stats.board);
     };
-    window.addEventListener("drbena-plays", onPlays);
-    void fetchPlays().then((count) => {
-      if (count != null) setPlays(count);
+    window.addEventListener("drbena-plays", onStats);
+    void fetchStats().then((stats) => {
+      if (!stats) return;
+      setPlays(stats.plays);
+      setBoard(stats.board);
     });
     return () => {
-      window.removeEventListener("drbena-plays", onPlays);
+      window.removeEventListener("drbena-plays", onStats);
       game.destroy();
     };
   }, []);
@@ -193,6 +198,36 @@ export function GameApp() {
             {plays != null && (
               <p className="mt-1 text-sm font-extrabold text-cream [text-shadow:0_1px_0_#241c16]">{playLabel(plays)}</p>
             )}
+            {plays != null && (
+              <label className="mx-auto mt-3 block max-w-xs text-left" onClick={(event) => event.stopPropagation()}>
+                <span className="text-xs font-extrabold tracking-wide text-cream [text-shadow:0_1px_0_#241c16]">Jméno do žebříčku</span>
+                <input
+                  value={name}
+                  maxLength={16}
+                  placeholder="Drběna"
+                  className="mt-1 h-10 w-full rounded-full border-2 border-ink bg-cream px-4 font-extrabold text-ink outline-none"
+                  onChange={(event) => {
+                    setName(event.target.value);
+                    saveName(event.target.value);
+                  }}
+                />
+              </label>
+            )}
+            {board.length > 0 && (
+              <ol className="mx-auto mt-3 w-full max-w-xs rounded-3xl border-2 border-ink bg-cream/95 px-4 py-2 text-left text-sm font-extrabold">
+                {board.slice(0, 5).map((row, index) => (
+                  <li key={`${row.name}-${row.score}-${index}`} className="flex justify-between gap-3 py-0.5">
+                    <span>
+                      {index + 1}. {row.name}
+                    </span>
+                    <span>
+                      {row.score}
+                      {row.gossips > 0 ? ` · ${row.gossips}` : ""}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            )}
           </section>
         </div>
       )}
@@ -285,6 +320,18 @@ export function GameApp() {
               {hud.newBest ? " · nový rekord" : hud.best > 0 ? ` · rekord ${hud.best}` : ""}
             </p>
             {plays != null && <p className="mt-2 text-sm font-extrabold text-ink-soft">{playLabel(plays)}</p>}
+            {board.length > 0 && (
+              <ol className="mt-3 text-left text-sm font-extrabold">
+                {board.slice(0, 5).map((row, index) => (
+                  <li key={`${row.name}-${row.score}-${index}`} className="flex justify-between gap-3">
+                    <span>
+                      {index + 1}. {row.name}
+                    </span>
+                    <span>{row.score}</span>
+                  </li>
+                ))}
+              </ol>
+            )}
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button
                 type="button"

@@ -1,5 +1,5 @@
 import { Sfx } from "@/game/audio";
-import { reportLongPlay } from "@/game/plays";
+import { reportLongPlay, submitScore } from "@/game/plays";
 import { publicUrl } from "@/lib/public-url";
 import {
   BIOME_LEN,
@@ -704,6 +704,7 @@ export class Runner {
       if (score > this.best) this.best = score;
       if (this.gossips > this.bestGossips) this.bestGossips = this.gossips;
       this.save();
+      submitScore(score, this.gossips);
       this.pushHud(true);
     }
   }
