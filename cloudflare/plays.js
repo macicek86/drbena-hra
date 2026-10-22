@@ -67,7 +67,7 @@ export default {
       }
       const ip = request.headers.get("CF-Connecting-IP") || "anon";
       if (!(await env.PLAYS.get(`score:${ip}`))) {
-        await env.PLAYS.put(`score:${ip}`, "1", { expirationTtl: 15 });
+        await env.PLAYS.put(`score:${ip}`, "1", { expirationTtl: 60 });
         const next = [...(await board(env)), { name: cleanName(body.name), score, gossips }];
         next.sort((a, b) => b.score - a.score || b.gossips - a.gossips);
         await env.PLAYS.put("board", JSON.stringify(next.slice(0, 10)));
@@ -79,7 +79,7 @@ export default {
     if (seconds < 20 || seconds > 60 * 60) return json({ ...(await snapshot(env)), counted: false });
     const ip = request.headers.get("CF-Connecting-IP") || "anon";
     if (await env.PLAYS.get(`lock:${ip}`)) return json({ ...(await snapshot(env)), counted: false });
-    await env.PLAYS.put(`lock:${ip}`, "1", { expirationTtl: 20 });
+    await env.PLAYS.put(`lock:${ip}`, "1", { expirationTtl: 60 });
     await env.PLAYS.put("count", String((await plays(env)) + 1));
     return json({ ...(await snapshot(env)), counted: true });
   },
