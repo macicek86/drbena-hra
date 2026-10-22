@@ -1,11 +1,15 @@
 const endpoint = String((import.meta.env as Record<string, string | undefined>).VITE_PLAYS_URL ?? "").replace(/\/$/, "");
 const NAME_KEY = "drbena-jmeno";
+const PLAYER_KEY = "drbena-hrac";
 
 export type BoardRow = { name: string; score: number; gossips: number };
+export type Stats = { plays: number; players: number; board: BoardRow[] };
+
 export const previewStats: Stats | null =
   import.meta.env.DEV && !endpoint
     ? {
-        plays: 12,
+        plays: 0,
+        players: 12,
         board: [
           { name: "Drběna", score: 2480, gossips: 18 },
           { name: "Anička", score: 1960, gossips: 14 },
@@ -46,9 +50,10 @@ export function saveName(name: string) {
 
 async function readStats(res: Response): Promise<Stats | null> {
   if (!res.ok) return null;
-  const data = (await res.json()) as { plays?: unknown; board?: unknown };
+  const data = (await res.json()) as { plays?: unknown; players?: unknown; board?: unknown };
   return {
     plays: typeof data.plays === "number" ? data.plays : 0,
+    players: typeof data.players === "number" ? data.players : 0,
     board: rows(data.board),
   };
 }
@@ -67,17 +72,23 @@ export async function fetchStats(): Promise<Stats | null> {
   }
 }
 
-export function reportLongPlay(seconds: number) {
-  if (!endpoint || seconds < 20) return;
-  void fetch(`${endpoint}/plays`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ seconds: Math.round(seconds) }),
-    keepalive: true,
-  })
+export function reportPlayer() {
+  if (!endpoint) return;
+  try {
+    if (localStorage.getItem(PLAYER_KEY) === "1") return;
+  } catch {
+    return;
+  }
+  void fetch(`${endpoint}/player`, { method: "POST", keepalive: true })
     .then((res) => readStats(res))
     .then((stats) => {
-      if (stats) publish(stats);
+      if (!stats) return;
+      try {
+        localStorage.setItem(PLAYER_KEY, "1");
+      } catch {
+        /* private mode */
+      }
+      publish(stats);
     })
     .catch(() => {});
 }
@@ -97,11 +108,11 @@ export function submitScore(score: number, gossips: number) {
     .catch(() => {});
 }
 
-export function playLabel(n: number): string {
-  if (n <= 0) return "Zatím žádná hra netrvala déle než 20 vteřin.";
+export function playerLabel(n: number): string {
+  if (n <= 0) return "Zatím tu nehrál žádný hráč.";
   const mod100 = n % 100;
   const mod10 = n % 10;
-  const word = mod100 >= 11 && mod100 <= 14 ? "her" : mod10 === 1 ? "hra" : mod10 >= 2 && mod10 <= 4 ? "hry" : "her";
-  const verb = word === "hra" ? "trvala" : word === "hry" ? "trvaly" : "trvalo";
-  return `Už ${n} ${word} ${verb} déle než 20 vteřin.`;
+  if (mod10 === 1 && mod100 !== 11) return `Hrál ${n} hráč.`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `Hráli ${n} hráči.`;
+  return `Hrálo ${n} hráčů.`;
 }

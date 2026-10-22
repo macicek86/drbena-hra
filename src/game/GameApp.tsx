@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Heart, Pause, Play, RotateCcw, Share2, Volume2, VolumeX } from "lucide-react";
 import { Runner, emptyHud, type Hud } from "@/game/runner";
-import { fetchStats, playLabel, previewStats, saveName, savedName, type BoardRow } from "@/game/plays";
+import { fetchStats, playerLabel, previewStats, saveName, savedName, type BoardRow } from "@/game/plays";
 import { publicUrl } from "@/lib/public-url";
 
 export function GameApp() {
@@ -9,7 +9,7 @@ export function GameApp() {
   const gameRef = useRef<Runner | null>(null);
   const [hud, setHud] = useState<Hud>(emptyHud);
   const [copied, setCopied] = useState(false);
-  const [plays, setPlays] = useState<number | null>(previewStats?.plays ?? null);
+  const [players, setPlayers] = useState<number | null>(previewStats?.players ?? null);
   const [board, setBoard] = useState<BoardRow[]>(previewStats?.board ?? []);
   const [name, setName] = useState(savedName);
 
@@ -20,14 +20,14 @@ export function GameApp() {
     gameRef.current = game;
     game.start();
     const onStats = (event: Event) => {
-      const stats = (event as CustomEvent<{ plays?: number; board?: BoardRow[] }>).detail;
-      if (typeof stats?.plays === "number") setPlays(stats.plays);
+      const stats = (event as CustomEvent<{ players?: number; board?: BoardRow[] }>).detail;
+      if (typeof stats?.players === "number") setPlayers(stats.players);
       if (Array.isArray(stats?.board)) setBoard(stats.board);
     };
     window.addEventListener("drbena-plays", onStats);
     void fetchStats().then((stats) => {
       if (!stats) return;
-      setPlays(stats.plays);
+      setPlayers(stats.players);
       setBoard(stats.board);
     });
     return () => {
@@ -204,10 +204,10 @@ export function GameApp() {
                 {hud.bestGossips > 0 ? ` · ${hud.bestGossips} drbů` : ""}
               </p>
             )}
-            {plays != null && (
-              <p className="mt-1 text-sm font-extrabold text-cream [text-shadow:0_1px_0_#241c16]">{playLabel(plays)}</p>
+            {players != null && (
+              <p className="mt-1 text-sm font-extrabold text-cream [text-shadow:0_1px_0_#241c16]">{playerLabel(players)}</p>
             )}
-            {plays != null && (
+            {players != null && (
               <label className="mx-auto mt-3 block max-w-xs text-left" onClick={(event) => event.stopPropagation()}>
                 <span className="text-xs font-extrabold tracking-wide text-cream [text-shadow:0_1px_0_#241c16]">Jméno do žebříčku</span>
                 <input
@@ -341,7 +341,7 @@ export function GameApp() {
               {hud.gossips} drbů
               {hud.newBest ? " · nový rekord" : hud.best > 0 ? ` · rekord ${hud.best}` : ""}
             </p>
-            {plays != null && <p className="mt-2 text-sm font-extrabold text-ink-soft">{playLabel(plays)}</p>}
+            {players != null && <p className="mt-2 text-sm font-extrabold text-ink-soft">{playerLabel(players)}</p>}
             {board.length > 0 && (
               <ol className="mt-3 text-left text-sm font-extrabold">
                 {board.slice(0, 5).map((row, index) => (

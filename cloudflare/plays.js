@@ -11,6 +11,12 @@ async function plays(env) {
   return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
 }
 
+async function players(env) {
+  const raw = await env.PLAYS.get("players");
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? Math.floor(n) : 0;
+}
+
 async function board(env) {
   try {
     const data = JSON.parse((await env.PLAYS.get("board")) || "[]");
@@ -41,13 +47,13 @@ function json(body, status = 200) {
 }
 
 async function snapshot(env) {
-  return { plays: await plays(env), board: await board(env) };
+  return { plays: await plays(env), players: await players(env), board: await board(env) };
 }
 
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    if (url.pathname !== "/plays" && url.pathname !== "/score") return new Response("not found", { status: 404, headers });
+    if (url.pathname !== "/plays" && url.pathname !== "/score" && url.pathname !== "/player") return new Response("not found", { status: 404, headers });
     if (request.method === "OPTIONS") return new Response(null, { status: 204, headers });
     if (request.method === "GET") return json(await snapshot(env));
     if (request.method !== "POST") return new Response("method", { status: 405, headers });
@@ -57,6 +63,12 @@ export default {
       body = await request.json();
     } catch {
       body = {};
+    }
+
+    if (url.pathname === "/player") {
+      const next = (await players(env)) + 1;
+      await env.PLAYS.put("players", String(next));
+      return json(await snapshot(env));
     }
 
     if (url.pathname === "/score") {
