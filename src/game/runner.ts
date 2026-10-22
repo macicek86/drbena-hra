@@ -80,20 +80,20 @@ const DECOR = new Set<Kind>(["bush", "lamp", "tree", "bench", "column", "church"
 
 const LINES: Record<string, string> = {
   fence: "Nejlepší sociální síť? Plot! Drběna se právě připojila čelem.",
-  pot: "V Drahorazi mají bohatou úrodu. Drběna právě provedla její inventuru!",
-  dog: "Pejsek si tě vyhlídl.",
+  pot: "Košík se vysypal dřív, než Drběna stačila zpomalit.",
+  dog: "Husa s mašlí si tě vyhlídla.",
   gardener: "Drběna chtěla jen proběhnout. Ale sousedka měla čerstvé drby!",
-  car: "Červené auto nepředjelo.",
-  branch: "Větev byla níž, než se zdálo.",
+  car: "Kráva s rolničkou nepředala přednost.",
+  branch: "Jabloň je nízko. Tady se musí pokrčit.",
 };
 
 const SPEC: Record<Kind, { h: number; hitW: number; hitH: number; lift: number }> = {
   fence: { h: 0.62, hitW: 0.62, hitH: 0.78, lift: 0 },
-  pot: { h: 0.7, hitW: 0.42, hitH: 0.7, lift: 0 },
-  dog: { h: 0.5, hitW: 0.66, hitH: 0.66, lift: 0 },
+  pot: { h: 0.5, hitW: 0.72, hitH: 0.62, lift: 0 },
+  dog: { h: 0.66, hitW: 0.48, hitH: 0.7, lift: 0 },
   gardener: { h: 1.08, hitW: 0.36, hitH: 0.76, lift: 0 },
-  car: { h: 0.64, hitW: 0.46, hitH: 0.58, lift: 0 },
-  branch: { h: 0.58, hitW: 0.7, hitH: 0.7, lift: 0.4 },
+  car: { h: 0.78, hitW: 0.62, hitH: 0.55, lift: 0 },
+  branch: { h: 1.02, hitW: 0.84, hitH: 0.52, lift: 0 },
   gossip: { h: 0.36, hitW: 0.6, hitH: 0.6, lift: 0.14 },
   heart: { h: 0.32, hitW: 0.7, hitH: 0.7, lift: 0.72 },
   bush: { h: 0.46, hitW: 0, hitH: 0, lift: 0 },
@@ -115,7 +115,7 @@ function hash(n: number): number {
   return x - Math.floor(x);
 }
 
-const ART_REV = "10";
+const ART_REV = "11";
 
 async function loadImage(src: string): Promise<HTMLImageElement | null> {
   try {
@@ -346,19 +346,18 @@ export class Runner {
       "church",
       "school",
       "info",
+      "dog",
     ] as const;
     const rest = Promise.all([
       loadFrames("jump"),
       loadFrames("duck"),
-      loadFrames("dog"),
       loadFrames("gossip"),
       ...names.map((name) => loadImage(publicUrl(`/game/${name}.webp`))),
     ]).then((loaded) => {
       if (!this.alive) return;
-      const [jump, duck, dog, gossip, ...singles] = loaded;
+      const [jump, duck, gossip, ...singles] = loaded;
       this.art.jump = jump;
       this.art.duck = duck;
-      this.art.dog = dog;
       this.art.gossip = gossip;
       names.forEach((name, i) => {
         this.art[name] = singles[i] ?? null;
@@ -818,7 +817,7 @@ export class Runner {
       return;
     }
     const kind = this.rollHazard();
-    this.ents.push({ kind, x, lift: kind === "branch" ? 0.4 : 0, anim: 0, alive: true });
+    this.ents.push({ kind, x, lift: 0, anim: Math.random() * 6, alive: true });
     if (kind === "fence") {
       [0.48, 0.95, 0.48].forEach((lift, i) => {
         this.ents.push({ kind: "gossip", x: x + (i - 1) * u * 0.36, lift, anim: i, alive: true });
@@ -828,7 +827,7 @@ export class Runner {
         this.ents.push({ kind: "gossip", x: x + (i - 1) * u * 0.34, lift: 0.08, anim: i, alive: true });
       }
     }
-    const bulk = kind === "car" ? u * 1.35 : kind === "gardener" ? u * 0.85 : u * 0.55;
+    const bulk = kind === "car" ? u * 1.7 : kind === "branch" ? u * 1.2 : kind === "pot" ? u * 0.85 : kind === "gardener" ? u * 0.85 : u * 0.55;
     this.hazardCursor += bulk + speed * 1.08;
     this.lastHazard = kind;
   }
@@ -938,12 +937,17 @@ export class Runner {
     const aspect = img && img.width ? img.width / img.height : ent.kind === "car" ? 2 : 1;
     const w = h * aspect;
     const cx = ent.x - this.camera;
-    const feet = this.groundY - (ent.kind === "branch" ? spec.lift : ent.lift) * this.u;
+    const feet = this.groundY - ent.lift * this.u;
+    if (ent.kind === "branch") {
+      const H = spec.h * this.u;
+      const W = H * aspect;
+      const gap = 0.4 * this.u;
+      return { l: cx - W * 0.4, r: cx + W * 0.4, t: feet - H * 0.98, b: feet - gap };
+    }
     return box(cx, feet, w * spec.hitW, h * spec.hitH);
   }
 
   private spriteFor(ent: Ent): HTMLImageElement | null {
-    if (ent.kind === "dog") return frameOf(this.art.dog, Math.floor(this.time * 10 + ent.anim));
     if (ent.kind === "gossip") return frameOf(this.art.gossip, Math.floor(this.time * 6 + ent.anim));
     const img = this.art[ent.kind];
     return img instanceof HTMLImageElement ? img : null;
@@ -1072,18 +1076,18 @@ export class Runner {
   private drawEnt(ctx: CanvasRenderingContext2D, ent: Ent) {
     const spec = SPEC[ent.kind];
     const h = spec.h * this.u;
-    const bob = ent.kind === "gossip" ? Math.sin(this.time * 4 + ent.anim) * this.u * 0.04 : 0;
-    const lift = (ent.kind === "branch" ? spec.lift : ent.lift) * this.u;
-    const cx = ent.x - this.camera;
-    const feet = this.groundY - lift + bob;
-    if (ent.kind === "branch") {
-      ctx.strokeStyle = "#6d4a2b";
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.moveTo(cx, 0);
-      ctx.lineTo(cx, feet - h + 8);
-      ctx.stroke();
+    let bob = ent.kind === "gossip" ? Math.sin(this.time * 4 + ent.anim) * this.u * 0.04 : 0;
+    let rot = 0;
+    if (ent.kind === "dog") {
+      bob = Math.abs(Math.sin(this.time * 11 + ent.anim)) * this.u * 0.04;
+      rot = Math.sin(this.time * 11 + ent.anim) * 0.07;
+    } else if (ent.kind === "car") {
+      bob = Math.abs(Math.sin(this.time * 8 + ent.anim)) * this.u * 0.035;
+      rot = Math.sin(this.time * 8 + ent.anim) * 0.045;
     }
+    const lift = ent.lift * this.u;
+    const cx = ent.x - this.camera;
+    const feet = this.groundY - lift - bob;
     if (ent.kind === "heart") {
       drawHeart(ctx, cx, feet - h * 0.55, h * 0.42);
       return;
@@ -1091,6 +1095,14 @@ export class Runner {
     const img = this.spriteFor(ent);
     if (!img) return;
     const w = h * (img.width / img.height);
+    if (rot) {
+      ctx.save();
+      ctx.translate(cx, feet - h * 0.55);
+      ctx.rotate(rot);
+      ctx.drawImage(img, -w / 2, -h * 0.45, w, h);
+      ctx.restore();
+      return;
+    }
     ctx.drawImage(img, cx - w / 2, feet - h, w, h);
   }
 
