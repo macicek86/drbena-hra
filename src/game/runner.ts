@@ -80,12 +80,12 @@ const LANDMARKS = new Set<Kind>(["houses", "castle", "greenhouse", "pond"]);
 const DECOR = new Set<Kind>(["bush", "lamp", "tree", "bench", "column", "church", "school", "info"]);
 
 const LINES: Record<string, string> = {
-  fence: "Plot měl čerstvou zprávu. Drběna se o něj zastavila čelem a chvíli poslouchala.",
-  pot: "U vysypaného košíku se zastavila. Pár jablek snědla a běžela dál.",
-  dog: "Husa s mašlí spustila křik. Drběna jí vysvětlila, že nic neukradla.",
-  gardener: "Zakecala se se sousedkou. Ta měla nové drby a nechtěla ji pustit.",
-  car: "Kráva s rolničkou zabrala cestu. Domluva trvala déle než skok.",
-  branch: "Pod jabloní to vonělo. Drběna zapomněla, že se měla pokrčit.",
+  fence: "Drběna chtěla zjistit, co se povídá za plotem. Teď má plot obtisknutý na čele!",
+  pot: "Drběna zakopla o jablka z Drahorazi. Než se zvedla, všechna je snědla!",
+  dog: "Drběna se chtěla zeptat, co je nového. Husa spustila takový povyk, že už to ví celé Kopidlno!",
+  gardener: "Drběna potkala sousedku a zeptala se, co je nového. O tři hodiny později se konečně dostala ke slovu!",
+  car: "Drběna se chtěla podělit o drby. Kráva jen přežvykovala. Tak si rozuměly!",
+  branch: "Drběna zahlédla na jabloni krásné listí. Jenže než se stihla zakousnout, zamotaly se jí do větví rohy!",
 };
 
 const SPEC: Record<Kind, { h: number; hitW: number; hitH: number; lift: number }> = {
