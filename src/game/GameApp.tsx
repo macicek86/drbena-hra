@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Heart, Pause, Play, RotateCcw, Share2, Volume2, VolumeX } from "lucide-react";
 import { Runner, emptyHud, type Hud } from "@/game/runner";
-import { fetchStats, playLabel, saveName, savedName, type BoardRow } from "@/game/plays";
+import { fetchStats, playLabel, previewStats, saveName, savedName, type BoardRow } from "@/game/plays";
 import { publicUrl } from "@/lib/public-url";
 
 export function GameApp() {
@@ -9,8 +9,8 @@ export function GameApp() {
   const gameRef = useRef<Runner | null>(null);
   const [hud, setHud] = useState<Hud>(emptyHud);
   const [copied, setCopied] = useState(false);
-  const [plays, setPlays] = useState<number | null>(null);
-  const [board, setBoard] = useState<BoardRow[]>([]);
+  const [plays, setPlays] = useState<number | null>(previewStats?.plays ?? null);
+  const [board, setBoard] = useState<BoardRow[]>(previewStats?.board ?? []);
   const [name, setName] = useState(savedName);
 
   useEffect(() => {
@@ -228,6 +228,9 @@ export function GameApp() {
                 ))}
               </ol>
             )}
+            {previewStats && (
+              <p className="mt-1 text-xs font-extrabold text-cream/80 [text-shadow:0_1px_0_#241c16]">Náhled, ještě to není venku</p>
+            )}
           </section>
         </div>
       )}
@@ -267,7 +270,7 @@ export function GameApp() {
                 </button>
               )}
             </div>
-            <div className="flex gap-1" aria-label={`Životy: ${hud.lives}`}>
+            <div className="flex gap-1" aria-label={`Příhody: ${3 - hud.lives} ze 3`}>
               {[0, 1, 2].map((i) => (
                 <Heart key={i} className={i < hud.lives ? "size-6 fill-bow text-bow" : "size-6 text-ink/25"} />
               ))}
@@ -276,7 +279,14 @@ export function GameApp() {
         </header>
       )}
 
-      {hud.fact && hud.phase === "play" && (
+      {hud.showTale && hud.line && hud.phase === "play" && (
+        <article className="pointer-events-none absolute inset-x-0 top-28 z-10 mx-auto w-[min(100%-1.5rem,32rem)] rounded-3xl border-2 border-ink bg-cream px-4 py-3 shadow-lg sm:top-24">
+          <p className="text-xs font-extrabold tracking-wide text-bow">Příhoda</p>
+          <p className="mt-1 text-sm leading-snug">{hud.line}</p>
+        </article>
+      )}
+
+      {hud.fact && !hud.showTale && hud.phase === "play" && (
         <article className="pointer-events-none absolute inset-x-0 top-28 z-10 mx-auto w-[min(100%-1.5rem,32rem)] rounded-3xl border-2 border-ink bg-cream px-4 py-3 shadow-lg sm:top-24">
           <p className="text-xs font-extrabold tracking-wide text-bow">Drb z Kopidlna</p>
           <h2 className="font-display text-xl leading-tight">{hud.fact.title}</h2>
@@ -284,7 +294,7 @@ export function GameApp() {
         </article>
       )}
 
-      {hud.coach && !hud.fact && hud.phase === "play" && (
+      {hud.coach && !hud.fact && !hud.showTale && hud.phase === "play" && (
         <p className="pointer-events-none absolute inset-x-3 top-28 text-center text-sm font-extrabold text-ink sm:top-24">
           <span className="rounded-full border-2 border-ink bg-cream/95 px-4 py-2">
             Klepni = skok. Táhni dolů = pokrč se.
@@ -311,8 +321,8 @@ export function GameApp() {
       {hud.phase === "over" && (
         <div className="absolute inset-0 flex items-center justify-center bg-ink/35 p-4">
           <section className="w-full max-w-sm rounded-3xl border-2 border-ink bg-cream p-6 text-center">
-            <p className="text-sm font-extrabold text-bow">Konec kola</p>
-            <h2 className="mt-1 font-display text-4xl leading-none">Drby došly</h2>
+            <p className="text-sm font-extrabold text-bow">Příhoda</p>
+            <h2 className="mt-1 font-display text-4xl leading-none">Dneska už stačilo</h2>
             <p className="mt-2 text-ink-soft">{hud.line}</p>
             <p className="mt-4 font-display text-5xl leading-none">{hud.score}</p>
             <p className="mt-1 font-extrabold">

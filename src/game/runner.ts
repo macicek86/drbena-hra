@@ -29,6 +29,7 @@ export type Hud = {
   muted: boolean;
   coach: boolean;
   line: string;
+  showTale: boolean;
 };
 
 type Kind =
@@ -79,12 +80,12 @@ const LANDMARKS = new Set<Kind>(["houses", "castle", "greenhouse", "pond"]);
 const DECOR = new Set<Kind>(["bush", "lamp", "tree", "bench", "column", "church", "school", "info"]);
 
 const LINES: Record<string, string> = {
-  fence: "Nejlepší sociální síť? Plot! Drběna se právě připojila čelem.",
-  pot: "Košík se vysypal dřív, než Drběna stačila zpomalit.",
-  dog: "Husa s mašlí si tě vyhlídla.",
-  gardener: "Drběna chtěla jen proběhnout. Ale sousedka měla čerstvé drby!",
-  car: "Kráva s rolničkou nepředala přednost.",
-  branch: "Jabloň je nízko. Tady se musí pokrčit.",
+  fence: "Plot měl čerstvou zprávu. Drběna se o něj zastavila čelem a chvíli poslouchala.",
+  pot: "U vysypaného košíku se zastavila. Pár jablek snědla a běžela dál.",
+  dog: "Husa s mašlí spustila křik. Drběna jí vysvětlila, že nic neukradla.",
+  gardener: "Zakecala se se sousedkou. Ta měla nové drby a nechtěla ji pustit.",
+  car: "Kráva s rolničkou zabrala cestu. Domluva trvala déle než skok.",
+  branch: "Pod jabloní to vonělo. Drběna zapomněla, že se měla pokrčit.",
 };
 
 const SPEC: Record<Kind, { h: number; hitW: number; hitH: number; lift: number }> = {
@@ -149,6 +150,7 @@ export function emptyHud(): Hud {
     muted: false,
     coach: true,
     line: "",
+    showTale: false,
   };
 }
 
@@ -219,6 +221,8 @@ export class Runner {
   private nextChunk = 0;
   private lastHazard: Kind | null = null;
   private hitKind: Kind | null = null;
+  private taleLife = 0;
+  private talk = 0;
   private newBest = false;
   private best = 0;
   private bestGossips = 0;
@@ -316,6 +320,8 @@ export class Runner {
     this.nextChunk = 0;
     this.lastHazard = null;
     this.hitKind = null;
+    this.taleLife = 0;
+    this.talk = 0;
     this.newBest = false;
     this.coachJump = false;
     this.coachDuck = false;
@@ -562,6 +568,16 @@ export class Runner {
       return;
     }
 
+    if (this.taleLife > 0) {
+      this.taleLife = Math.max(0, this.taleLife - dt);
+      if (this.taleLife === 0) this.pushHud(true);
+    }
+    if (this.talk > 0) {
+      this.talk = Math.max(0, this.talk - dt);
+      this.decayJuice(dt);
+      return;
+    }
+
     const speed = this.currentSpeed();
     this.speed = speed;
     this.camera += speed * dt;
@@ -688,15 +704,18 @@ export class Runner {
     ent.alive = false;
     this.lives -= 1;
     this.invuln = 1.35;
-    this.shake = 1;
-    this.flash = 1;
-    this.vy = -this.jumpSpeed * 0.42;
+    this.shake = 0.35;
+    this.flash = 0;
+    this.vy = -this.jumpSpeed * 0.22;
     this.onGround = false;
     this.hitKind = ent.kind;
+    this.taleLife = 2.6;
+    this.talk = 0.9;
     this.sfx.hurt();
-    this.burst(this.playerX, this.feet - this.u * 0.4, "#e4577a", 12);
+    this.burst(this.playerX, this.feet - this.u * 0.4, "#e8a317", 8);
     if (this.lives <= 0) {
       this.phase = "over";
+      this.talk = 0;
       this.lock = 0.45;
       const score = this.score();
       this.newBest = score > this.best;
@@ -704,8 +723,8 @@ export class Runner {
       if (this.gossips > this.bestGossips) this.bestGossips = this.gossips;
       this.save();
       submitScore(score, this.gossips);
-      this.pushHud(true);
     }
+    this.pushHud(true);
   }
 
   private fillWorld() {
@@ -1179,8 +1198,9 @@ export class Runner {
       pips: this.gossips % 10,
       newBest: this.newBest,
       muted: this.muted,
-      coach: this.phase === "play" && (!this.coachJump || !this.coachDuck) && this.run < 1400,
-      line: LINES[this.hitKind ?? ""] ?? "Dneska vyhrál chodník.",
+      coach: this.phase === "play" && !this.taleLife && (!this.coachJump || !this.coachDuck) && this.run < 1400,
+      line: this.hitKind ? (LINES[this.hitKind] ?? "Dneska vyhrál chodník.") : "",
+      showTale: this.taleLife > 0 && this.phase === "play",
     });
   }
 
