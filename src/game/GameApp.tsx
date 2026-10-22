@@ -132,7 +132,7 @@ export function GameApp() {
             />
             <img
               src={`${publicUrl("/game/splash-url.webp")}?v=4`}
-              alt="www.kopidlnenskadrbna.cz"
+              alt="www.kopidlenskadrbna.org"
               className="z-20 -mt-[9%] w-[84%] rotate-1 drop-shadow-[0_8px_12px_rgba(36,28,22,0.3)]"
             />
             <p className="mt-3 text-sm font-extrabold tracking-wide text-[#3d2c22]/75">Klepni a pokračuj</p>
