@@ -26,13 +26,19 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm install
       - run: npm run build:pages
       - name: Pages fallback
         run: |
           cp pages-dist/index.pages.html pages-dist/index.html
           cp pages-dist/index.html pages-dist/404.html
           touch pages-dist/.nojekyll
+      - name: Zapnout Pages, pokud ještě nejsou
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api -X POST "repos/${GITHUB_REPOSITORY}/pages" -f build_type=workflow \
+            || gh api "repos/${GITHUB_REPOSITORY}/pages"
       - uses: actions/upload-pages-artifact@v3
         with:
           path: pages-dist
