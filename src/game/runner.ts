@@ -156,7 +156,7 @@ function hash(n: number): number {
   return x - Math.floor(x);
 }
 
-const ART_REV = "13";
+const ART_REV = "14";
 
 async function loadImage(src: string): Promise<HTMLImageElement | null> {
   try {
@@ -400,6 +400,7 @@ export class Runner {
       "info",
       "dog",
       "gossip",
+      "fish",
     ] as const;
     const frames = ["jump", "duck", "run", "idle"] as const;
     this.loaded = 0;
@@ -1281,15 +1282,16 @@ export class Runner {
   }
 
   private maybeFish() {
-    if (this.talk > 0 || this.fish > 0 || !this.onGround) return;
+    if (this.talk > 0 || this.fish > 0) return;
     const here = this.camera + this.playerX;
     for (const ent of this.ents) {
       if (ent.kind !== "pond" || !ent.alive) continue;
       const id = Math.floor(ent.x / BIOME_LEN);
       if (id === this.lastFish) continue;
-      if (here > ent.x - this.u * 0.15 && here < ent.x + this.u * 2.4) {
+      const fishAt = ent.x + this.u * 1.15;
+      if (here > fishAt - this.u * 1.7 && here < fishAt - this.u * 0.55) {
         this.lastFish = id;
-        this.startFish(ent.x);
+        this.startFish(fishAt);
         return;
       }
     }
@@ -1318,62 +1320,28 @@ export class Runner {
 
   private drawFish(ctx: CanvasRenderingContext2D) {
     if (this.fish <= 0) return;
+    const img = this.art.fish;
+    if (!(img instanceof HTMLImageElement)) return;
     const duration = 5.2;
     const t = 1 - this.fish / duration;
     const peek = t < 0.16 ? t / 0.16 : t > 0.84 ? (1 - t) / 0.16 : 1;
-    const h = 1.85 * this.u;
-    const water = this.groundY - h * 0.58;
-    const x = this.fishX - this.camera + this.u * 1.05;
-    const rise = peek * this.u * 0.72;
-    const s = this.u * 0.34;
+    const water = this.groundY - 1.85 * this.u * 0.5;
+    const x = this.fishX - this.camera;
+    const fh = this.u * 1.05;
+    const fw = fh * (img.width / img.height);
+    const bob = Math.sin(this.time * 5) * this.u * 0.03;
+    const top = water - peek * fh * 0.78 + bob;
     ctx.save();
     ctx.beginPath();
-    ctx.rect(-30, -30, this.viewW + 60, water + 6);
+    ctx.rect(-30, -30, this.viewW + 60, water + 8);
     ctx.clip();
-    ctx.translate(x, water + s * 0.85 - rise);
-    ctx.rotate(Math.sin(this.time * 6) * 0.06);
-    ctx.fillStyle = "#241c16";
-    ctx.beginPath();
-    ctx.ellipse(0, 0, s * 1.15, s * 0.62, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#f08a2a";
-    ctx.beginPath();
-    ctx.ellipse(-s * 0.02, -s * 0.02, s * 1.02, s * 0.5, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#ffe3a4";
-    ctx.beginPath();
-    ctx.ellipse(-s * 0.05, s * 0.12, s * 0.62, s * 0.24, 0, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#e4577a";
-    ctx.beginPath();
-    ctx.moveTo(s * 0.85, 0);
-    ctx.lineTo(s * 1.35, -s * 0.38);
-    ctx.lineTo(s * 1.35, s * 0.38);
-    ctx.closePath();
-    ctx.fill();
-    ctx.fillStyle = "#f08a2a";
-    ctx.beginPath();
-    ctx.ellipse(s * 0.15, -s * 0.28, s * 0.28, s * 0.16, -0.4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#fff6e8";
-    ctx.beginPath();
-    ctx.arc(-s * 0.48, -s * 0.08, s * 0.16, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "#241c16";
-    ctx.beginPath();
-    ctx.arc(-s * 0.52, -s * 0.08, s * 0.07, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.strokeStyle = "#241c16";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.arc(-s * 0.78, s * 0.08, s * 0.12, 0.2, Math.PI - 0.2);
-    ctx.stroke();
+    ctx.drawImage(img, x - fw / 2, top, fw, fh);
     ctx.restore();
     ctx.save();
     ctx.strokeStyle = "rgba(255,255,255,0.85)";
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.ellipse(x, water, s * (0.8 + peek * 0.35), s * 0.12, 0, 0, Math.PI * 2);
+    ctx.ellipse(x, water, fw * (0.28 + peek * 0.08), this.u * 0.045, 0, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
   }
