@@ -1,0 +1,11 @@
+{
+  "target": "asset",
+  "mode": "single",
+  "prompt": "",
+  "role": "",
+  "input": "/workspace/artifacts/imagine_images/02a66ba3-97a8-4bca-a387-6be66912fafb.jpg",
+  "threshold": 95,
+  "edge_threshold": 135,
+  "duration": 200,
+  "single_size": 256
+}
