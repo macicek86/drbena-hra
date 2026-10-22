@@ -130,7 +130,7 @@ const SPEC: Record<Kind, { h: number; hitW: number; hitH: number; lift: number }
   houses: { h: 1.55, hitW: 0, hitH: 0, lift: 0 },
   castle: { h: 2.35, hitW: 0, hitH: 0, lift: 0 },
   greenhouse: { h: 2.15, hitW: 0, hitH: 0, lift: 0 },
-  pond: { h: 1.65, hitW: 0, hitH: 0, lift: 0.02 },
+  pond: { h: 1.85, hitW: 0, hitH: 0, lift: 0.02 },
   column: { h: 1.7, hitW: 0, hitH: 0, lift: 0 },
   church: { h: 2.2, hitW: 0, hitH: 0, lift: 0 },
   school: { h: 1.45, hitW: 0, hitH: 0, lift: 0 },
@@ -142,7 +142,7 @@ function hash(n: number): number {
   return x - Math.floor(x);
 }
 
-const ART_REV = "12";
+const ART_REV = "13";
 
 async function loadImage(src: string): Promise<HTMLImageElement | null> {
   try {
