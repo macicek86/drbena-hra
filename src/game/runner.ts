@@ -859,6 +859,18 @@ export class Runner {
     while (this.hazardCursor < this.camera + this.viewW + 20 && guard++ < 8) this.spawnWave();
   }
 
+  private pondGapEnd(x: number): number | null {
+    const cycle = BIOME_LEN * 4;
+    const base = Math.floor(x / cycle);
+    for (let i = base - 1; i <= base + 1; i += 1) {
+      const pondX = (i * 4 + 3) * BIOME_LEN + this.viewW * 0.82;
+      const from = pondX + this.u * 0.2;
+      const to = pondX + this.u * 8;
+      if (x >= from && x < to) return to;
+    }
+    return null;
+  }
+
   private facingBuilding(x: number) {
     const u = this.u;
     const cycle = BIOME_LEN * 4;
@@ -880,6 +892,11 @@ export class Runner {
   }
 
   private spawnWave() {
+    const gap = this.pondGapEnd(this.hazardCursor);
+    if (gap != null) {
+      this.hazardCursor = gap;
+      return;
+    }
     const u = this.u;
     const speed = Math.max(this.speed, this.speed0);
     const x = this.hazardCursor;
@@ -1311,8 +1328,8 @@ export class Runner {
     this.onGround = true;
     this.feet = this.groundY;
     for (const ent of this.ents) {
-      if (!HAZARDS.has(ent.kind)) continue;
-      if (Math.abs(ent.x - (this.camera + this.playerX)) < this.u * 2.4) ent.alive = false;
+      if (!HAZARDS.has(ent.kind) || !ent.alive) continue;
+      if (ent.x > x - this.u * 2.2 && ent.x < x + this.u * 7) ent.alive = false;
     }
     this.sfx.fact();
     this.pushHud(true);
