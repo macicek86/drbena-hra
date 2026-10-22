@@ -79,13 +79,37 @@ const PICKUPS = new Set<Kind>(["gossip", "heart"]);
 const LANDMARKS = new Set<Kind>(["houses", "castle", "greenhouse", "pond"]);
 const DECOR = new Set<Kind>(["bush", "lamp", "tree", "bench", "column", "church", "school", "info"]);
 
-const LINES: Record<string, string> = {
-  fence: "Drběna chtěla zjistit, co se povídá za plotem. Teď má plot obtisknutý na čele!",
-  pot: "Drběna zakopla o jablka z Drahorazi. Než se zvedla, všechna je snědla!",
-  dog: "Drběna se chtěla zeptat, co je nového. Husa spustila takový povyk, že už to ví celé Kopidlno!",
-  gardener: "Drběna potkala sousedku a zeptala se, co je nového. O tři hodiny později se konečně dostala ke slovu!",
-  car: "Drběna se chtěla podělit o drby. Kráva jen přežvykovala. Tak si rozuměly!",
-  branch: "Drběna zahlédla na jabloni krásné listí. Jenže než se stihla zakousnout, zamotaly se jí do větví rohy!",
+const LINES: Record<string, string[]> = {
+  fence: [
+    "Drběna chtěla zjistit, co se povídá za plotem. Teď má plot obtisknutý na čele!",
+    "Opřela se o plot, aby líp slyšela. Plot se opřel o ni.",
+    "Za plotem se šuškalo. Drběna šla blíž. Až moc blíž.",
+  ],
+  pot: [
+    "Drběna zakopla o jablka z Drahorazi. Než se zvedla, všechna je snědla!",
+    "Jablka ležela na cestě. Drběna udělala inventuru. Ústy.",
+    "Košík se vysypal a Drběna se ujala záchrany. Nezachránilo se nic.",
+  ],
+  dog: [
+    "Drběna se chtěla zeptat, co je nového. Husa spustila takový povyk, že už to ví celé Kopidlno!",
+    "Drběna husu jen pozdravila. Husa z toho udělala městský rozhlas.",
+    "Chtěla si vyměnit jeden drb. Husa jich vypustila čtyřicet a ještě syčela.",
+  ],
+  gardener: [
+    "Drběna potkala sousedku a zeptala se, co je nového. O tři hodiny později se konečně dostala ke slovu!",
+    "Sousedka začala jednou větou. Drběna mezitím v duchu oběhla celé Kopidlno.",
+    "Drběna řekla jen „co je nového“. Sousedka začala od loňských Vánoc.",
+  ],
+  car: [
+    "Drběna se chtěla podělit o drby. Kráva jen přežvykovala. Tak si rozuměly!",
+    "Drběna přinesla novinku. Kráva přikusovala. Obě odešly spokojené.",
+    "Kráva neměla čas na drby, měla čas na trávu. Drběna to vzala jako souhlas.",
+  ],
+  branch: [
+    "Drběna zahlédla na jabloni krásné listí. Jenže než se stihla zakousnout, zamotaly se jí do větví rohy!",
+    "Listí vonělo jako svačina. Rohy to pochopily dřív než Drběna.",
+    "Chtěla si jen čichnout. Jabloň si ji nechala na ozdobu.",
+  ],
 };
 
 const SPEC: Record<Kind, { h: number; hitW: number; hitH: number; lift: number }> = {
@@ -221,7 +245,9 @@ export class Runner {
   private nextChunk = 0;
   private lastHazard: Kind | null = null;
   private hitKind: Kind | null = null;
+  private tale = "";
   private taleLife = 0;
+  private lastTale: Partial<Record<Kind, number>> = {};
   private talk = 0;
   private newBest = false;
   private best = 0;
@@ -320,6 +346,7 @@ export class Runner {
     this.nextChunk = 0;
     this.lastHazard = null;
     this.hitKind = null;
+    this.tale = "";
     this.taleLife = 0;
     this.talk = 0;
     this.newBest = false;
@@ -709,6 +736,7 @@ export class Runner {
     this.vy = -this.jumpSpeed * 0.22;
     this.onGround = false;
     this.hitKind = ent.kind;
+    this.tale = this.pickTale(ent.kind);
     this.taleLife = 2.6;
     this.talk = 0.9;
     this.sfx.hurt();
@@ -1199,9 +1227,17 @@ export class Runner {
       newBest: this.newBest,
       muted: this.muted,
       coach: this.phase === "play" && !this.taleLife && (!this.coachJump || !this.coachDuck) && this.run < 1400,
-      line: this.hitKind ? (LINES[this.hitKind] ?? "Dneska vyhrál chodník.") : "",
+      line: this.tale,
       showTale: this.taleLife > 0 && this.phase === "play",
     });
+  }
+
+  private pickTale(kind: Kind): string {
+    const pool = LINES[kind] ?? ["Dneska vyhrál chodník."];
+    let index = Math.floor(Math.random() * pool.length);
+    if (pool.length > 1 && index === this.lastTale[kind]) index = (index + 1) % pool.length;
+    this.lastTale[kind] = index;
+    return pool[index] ?? pool[0]!;
   }
 
   private loadSave() {
