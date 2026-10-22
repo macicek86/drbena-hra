@@ -82,10 +82,22 @@ const DECOR = new Set<Kind>(["bush", "lamp", "tree", "bench", "column", "church"
 const LINES: Record<string, string[]> = {
   fence: ["Drběna chtěla zjistit, co se povídá za plotem. Teď má plot obtisknutý na čele!"],
   pot: ["Drběna zakopla o jablka z Drahorazi. Než se zvedla, všechna je snědla!"],
-  dog: ["Drběna se chtěla zeptat, co je nového. Husa spustila takový povyk, že už to ví celé Kopidlno!"],
-  gardener: ["Drběna potkala sousedku a zeptala se, co je nového. O tři hodiny později se konečně dostala ke slovu!"],
+  dog: [
+    "Drběna se chtěla zeptat, co je nového. Husa spustila takový povyk, že už to ví celé Kopidlno!",
+    "Husa měla žhavý drb z Kopidlna. Drběna ale zjistila jen to, že husa neumí šeptat!",
+    "Drběna chtěla nenápadně zjistit, co je nového. Husa to vykejhakala tak hlasitě, že už to ví i v Pševsi!",
+  ],
+  gardener: [
+    "Drběna potkala sousedku a zeptala se, co je nového. O tři hodiny později se konečně dostala ke slovu!",
+    "Drběna se zeptala sousedky, co je nového v Kopidlně. Sousedka začala rokem 1998!",
+    "Sousedka slíbila jeden krátký drb. Než ho dopověděla, mohl z něj být nový díl kopidlenské kroniky!",
+  ],
   car: ["Drběna se chtěla podělit o drby. Kráva jen přežvykovala. Tak si rozuměly!"],
-  branch: ["Drběna zahlédla na jabloni krásné listí. Jenže než se stihla zakousnout, zamotaly se jí do větví rohy!"],
+  branch: [
+    "Drběna zahlédla na jabloni krásné listí. Jenže než se stihla zakousnout, zamotaly se jí do větví rohy!",
+    "Drběna zaslechla v sadu šustění. Myslela, že někdo drbe. Byly to jen její rohy zamotané ve větvích!",
+    "Drběna chtěla přinést do Kopidlna šťavnatou novinku. Z jabloně si ale odnesla jen listí mezi rohy!",
+  ],
 };
 
 const SPEC: Record<Kind, { h: number; hitW: number; hitH: number; lift: number }> = {
