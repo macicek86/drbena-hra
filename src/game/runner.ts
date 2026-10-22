@@ -30,6 +30,7 @@ export type Hud = {
   coach: boolean;
   line: string;
   showTale: boolean;
+  taleTag: string;
   ready: boolean;
   progress: number;
 };
@@ -80,6 +81,19 @@ const HAZARDS = new Set<Kind>(["fence", "pot", "dog", "gardener", "car", "branch
 const PICKUPS = new Set<Kind>(["gossip", "heart"]);
 const LANDMARKS = new Set<Kind>(["houses", "castle", "greenhouse", "pond"]);
 const DECOR = new Set<Kind>(["bush", "lamp", "tree", "bench", "column", "church", "school", "info"]);
+
+const FISH = [
+  "Tady dole se toho děje víc než na kopidlenském náměstí!",
+  "Něco jsem zaslechla… ale mám bobříka mlčení!",
+  "Drběno, víš, proč ryby nemluví? Protože by se to hned rozneslo po Kopidlně!",
+  "Já nic neříkám, ale kapři už o tom vědí!",
+  "Na hladině klid, ale pod vodou se pěkně drbe!",
+  "Drběno, slyšela jsem něco šťavnatého… ale mám to ještě za žábrami!",
+  "Víš, co se povídá na druhém břehu? Já taky ne, tam neplavu!",
+  "V Kopidlně se říká, že ryby mlčí. To nás ještě neznají!",
+  "Zrovna jsem měla velký drb na jazyku. Jenže jsem spolkla háček!",
+  "Drběno, tenhle drb je tak hluboký, že na něj nestačí ani náš rybník!",
+];
 
 const LINES: Record<string, string[]> = {
   fence: [
@@ -172,6 +186,7 @@ export function emptyHud(): Hud {
     coach: true,
     line: "",
     showTale: false,
+    taleTag: "Příhoda",
     ready: false,
     progress: 0,
   };
@@ -245,6 +260,11 @@ export class Runner {
   private loaded = 0;
   private loadTotal = 1;
   private ready = false;
+  private fish = 0;
+  private fishX = 0;
+  private lastFish = -1;
+  private fishTold = -1;
+  private taleTag = "Příhoda";
   private tale = "";
   private taleLife = 0;
   private lastTale: Partial<Record<Kind, number>> = {};
@@ -352,6 +372,8 @@ export class Runner {
     this.newBest = false;
     this.coachJump = false;
     this.coachDuck = false;
+    this.lastFish = -1;
+    this.fish = 0;
     this.fillWorld();
     this.pushHud(true);
     reportPlayer();
@@ -609,12 +631,22 @@ export class Runner {
       return;
     }
 
-    if (this.taleLife > 0) {
+    if (this.taleLife > 0 && this.fish <= 0) {
       this.taleLife = Math.max(0, this.taleLife - dt);
       if (this.taleLife === 0) this.pushHud(true);
     }
     if (this.talk > 0) {
       this.talk = Math.max(0, this.talk - dt);
+      if (this.fish > 0) {
+        this.fish = Math.max(0, this.fish - dt);
+        this.anim += dt * 3;
+        if (this.fish === 0) {
+          this.tale = "";
+          this.taleLife = 0;
+          this.taleTag = "Příhoda";
+          this.pushHud(true);
+        }
+      }
       this.decayJuice(dt);
       return;
     }
@@ -634,6 +666,7 @@ export class Runner {
     this.fillWorld();
     if (this.phase === "play") this.collisions();
     this.sweep();
+    if (this.phase === "play") this.maybeFish();
     this.decayJuice(dt);
     if (this.factLife > 0) {
       this.factLife -= dt;
@@ -744,6 +777,7 @@ export class Runner {
     this.onGround = false;
     this.hitKind = ent.kind;
     this.tale = this.pickTale(ent.kind);
+    this.taleTag = "Příhoda";
     this.taleLife = 2.6;
     this.talk = 0.9;
     this.sfx.hurt();
@@ -1059,6 +1093,7 @@ export class Runner {
       this.drawEnt(ctx, ent);
     }
 
+    this.drawFish(ctx);
     this.drawPlayer(ctx);
     for (const bit of this.bits) {
       if (!bit.on) continue;
@@ -1177,6 +1212,9 @@ export class Runner {
     } else if (ducking) {
       sheet = this.art.duck;
       index = this.duckLock > 0.2 ? 1 + (Math.floor(this.time * 8) % 2) : 0;
+    } else if (this.fish > 0) {
+      sheet = this.art.idle;
+      index = Math.floor(this.time * 3) % 4;
     } else if (!this.onGround && this.phase === "play") {
       sheet = this.art.jump;
       if (this.vy < -this.jumpSpeed * 0.25) index = 1;
@@ -1236,9 +1274,108 @@ export class Runner {
       coach: this.phase === "play" && !this.taleLife && (!this.coachJump || !this.coachDuck) && this.run < 1400,
       line: this.tale,
       showTale: this.taleLife > 0 && this.phase === "play",
+      taleTag: this.taleTag,
       ready: this.ready,
       progress: Math.min(1, this.loaded / this.loadTotal),
     });
+  }
+
+  private maybeFish() {
+    if (this.talk > 0 || this.fish > 0 || !this.onGround) return;
+    const here = this.camera + this.playerX;
+    for (const ent of this.ents) {
+      if (ent.kind !== "pond" || !ent.alive) continue;
+      const id = Math.floor(ent.x / BIOME_LEN);
+      if (id === this.lastFish) continue;
+      if (here > ent.x - this.u * 0.15 && here < ent.x + this.u * 2.4) {
+        this.lastFish = id;
+        this.startFish(ent.x);
+        return;
+      }
+    }
+  }
+
+  private startFish(x: number) {
+    let index = Math.floor(Math.random() * FISH.length);
+    if (FISH.length > 1 && index === this.fishTold) index = (index + 1) % FISH.length;
+    this.fishTold = index;
+    this.fishX = x;
+    this.fish = 5.2;
+    this.talk = 5.2;
+    this.tale = FISH[index] ?? FISH[0]!;
+    this.taleTag = "Ryba z rybníka";
+    this.taleLife = 5.2;
+    this.vy = 0;
+    this.onGround = true;
+    this.feet = this.groundY;
+    for (const ent of this.ents) {
+      if (!HAZARDS.has(ent.kind)) continue;
+      if (Math.abs(ent.x - (this.camera + this.playerX)) < this.u * 2.4) ent.alive = false;
+    }
+    this.sfx.fact();
+    this.pushHud(true);
+  }
+
+  private drawFish(ctx: CanvasRenderingContext2D) {
+    if (this.fish <= 0) return;
+    const duration = 5.2;
+    const t = 1 - this.fish / duration;
+    const peek = t < 0.16 ? t / 0.16 : t > 0.84 ? (1 - t) / 0.16 : 1;
+    const h = 1.85 * this.u;
+    const water = this.groundY - h * 0.58;
+    const x = this.fishX - this.camera + this.u * 1.05;
+    const rise = peek * this.u * 0.72;
+    const s = this.u * 0.34;
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(-30, -30, this.viewW + 60, water + 6);
+    ctx.clip();
+    ctx.translate(x, water + s * 0.85 - rise);
+    ctx.rotate(Math.sin(this.time * 6) * 0.06);
+    ctx.fillStyle = "#241c16";
+    ctx.beginPath();
+    ctx.ellipse(0, 0, s * 1.15, s * 0.62, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#f08a2a";
+    ctx.beginPath();
+    ctx.ellipse(-s * 0.02, -s * 0.02, s * 1.02, s * 0.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#ffe3a4";
+    ctx.beginPath();
+    ctx.ellipse(-s * 0.05, s * 0.12, s * 0.62, s * 0.24, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#e4577a";
+    ctx.beginPath();
+    ctx.moveTo(s * 0.85, 0);
+    ctx.lineTo(s * 1.35, -s * 0.38);
+    ctx.lineTo(s * 1.35, s * 0.38);
+    ctx.closePath();
+    ctx.fill();
+    ctx.fillStyle = "#f08a2a";
+    ctx.beginPath();
+    ctx.ellipse(s * 0.15, -s * 0.28, s * 0.28, s * 0.16, -0.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#fff6e8";
+    ctx.beginPath();
+    ctx.arc(-s * 0.48, -s * 0.08, s * 0.16, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#241c16";
+    ctx.beginPath();
+    ctx.arc(-s * 0.52, -s * 0.08, s * 0.07, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.strokeStyle = "#241c16";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(-s * 0.78, s * 0.08, s * 0.12, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+    ctx.restore();
+    ctx.save();
+    ctx.strokeStyle = "rgba(255,255,255,0.85)";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.ellipse(x, water, s * (0.8 + peek * 0.35), s * 0.12, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
   }
 
   private pickTale(kind: Kind): string {
