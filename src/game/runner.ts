@@ -121,12 +121,12 @@ const SPEC: Record<Kind, { h: number; hitW: number; hitH: number; lift: number }
   gardener: { h: 1.08, hitW: 0.36, hitH: 0.76, lift: 0 },
   car: { h: 0.78, hitW: 0.62, hitH: 0.55, lift: 0 },
   branch: { h: 1.02, hitW: 0.84, hitH: 0.52, lift: 0 },
-  gossip: { h: 0.36, hitW: 0.6, hitH: 0.6, lift: 0.14 },
+  gossip: { h: 0.42, hitW: 0.62, hitH: 0.62, lift: 0.14 },
   heart: { h: 0.32, hitW: 0.7, hitH: 0.7, lift: 0.72 },
   bush: { h: 0.46, hitW: 0, hitH: 0, lift: 0 },
-  lamp: { h: 1.25, hitW: 0, hitH: 0, lift: 0 },
+  lamp: { h: 1.42, hitW: 0, hitH: 0, lift: 0 },
   tree: { h: 1.85, hitW: 0, hitH: 0, lift: 0 },
-  bench: { h: 0.42, hitW: 0, hitH: 0, lift: 0 },
+  bench: { h: 0.5, hitW: 0, hitH: 0, lift: 0 },
   houses: { h: 1.55, hitW: 0, hitH: 0, lift: 0 },
   castle: { h: 2.35, hitW: 0, hitH: 0, lift: 0 },
   greenhouse: { h: 2.15, hitW: 0, hitH: 0, lift: 0 },
@@ -142,7 +142,7 @@ function hash(n: number): number {
   return x - Math.floor(x);
 }
 
-const ART_REV = "11";
+const ART_REV = "12";
 
 async function loadImage(src: string): Promise<HTMLImageElement | null> {
   try {
@@ -377,22 +377,21 @@ export class Runner {
       "school",
       "info",
       "dog",
+      "gossip",
     ] as const;
-    const frames = ["jump", "duck", "gossip", "run", "idle"] as const;
+    const frames = ["jump", "duck", "run", "idle"] as const;
     this.loaded = 0;
     this.loadTotal = names.length + frames.length * 4;
     this.ready = false;
     const rest = Promise.all([
       this.loadFramesCounted("jump"),
       this.loadFramesCounted("duck"),
-      this.loadFramesCounted("gossip"),
       ...names.map((name) => this.loadCounted(publicUrl(`/game/${name}.webp`))),
     ]).then((loaded) => {
       if (!this.alive) return;
-      const [jump, duck, gossip, ...singles] = loaded;
+      const [jump, duck, ...singles] = loaded;
       this.art.jump = jump;
       this.art.duck = duck;
-      this.art.gossip = gossip;
       names.forEach((name, i) => {
         this.art[name] = singles[i] ?? null;
       });
@@ -1003,7 +1002,6 @@ export class Runner {
   }
 
   private spriteFor(ent: Ent): HTMLImageElement | null {
-    if (ent.kind === "gossip") return frameOf(this.art.gossip, Math.floor(this.time * 6 + ent.anim));
     const img = this.art[ent.kind];
     return img instanceof HTMLImageElement ? img : null;
   }
@@ -1130,7 +1128,8 @@ export class Runner {
 
   private drawEnt(ctx: CanvasRenderingContext2D, ent: Ent) {
     const spec = SPEC[ent.kind];
-    const h = spec.h * this.u;
+    const pulse = ent.kind === "gossip" ? 1 + Math.sin(this.time * 5 + ent.anim) * 0.06 : 1;
+    const h = spec.h * this.u * pulse;
     let bob = ent.kind === "gossip" ? Math.sin(this.time * 4 + ent.anim) * this.u * 0.04 : 0;
     let rot = 0;
     if (ent.kind === "dog") {
