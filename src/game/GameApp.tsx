@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Heart, Pause, Play, RotateCcw, Share2, Volume2, VolumeX } from "lucide-react";
 import { Runner, emptyHud, type Hud } from "@/game/runner";
+import { publicUrl } from "@/lib/public-url";
 
 export function GameApp() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -120,17 +121,17 @@ export function GameApp() {
           <div className="pointer-events-none absolute bottom-[14%] left-1/2 h-16 w-[62%] -translate-x-1/2 rounded-[100%] bg-[#6b4a28]/20 blur-md" />
           <div className="relative z-10 flex w-[min(94vw,680px,84vh)] flex-col items-center">
             <img
-              src="/game/splash-logo.webp?v=4"
+              src={`${publicUrl("/game/splash-logo.webp")}?v=4`}
               alt="Kopidlnenská drbna"
               className="z-20 -mb-[7%] w-[108%] max-w-none -rotate-1 drop-shadow-[0_10px_16px_rgba(36,28,22,0.28)]"
             />
             <img
-              src="/game/splash-goat.webp?v=4"
+              src={`${publicUrl("/game/splash-goat.webp")}?v=4`}
               alt="Drběna běží před zámkem"
               className="z-10 w-full drop-shadow-[0_18px_24px_rgba(36,28,22,0.25)]"
             />
             <img
-              src="/game/splash-url.webp?v=4"
+              src={`${publicUrl("/game/splash-url.webp")}?v=4`}
               alt="www.kopidlnenskadrbna.cz"
               className="z-20 -mt-[9%] w-[84%] rotate-1 drop-shadow-[0_8px_12px_rgba(36,28,22,0.3)]"
             />
@@ -146,7 +147,7 @@ export function GameApp() {
         >
           <section className="w-full max-w-sm text-center">
             <img
-              src="/game/portrait.webp"
+              src={publicUrl("/game/portrait.webp")}
               alt="Drběna, černobílá koza s růžovou mašlí"
               className="mx-auto size-24 rounded-full border-4 border-cream bg-ink object-cover shadow-lg sm:size-28"
             />

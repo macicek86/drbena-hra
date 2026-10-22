@@ -1,4 +1,5 @@
 import { Sfx } from "@/game/audio";
+import { publicUrl } from "@/lib/public-url";
 import {
   BIOME_LEN,
   BIOMES,
@@ -127,7 +128,7 @@ async function loadImage(src: string): Promise<HTMLImageElement | null> {
 }
 
 async function loadFrames(name: string): Promise<HTMLImageElement[]> {
-  const frames = await Promise.all([0, 1, 2, 3].map((i) => loadImage(`/game/${name}/${i}.webp`)));
+  const frames = await Promise.all([0, 1, 2, 3].map((i) => loadImage(publicUrl(`/game/${name}/${i}.webp`))));
   return frames.filter((frame): frame is HTMLImageElement => frame !== null);
 }
 
@@ -346,7 +347,7 @@ export class Runner {
       loadFrames("duck"),
       loadFrames("dog"),
       loadFrames("gossip"),
-      ...names.map((name) => loadImage(`/game/${name}.webp`)),
+      ...names.map((name) => loadImage(publicUrl(`/game/${name}.webp`))),
     ]).then((loaded) => {
       if (!this.alive) return;
       const [jump, duck, dog, gossip, ...singles] = loaded;
