@@ -28,6 +28,8 @@ jobs:
           cache: npm
       - run: npm install
       - run: npm run build:pages
+        env:
+          PAGES_BASE: /drbena-hra/
       - name: Pages fallback
         run: |
           cp pages-dist/index.pages.html pages-dist/index.html
