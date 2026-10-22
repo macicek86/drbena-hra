@@ -2,7 +2,19 @@ const endpoint = String((import.meta.env as Record<string, string | undefined>).
 const NAME_KEY = "drbena-jmeno";
 
 export type BoardRow = { name: string; score: number; gossips: number };
-export type Stats = { plays: number; board: BoardRow[] };
+export const previewStats: Stats | null =
+  import.meta.env.DEV && !endpoint
+    ? {
+        plays: 12,
+        board: [
+          { name: "Drběna", score: 2480, gossips: 18 },
+          { name: "Anička", score: 1960, gossips: 14 },
+          { name: "Pepík", score: 1540, gossips: 9 },
+          { name: "Bára", score: 1210, gossips: 7 },
+          { name: "Honza", score: 860, gossips: 4 },
+        ],
+      }
+    : null;
 
 function rows(value: unknown): BoardRow[] {
   if (!Array.isArray(value)) return [];

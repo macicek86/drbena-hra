@@ -154,6 +154,7 @@ export function GameApp() {
               className="z-20 -mt-[9%] w-[84%] rotate-1 drop-shadow-[0_8px_12px_rgba(36,28,22,0.3)]"
             />
             <p className="mt-3 text-sm font-extrabold tracking-wide text-[#3d2c22]/75">Klepni a pokračuj</p>
+            <p className="mt-2 text-[11px] font-extrabold tracking-wide text-[#3d2c22]/55">© Kopidlenská drbna | Camledian</p>
           </div>
         </div>
       )}
@@ -231,6 +232,9 @@ export function GameApp() {
             {previewStats && (
               <p className="mt-1 text-xs font-extrabold text-cream/80 [text-shadow:0_1px_0_#241c16]">Náhled, ještě to není venku</p>
             )}
+            <p className="mt-3 text-[11px] font-extrabold tracking-wide text-cream/75 [text-shadow:0_1px_0_#241c16]">
+              © Kopidlenská drbna | Camledian
+            </p>
           </section>
         </div>
       )}
