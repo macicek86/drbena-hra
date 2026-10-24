@@ -156,7 +156,7 @@ function hash(n: number): number {
   return x - Math.floor(x);
 }
 
-const ART_REV = "14";
+const ART_REV = "15";
 
 async function loadImage(src: string): Promise<HTMLImageElement | null> {
   try {
