@@ -246,9 +246,6 @@ export function GameApp() {
             <p className="mt-3 text-[11px] font-extrabold tracking-wide text-cream/75 [text-shadow:0_1px_0_#241c16]">
               © Kopidlenská drbna | Camledian
             </p>
-            <p className="mt-1 text-[11px] font-extrabold tracking-wide text-cream/75 [text-shadow:0_1px_0_#241c16]">
-              Hudba: František Matěj Hilmar – Esmeralda
-            </p>
           </section>
         </div>
       )}
@@ -265,9 +262,6 @@ export function GameApp() {
                 <span key={i} className={i < hud.pips ? "size-1.5 rounded-full bg-gold" : "size-1.5 rounded-full bg-ink/15"} />
               ))}
             </div>
-            <p className="mt-1 max-w-44 text-[10px] font-extrabold leading-snug text-ink/60">
-              Hudba: František Matěj Hilmar – Esmeralda
-            </p>
           </div>
           <div className="pointer-events-auto flex flex-col items-end gap-2">
             <div className="flex items-center gap-2">

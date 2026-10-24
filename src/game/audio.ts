@@ -141,7 +141,7 @@ export class Sfx {
     this.song = id;
     this.notes = id === "intro" ? INTRO : LOOP;
     this.dur = id === "intro" ? INTRO_DUR : LOOP_DUR;
-    this.looping = id === "loop";
+    this.looping = true;
     this.index = 0;
     this.wrap = 0;
     this.anchorSong = 0;
