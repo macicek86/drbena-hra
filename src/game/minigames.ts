@@ -1,4 +1,4 @@
-import { alarmAct, createAlarm, type AlarmEvent, type AlarmState } from "./goatAlarm.ts";
+import { alarmAct, type AlarmEvent, type AlarmState } from "./goatAlarm.ts";
 
 export type MiniId = "untangle" | "alarm";
 
@@ -201,18 +201,12 @@ const PUZZLES: readonly { parts: readonly [string, string, string]; success: str
 
 let lastPuzzle = -1;
 
-let lastOffered: "untangle" | "alarm" | null = null;
-
 export function fishOffersMini(_rng: () => number = Math.random) {
   return true;
 }
 
 export function createOfferedMini(rng: () => number = Math.random): AnyBonus {
-  let alarm = rng() >= 0.5;
-  if (alarm && lastOffered === "alarm") alarm = false;
-  else if (!alarm && lastOffered === "untangle") alarm = true;
-  lastOffered = alarm ? "alarm" : "untangle";
-  return alarm ? createAlarm(rng) : createUntangle(rng);
+  return createUntangle(rng);
 }
 
 export function puzzleCount() {

@@ -7,11 +7,11 @@ function untangle(state: AnyBonus | null | undefined): BonusState {
   return state;
 }
 
-test("ryba u každého rybníka nabídne minihru a střídá obě", () => {
+test("ryba u každého rybníka nabídne Rozpleť drb", () => {
   assert.equal(fishOffersMini(() => 0), true);
   assert.equal(fishOffersMini(() => 0.99), true);
   const ids = [createOfferedMini(() => 0), createOfferedMini(() => 0)].map((game) => game.id);
-  assert.deepEqual(ids, ["untangle", "alarm"]);
+  assert.deepEqual(ids, ["untangle", "untangle"]);
 });
 
 test("drby dávají složené věty a není jich míň než dvacet", () => {
