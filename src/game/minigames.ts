@@ -201,8 +201,18 @@ const PUZZLES: readonly { parts: readonly [string, string, string]; success: str
 
 let lastPuzzle = -1;
 
-export function fishOffersMini(rng: () => number = Math.random) {
-  return rng() >= 0.5;
+let lastOffered: "untangle" | "alarm" | null = null;
+
+export function fishOffersMini(_rng: () => number = Math.random) {
+  return true;
+}
+
+export function createOfferedMini(rng: () => number = Math.random): AnyBonus {
+  let alarm = rng() >= 0.5;
+  if (alarm && lastOffered === "alarm") alarm = false;
+  else if (!alarm && lastOffered === "untangle") alarm = true;
+  lastOffered = alarm ? "alarm" : "untangle";
+  return alarm ? createAlarm(rng) : createUntangle(rng);
 }
 
 export function puzzleCount() {
@@ -248,10 +258,6 @@ export function createUntangle(rng: () => number = Math.random, index?: number):
     wrong: "",
     rewarded: false,
   };
-}
-
-export function createOfferedMini(rng: () => number = Math.random): AnyBonus {
-  return rng() < 0.5 ? createUntangle(rng) : createAlarm(rng);
 }
 
 export function bonusHud(state: AnyBonus): BonusHud {

@@ -1,17 +1,17 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { bonusAct, createUntangle, fishOffersMini, puzzleCount, puzzleSentence, type AnyBonus, type BonusState } from "./minigames.ts";
+import { bonusAct, createOfferedMini, createUntangle, fishOffersMini, puzzleCount, puzzleSentence, type AnyBonus, type BonusState } from "./minigames.ts";
 
 function untangle(state: AnyBonus | null | undefined): BonusState {
   if (!state || state.id !== "untangle") throw new Error("expected untangle");
   return state;
 }
 
-test("ryba nabízí minihru jen v polovině hodů", () => {
-  assert.equal(fishOffersMini(() => 0), false);
-  assert.equal(fishOffersMini(() => 0.49), false);
-  assert.equal(fishOffersMini(() => 0.5), true);
+test("ryba u každého rybníka nabídne minihru a střídá obě", () => {
+  assert.equal(fishOffersMini(() => 0), true);
   assert.equal(fishOffersMini(() => 0.99), true);
+  const ids = [createOfferedMini(() => 0), createOfferedMini(() => 0)].map((game) => game.id);
+  assert.deepEqual(ids, ["untangle", "alarm"]);
 });
 
 test("drby dávají složené věty a není jich míň než dvacet", () => {

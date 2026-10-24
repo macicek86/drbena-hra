@@ -1,5 +1,5 @@
 import { Sfx } from "@/game/audio";
-import { bonusAct as actBonus, bonusHud, createOfferedMini, fishOffersMini, type AnyBonus, type BonusAction, type BonusHud } from "@/game/minigames";
+import { bonusAct as actBonus, bonusHud, createOfferedMini, type AnyBonus, type BonusAction, type BonusHud } from "@/game/minigames";
 import { tickAlarm, type AlarmEvent } from "./goatAlarm.ts";
 import { reportPlayer, submitScore } from "@/game/plays";
 import { publicUrl } from "@/lib/public-url";
@@ -269,7 +269,6 @@ export class Runner {
   private fishAge = 0;
   private fishX = 0;
   private lastFish = -1;
-  private fishTold = -1;
   private bonus: AnyBonus | null = null;
   private taleTag = "Příhoda";
   private tale = "";
@@ -1397,27 +1396,13 @@ export class Runner {
       if (!HAZARDS.has(ent.kind) || !ent.alive) continue;
       if (ent.x > x - this.u * 9.2 && ent.x < x + this.u * 8) ent.alive = false;
     }
-    if (fishOffersMini()) {
-      this.bonus = createOfferedMini();
-      this.phase = "bonus";
-      this.fish = 2.6;
-      this.talk = 0;
-      this.tale = "";
-      this.taleLife = 0;
-      this.taleTag = "Ryba z rybníka";
-      this.sfx.fact();
-      this.pushHud(true);
-      return;
-    }
-    let index = Math.floor(Math.random() * FISH.length);
-    if (FISH.length > 1 && index === this.fishTold) index = (index + 1) % FISH.length;
-    this.fishTold = index;
-    this.bonus = null;
-    this.fish = 5.2;
-    this.talk = 5.2;
-    this.tale = FISH[index] ?? FISH[0]!;
+    this.bonus = createOfferedMini();
+    this.phase = "bonus";
+    this.fish = 2.6;
+    this.talk = 0;
+    this.tale = "";
+    this.taleLife = 0;
     this.taleTag = "Ryba z rybníka";
-    this.taleLife = 5.2;
     this.sfx.fact();
     this.pushHud(true);
   }
