@@ -18,7 +18,7 @@ export type BonusState = {
   parts: readonly string[];
   order: number[];
   picked: number | null;
-  wrong: boolean;
+  wrong: string;
   rewarded: boolean;
 };
 
@@ -29,7 +29,7 @@ export type BonusHud = {
   prompt: string;
   cards: string[];
   picked: number | null;
-  wrong: boolean;
+  wrong: string;
   success: string;
   reward: number;
 };
@@ -38,94 +38,106 @@ const TITLE = "Rozpleť drb!";
 const PROMPT = "Drběno, já něco zaslechla, ale úplně se mi to pomotalo! Pomůžeš mi rozplést drb?";
 const REWARD = 50;
 
+const WRONG_LINES = [
+  "Bubliny moje! Takhle zamotaný drb jsem ještě neviděla!",
+  "Tohle nesedí! A já o sezení něco vím… sedím tu ve vodě celý den!",
+  "Drběno, zkus to znovu! Tohle by nesežral ani kapr!",
+  "Něco ti tam uplavalo. Zkus ty věty přeházet!",
+  "Taková motanice! Ještě chvíli a budu z toho mít zauzlované ploutve!",
+  "Tohle mi nějak nešplouchá dohromady!",
+  "Pozor, pozor! V rybníce se šíří falešné drby!",
+  "Já mám paměť jako ryba, ale tohle si pamatuju jinak!",
+] as const;
+
+let lastWrong = -1;
+
+function pickWrong(rng: () => number = Math.random) {
+  let index = Math.floor(rng() * WRONG_LINES.length);
+  if (WRONG_LINES.length > 1 && index === lastWrong) index = (index + 1) % WRONG_LINES.length;
+  lastWrong = index;
+  return WRONG_LINES[index]!;
+}
+
 const PUZZLES: readonly { parts: readonly [string, string, string]; success: string }[] = [
   {
-    parts: ["Drběna se doslechla,", "že kapři v kopidlenském rybníku", "pořádají tajnou schůzi."],
-    success: "Takhle to šplouchá! Přesně tak jsem to zaslechla.",
+    parts: ["Drběna zjistila, že Kopidlno získalo", "už v roce 1523 městský znak s kozlí hlavou,", "a od té doby si připadá jako místní šlechtična!"],
+    success: "Tak proto si ta naše Drběna tolik vyskakuje! Ona si vážně myslí, že má modrou krev!",
   },
   {
-    parts: ["Na kopidlenském náměstí", "prý koza s růžovou mašlí", "sbírá drby rychleji než vítr."],
-    success: "No vidíš. V žábrách jsem měla uzel a ty jsi ho rozpletla.",
+    parts: ["V kopidlenském zámku kdysi sídlila šlechta,", "ale od roku 1948 slouží zahradnické škole,", "takže dnes tam místo hrabat vládnou zahradníci!"],
+    success: "Dřív tam bydlela šlechta, dneska zahradníci. Hlavně aby tam Drběna nezačala spásat záhony!",
   },
   {
-    parts: ["Drběna tvrdila,", "že v zámeckém skleníku", "si palmy šeptají mezi listy."],
-    success: "To je ono. Konečně to teče jako čistá voda.",
+    parts: ["František Matěj Hilmar působil v Kopidlně", "jako učitel a hudební skladatel,", "a jeho polka Esmeralda teď doprovází i Drběnu!"],
+    success: "Ten Hilmar uměl složit polku! Já umím akorát složit ploutve a jít spát.",
   },
   {
-    parts: ["U staré školy", "se povídalo,", "že koza čte kroniku rohama."],
-    success: "Výborně. Tenhle drb už se může roznést po Kopidlně.",
+    parts: ["V zámeckém parku stojí palmový skleník", "postavený už v roce 1894,", "ale Drběna v něm zatím žádné kokosové ořechy nedostala!"],
+    success: "Palmy v Kopidlně? Ještě pár stupňů navíc a budu si připadat jako tropická rybička!",
   },
   {
-    parts: ["Drběna slyšela,", "že lavička na náměstí", "pamatuje víc drbů než kdokoliv."],
-    success: "Správně. Já bych to ještě třikrát přežvýkala.",
+    parts: ["Roku 1514 získalo Kopidlno", "od krále Vladislava II. městská práva,", "ale Drběna stále marně žádá o titul královské kozy!"],
+    success: "Městská práva? A kdy konečně někdo uzná práva kaprů na pořádně hluboký rybník?",
   },
   {
-    parts: ["V zámeckém parku", "prý keře naklánějí větve,", "aby líp slyšely."],
-    success: "Šplouch. Teď to dává smysl i pod hladinou.",
+    parts: ["Zámecký rybník v Kopidlně", "existuje už od 16. století,", "takže zdejší kapři mají opravdu dlouhou rodinnou historii!"],
+    success: "Šestnácté století? Tak to už chápu, proč dědeček kapr pořád říká, že za jeho mládí bylo víc vody!",
   },
   {
-    parts: ["Drběna přísahala,", "že rybník má", "vlastní šeptandu pod hladinou."],
-    success: "Přesně! Já tam na té schůzi skoro byla.",
+    parts: ["Kopidlenský skladatel František Matěj Hilmar", "vytvořil více než dvě stě tanečních skladeb,", "ale žádnou prý nevěnoval kozímu dupání!"],
+    success: "Dvě stě skladeb? Já složila zatím jen tři bubliny do řady. A ještě mi uplavaly!",
   },
   {
-    parts: ["Na hrázi", "se šuškalo,", "že koza skáče, jen když je drb šťavnatý."],
-    success: "A je to. Žábry si oddechly.",
+    parts: ["Kopidlenská radnice na náměstí", "pochází z roku 1875 a má ve štítu kozlí hlavu,", "takže Drběna tvrdí, že na úřadě má příbuzného!"],
+    success: "Kozlí hlava na radnici? Tak to už chápu, proč chce být Drběna starostkou!",
   },
   {
-    parts: ["Drběna donesla,", "že zvon na věži", "odbíjí pokaždé, když se něco provalí."],
-    success: "Takhle jsem to slyšela, jenom trochu mokřeji.",
+    parts: ["Kopidlenský zámecký park", "má rozlohu téměř osm hektarů,", "a Drběna by v něm nejraději spásla každý trávník!"],
+    success: "Osm hektarů parku? To je trávy! Drběna by tam měla snídani na celý rok!",
   },
   {
-    parts: ["V Drahorazi", "prý jablka červenají,", "když zaslechnou čerstvý drb."],
-    success: "Výborně. Tenhle drb už se nemusí stydět.",
+    parts: ["Kopidlenský palmový skleník", "byl inspirován skleníkem ve vídeňském Schönbrunnu,", "ale místní kozy by prý raději skleník plný jetele!"],
+    success: "Ve Vídni mají Schönbrunn, v Kopidlně palmy. A já? Já mám na dně rybníka starý hrnec!",
   },
   {
-    parts: ["Drběna se zakecala tak dlouho,", "že stihla Kopidlno", "třikrát obejít."],
-    success: "Hotovo. Ani kapr by to nepopletl líp.",
+    parts: ["V Kopidlně se narodila Anna Honzáková,", "která roku 1902 jako první žena promovala na lékařku na české lékařské fakultě,", "a Drběna si říká, jestli by uměla léčit i kozí tvrdohlavost!"],
+    success: "První lékařka! Kdyby tu byla dneska, hned bych se zeptala, jestli se dá vyléčit závislost na drbech!",
   },
   {
-    parts: ["U rybníka", "se říká,", "že nejlepší drb má žábry."],
-    success: "No jasně. Vždyť je to náš domácí recept.",
+    parts: ["Železniční trať z Nymburka do Jičína", "zahájila provoz v roce 1881 a vede přes Kopidlno,", "ale Drběna stále tvrdí, že po čtyřech je to větší dobrodružství!"],
+    success: "Vlakem do Kopidlna? Já radši plavu. Ale uznávám, že na kolejích je méně bahna!",
   },
   {
-    parts: ["Drběna zjistila,", "že ploty v Kopidlně", "nestojí na ochranu, ale na poslouchání."],
-    success: "Správné pořadí. Už to můžu vyprávět dál.",
+    parts: ["Kopidlenský kostel svatého Jakuba Většího", "byl postaven v letech 1704 až 1705,", "a Drběna si jeho vysokou věž plete s obřím kozím rozhledem!"],
+    success: "Tak starý kostel! A já si myslela, že nejstarší věc v Kopidlně je náš kapr Franta!",
   },
   {
-    parts: ["V palmovém skleníku", "prý jedna palma", "chtěla předplatné na všechny drby."],
-    success: "To sedí. Palmy by za tohle daly list.",
+    parts: ["Hlavní kopidlenské náměstí", "nese jméno skladatele Františka Matěje Hilmara,", "a Drběna by tam nejraději pořádala kozí taneční soutěž!"],
+    success: "Náměstí po skladateli? To je pocta! Po mně zatím pojmenovali jen jednu louži. A ta vyschla!",
   },
   {
-    parts: ["Drběna běžela,", "protože čerstvý drb", "nevydrží ani do oběda."],
-    success: "Výborně. Než se to zkazí, už je to srovnané.",
+    parts: ["Podobu kopidlenského zámeckého parku", "pomáhal koncem 19. století utvářet František Thomayer,", "ale o plánované výsadbě kozího zelí se nikde nepíše!"],
+    success: "Ten Thomayer měl určitě rád rostliny. Ještě že nepotkal Drběnu, ta by mu udělala kompletní prostřih za pět minut!",
   },
   {
-    parts: ["Na náměstí", "se povídalo,", "že růžová mašle je značka zpravodajství."],
-    success: "Přesně tak. Mašle nelže, jenom poletuje.",
+    parts: ["První písemná zmínka o Drahorazi", "pochází už z roku 1294,", "takže se tam mohou pochlubit opravdu dlouhou pamětí!"],
+    success: "Drahoraz má tak dlouhou historii? To musí mít pořádně staré drby! Honem tam někoho pošli!",
   },
   {
-    parts: ["Drběna slyšela od vody,", "že kapr mlčí,", "jen když má plnou pusu drbů."],
-    success: "Šplouch, šplouch. Konečně to plyne.",
+    parts: ["U kostela v Drahorazi stojí kaple Božího hrobu,", "která vznikla v letech 1695 až 1698 podle jeruzalémského vzoru,", "a Drběna nevěří, že kvůli ní nemusí cestovat až do Jeruzaléma!"],
+    success: "Kousek Jeruzaléma u Kopidlna? No vida! A já se bála vyplavat až na druhý břeh!",
   },
   {
-    parts: ["U zámku", "prý schody počítají,", "kolikrát se novinka donese nahoru."],
-    success: "Tak. Schody by ti za to zatleskaly.",
+    parts: ["Nedaleko Mlýnce leží rybník Zrcadlo,", "který patří k největším rybníkům na Jičínsku,", "a Drběna se tam chodí přesvědčit, jestli jí sluší mašle!"],
+    success: "Rybník Zrcadlo? Tam já nesmím! Minule jsem se zahlédla a půl hodiny jsem si upravovala šupiny!",
   },
   {
-    parts: ["Drběna přinesla,", "že v Kopidlně je ticho", "jen tehdy, když všichni poslouchají."],
-    success: "Ano! Ticho je u nás taky druh drbu.",
+    parts: ["V kopidlenské radnici býval", "kromě městského úřadu také divadelní sál a kino,", "takže Drběna tam chce okamžitě uvést svůj kozí muzikál!"],
+    success: "Kino na radnici? Drběna by určitě chtěla hlavní roli. A já? Já bych dělala němý film!",
   },
   {
-    parts: ["V parku", "se šuškalo,", "že koza sbírá drby i ve skoku."],
-    success: "Rozpleteno. Můžeš zase běžet, než to vychladne.",
-  },
-  {
-    parts: ["Drběna se dušovala,", "že nejdelší drb", "začíná u rybníka a končí až za humny."],
-    success: "Dlouhý byl, ale ty jsi ho srovnala na tři řádky.",
-  },
-  {
-    parts: ["Na hrázi", "kapři rozhodli,", "že koza smí poslouchat, ale ne kecat do vody."],
-    success: "Usnesení platí. A ty jsi ho přečetla správně.",
+    parts: ["Ve staré škole v Hilmarově ulici", "kdysi sídlilo městské muzeum a dnes tam najdeme knihovnu,", "takže Drběna má kde hledat další historické drby!"],
+    success: "Muzeum, knihovna… Tolik moudrosti v jedné budově! A Drběna stejně nejradši čte, co se kde šustlo!",
   },
 ];
 
@@ -175,7 +187,7 @@ export function createUntangle(rng: () => number = Math.random, index?: number):
     parts: puzzle.parts,
     order: shuffleOrder(puzzle.parts.length, rng),
     picked: null,
-    wrong: false,
+    wrong: "",
     rewarded: false,
   };
 }
@@ -199,7 +211,7 @@ export function bonusAct(state: BonusState, action: BonusAction): { state: Bonus
   if (action.type === "decline" && state.stage === "offer") return { state: null, grant: 0, resume: true };
   if (action.type === "continue" && state.stage === "done") return { state: null, grant: 0, resume: true };
   if (action.type === "play" && state.stage === "offer") {
-    return { state: { ...state, stage: "play", picked: null, wrong: false }, grant: 0, resume: false };
+    return { state: { ...state, stage: "play", picked: null, wrong: "" }, grant: 0, resume: false };
   }
   if (action.type === "pick" && state.stage === "play") {
     const index = action.index;
@@ -211,13 +223,13 @@ export function bonusAct(state: BonusState, action: BonusAction): { state: Bonus
     const swap = order[from]!;
     order[from] = order[index]!;
     order[index] = swap;
-    return { state: { ...state, order, picked: null, wrong: false }, grant: 0, resume: false };
+    return { state: { ...state, order, picked: null, wrong: "" }, grant: 0, resume: false };
   }
   if (action.type === "check" && state.stage === "play") {
     const ok = state.order.every((part, index) => part === index);
-    if (!ok) return { state: { ...state, wrong: true, picked: null }, grant: 0, resume: false };
+    if (!ok) return { state: { ...state, wrong: pickWrong(), picked: null }, grant: 0, resume: false };
     return {
-      state: { ...state, stage: "done", wrong: false, picked: null, rewarded: true },
+      state: { ...state, stage: "done", wrong: "", picked: null, rewarded: true },
       grant: state.rewarded ? 0 : state.reward,
       resume: false,
     };

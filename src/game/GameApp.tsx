@@ -471,7 +471,7 @@ function BonusCard({ bonus, onAct }: { bonus: NonNullable<Hud["bonus"]>; onAct: 
             ))}
           </div>
           <p className="mt-3 text-xs font-extrabold text-ink-soft">Klepni na dvě kartičky a prohoď je.</p>
-          {bonus.wrong && <p className="mt-2 text-sm font-extrabold text-bow">Ještě je to zamotané. Prohoď kartičky a zkus to znovu.</p>}
+          {bonus.wrong && <p className="mt-2 text-sm font-extrabold text-bow">{bonus.wrong}</p>}
           <button
             type="button"
             className="mt-4 flex h-14 w-full items-center justify-center rounded-full border-2 border-ink bg-bow text-lg font-extrabold text-cream"

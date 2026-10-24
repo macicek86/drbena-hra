@@ -10,7 +10,7 @@ test("ryba nabízí minihru jen v polovině hodů", () => {
 });
 
 test("drby dávají složené věty a není jich míň než dvacet", () => {
-  assert.ok(puzzleCount() >= 20);
+  assert.equal(puzzleCount(), 20);
   for (let i = 0; i < puzzleCount(); i += 1) {
     const sentence = puzzleSentence(i);
     assert.match(sentence, /[.!?]$/);
@@ -42,7 +42,8 @@ test("odmítnutí, chyba, oprava, odměna jednou a pokračování", () => {
   let state = playing.state!;
   const wrong = bonusAct(state, { type: "check" });
   assert.equal(wrong.state?.stage, "play");
-  assert.equal(wrong.state?.wrong, true);
+  assert.equal(typeof wrong.state?.wrong, "string");
+  assert.ok(wrong.state && wrong.state.wrong.length > 10);
   assert.equal(wrong.grant, 0);
 
   state = wrong.state!;
