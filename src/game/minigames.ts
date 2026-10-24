@@ -35,7 +35,37 @@ export type BonusHud = {
 };
 
 const TITLE = "Rozpleť drb!";
-const PROMPT = "Drběno, já něco zaslechla, ale úplně se mi to pomotalo! Pomůžeš mi rozplést drb?";
+const INVITES = [
+  "Drběnooo! Mám drb tak zamotaný, že se mi do něj chytily vlastní ploutve! Pomůžeš?",
+  "Hele, kozo! Ty máš rohy, já mám hlavu. Tak schválně, komu to dneska víc myslí?",
+  "Včera jsem slyšela něco tak zajímavého, že jsem zapomněla zavřít pusu! A teď nevím, jak to bylo dál!",
+  "Drběno, pojď sem! Mám pro tebe hlavolam. A neboj, žádný háček v tom není… teda skoro!",
+  "Tak co, chlupatá? Troufneš si na pořádný drb, nebo umíš jenom běhat?",
+  "Já mám paměť jako ryba. Takže potřebuju někoho, kdo ji má aspoň jako koza!",
+  "Představ si, co se povídá na dně rybníka! Jenže než jsem doplavala nahoru, úplně se mi to pomotalo!",
+  "Drběno! Jestli mi pomůžeš, prozradím ti tajemství! Tedy pokud si vzpomenu, jaké.",
+  "Dneska jsem ulovila pořádný drb! Jenom nevím, kde má hlavu a kde ocas!",
+  "Tak schválně, Drběno! Dokážeš rozmotat něco jiného než provaz, kterým tě přivazují?",
+  "Mám tu tři kousky pravdy. Akorát je někdo pěkně zamíchal. Že by ti kapři?",
+  "Víš, co je horší než ryba na suchu? Zamotaný drb! Tak mi s ním pomoz!",
+  "Celý rybník už to ví! Jenom nikdo neví, v jakém pořadí se to stalo!",
+  "Pojď si procvičit mozek! Já bych si procvičila taky, ale nějak mi klouže mezi ploutvemi.",
+  "Drběno, mám pro tebe výzvu! Když ji zvládneš, uznám, že kozy nejsou úplně natvrdlé!",
+  "Taková ostuda! Já, největší drbna celého rybníka, a nedokážu dát dohromady jednu větu!",
+  "Pšššt! Mám tajnou zprávu z Kopidlna. Ale nejdřív ji musíš rozplést!",
+  "Drběno, nech toho poskakování! Tady se řeší důležitá rybniční záležitost!",
+  "Myslíš si, že máš pod čepicí? Tak ukaž! Já žádnou nemám, pořád by mi uplavávala.",
+  "Pojď, Drběno, něco si zahrajeme! Slibuju, že tentokrát tě nebudu tahat za nos. Ani za rohy!",
+] as const;
+
+let lastInvite = -1;
+
+function pickInvite(rng: () => number) {
+  let index = Math.floor(rng() * INVITES.length);
+  if (INVITES.length > 1 && index === lastInvite) index = (index + 1) % INVITES.length;
+  lastInvite = index;
+  return INVITES[index]!;
+}
 const REWARD = 50;
 
 const WRONG_LINES = [
@@ -181,7 +211,7 @@ export function createUntangle(rng: () => number = Math.random, index?: number):
     stage: "offer",
     id: "untangle",
     title: TITLE,
-    prompt: PROMPT,
+    prompt: pickInvite(rng),
     reward: REWARD,
     success: puzzle.success,
     parts: puzzle.parts,
