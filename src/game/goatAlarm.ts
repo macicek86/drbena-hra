@@ -199,7 +199,7 @@ export function alarmTap(state: AlarmState): { state: AlarmState; events: AlarmE
       zoneStart: zone.start,
       zoneEnd: zone.end,
       pose: "hit",
-      poseT: grade === "perfect" ? 0.52 : 0.42,
+      poseT: grade === "perfect" ? 0.85 : 0.7,
       grade,
       shake: grade === "perfect" ? 1 : 0.62,
       note: grade === "perfect" ? "Přesně mezi rohy! Hostinec se otřásl." : "Třesk! V okně se rozsvítilo.",

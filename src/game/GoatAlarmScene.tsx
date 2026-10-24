@@ -56,8 +56,8 @@ function AlarmScene({ bonus }: { bonus: AlarmHud }) {
     bonus.pose === "hit" ? "/game/alarm/goat-hit.webp" : bonus.pose === "stumble" ? "/game/alarm/goat-miss.webp" : "/game/alarm/goat.webp";
   const awake = bonus.windows >= 2 || (bonus.stage === "done" && !bonus.failed);
   const gooseUp = bonus.windows >= 3 || (bonus.stage === "done" && !bonus.failed);
-  const shift = bonus.pose === "hit" ? 6 : bonus.pose === "stumble" ? -3 : 0;
-  const tilt = bonus.pose === "stumble" ? -8 : 0;
+  const shift = bonus.pose === "hit" ? "16%" : bonus.pose === "stumble" ? "-6%" : "-1%";
+  const tilt = bonus.pose === "stumble" ? -14 : bonus.pose === "hit" ? -6 : 0;
   const shake = Math.sin(bonus.shake * 28) * bonus.shake * 8;
   const perfectStart = bonus.zoneStart + (bonus.zoneEnd - bonus.zoneStart) * 0.31;
   const perfectWidth = Math.max(0.02, (bonus.zoneEnd - bonus.zoneStart) * 0.38);
@@ -75,24 +75,23 @@ function AlarmScene({ bonus }: { bonus: AlarmHud }) {
           ) : null,
         )}
         {awake && (
-          <img src="/game/alarm/keeper.webp" alt="" className="absolute w-[18%] drop-shadow-md" style={{ left: "36%", top: "36%" }} />
+          <img src="/game/alarm/keeper.webp" alt="" className="absolute z-10 w-[14%] drop-shadow-md" style={{ left: "39%", top: "34%" }} />
         )}
         <img
           src={gooseUp ? "/game/alarm/goose-honk.webp" : "/game/alarm/goose.webp"}
           alt=""
-          className="absolute drop-shadow-md"
-          style={{ left: "7%", bottom: "6%", width: gooseUp ? "15%" : "20%" }}
+          className="absolute z-20 drop-shadow-md"
+          style={{ left: "64%", bottom: "5%", width: gooseUp ? "14%" : "18%" }}
         />
         <img
           src={goat}
           alt=""
-          className="absolute drop-shadow-lg"
+          className="absolute z-30 w-[34%] drop-shadow-lg transition-all duration-150"
           style={{
-            left: "1%",
-            bottom: "2%",
-            width: "46%",
-            transform: `translateX(${shift}%) rotate(${tilt}deg)`,
-            transformOrigin: "70% 80%",
+            left: shift,
+            bottom: "0%",
+            transform: `rotate(${tilt}deg)`,
+            transformOrigin: "80% 90%",
           }}
         />
       </div>
