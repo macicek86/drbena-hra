@@ -1,4 +1,6 @@
-export type MiniId = "untangle";
+import { alarmAct, createAlarm, type AlarmEvent, type AlarmState } from "./goatAlarm.ts";
+
+export type MiniId = "untangle" | "alarm";
 
 export type BonusAction =
   | { type: "play" }
@@ -6,11 +8,12 @@ export type BonusAction =
   | { type: "skip" }
   | { type: "pick"; index: number }
   | { type: "check" }
-  | { type: "continue" };
+  | { type: "continue" }
+  | { type: "tap" };
 
 export type BonusState = {
   stage: "offer" | "play" | "done";
-  id: MiniId;
+  id: "untangle";
   title: string;
   prompt: string;
   reward: number;
@@ -22,16 +25,41 @@ export type BonusState = {
   rewarded: boolean;
 };
 
-export type BonusHud = {
-  stage: BonusState["stage"];
-  id: MiniId;
+export type AnyBonus = BonusState | AlarmState;
+
+export type BonusHud =
+  | {
+      stage: BonusState["stage"];
+      id: "untangle";
+      title: string;
+      prompt: string;
+      cards: string[];
+      picked: number | null;
+      wrong: string;
+      success: string;
+      reward: number;
+    }
+  | AlarmHud;
+
+export type AlarmHud = {
+  id: "alarm";
+  stage: AlarmState["stage"];
   title: string;
   prompt: string;
-  cards: string[];
-  picked: number | null;
-  wrong: string;
   success: string;
   reward: number;
+  wrong: string;
+  failed: boolean;
+  pointer: number;
+  zoneStart: number;
+  zoneEnd: number;
+  windows: number;
+  goal: number;
+  pose: AlarmState["pose"];
+  poseT: number;
+  shake: number;
+  note: string;
+  timeLeft: number;
 };
 
 const TITLE = "Rozpleť drb!";
@@ -222,10 +250,36 @@ export function createUntangle(rng: () => number = Math.random, index?: number):
   };
 }
 
-export function bonusHud(state: BonusState): BonusHud {
+export function createOfferedMini(rng: () => number = Math.random): AnyBonus {
+  return rng() < 0.5 ? createUntangle(rng) : createAlarm(rng);
+}
+
+export function bonusHud(state: AnyBonus): BonusHud {
+  if (state.id === "alarm") {
+    return {
+      id: "alarm",
+      stage: state.stage,
+      title: state.title,
+      prompt: state.prompt,
+      success: state.success,
+      reward: state.reward,
+      wrong: state.failed ? state.success : "",
+      failed: state.failed,
+      pointer: state.pointer,
+      zoneStart: state.zoneStart,
+      zoneEnd: state.zoneEnd,
+      windows: state.windows,
+      goal: state.goal,
+      pose: state.pose,
+      poseT: state.poseT,
+      shake: state.shake,
+      note: state.note,
+      timeLeft: Math.max(0, state.limit - state.t),
+    };
+  }
   return {
     stage: state.stage,
-    id: state.id,
+    id: "untangle",
     title: state.title,
     prompt: state.prompt,
     cards: state.stage === "offer" ? [] : state.order.map((index) => state.parts[index] ?? ""),
@@ -236,7 +290,11 @@ export function bonusHud(state: BonusState): BonusHud {
   };
 }
 
-export function bonusAct(state: BonusState, action: BonusAction): { state: BonusState | null; grant: number; resume: boolean } {
+export function bonusAct(
+  state: AnyBonus,
+  action: BonusAction,
+): { state: AnyBonus | null; grant: number; resume: boolean; events?: AlarmEvent[] } {
+  if (state.id === "alarm") return alarmAct(state, action);
   if (action.type === "skip") return { state: null, grant: 0, resume: true };
   if (action.type === "decline" && state.stage === "offer") return { state: null, grant: 0, resume: true };
   if (action.type === "continue" && state.stage === "done") return { state: null, grant: 0, resume: true };

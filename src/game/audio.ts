@@ -544,6 +544,39 @@ export class Sfx {
     }
   }
 
+  alarmThud() {
+    this.sweep(120, 55, 0.14, "triangle", 0.16);
+    this.blip(78, undefined, 0.09, "sine", 0.1);
+  }
+
+  alarmBleat() {
+    this.sweep(460, 250, 0.16, "triangle", 0.09);
+    this.blip(320, (this.ctx?.currentTime ?? 0) + 0.08, 0.1, "sine", 0.05);
+  }
+
+  alarmHonk() {
+    this.sweep(620, 360, 0.16, "triangle", 0.07);
+  }
+
+  alarmKeeper() {
+    const now = this.ctx?.currentTime ?? 0;
+    this.blip(294, now, 0.09, "triangle", 0.08);
+    this.blip(392, now + 0.09, 0.11, "triangle", 0.07);
+  }
+
+  alarmFanfare() {
+    const now = this.ctx?.currentTime ?? 0;
+    [523, 659, 784].forEach((tone, index) => this.blip(tone, now + index * 0.09, 0.16, "triangle", 0.1));
+  }
+
+  alarmStumble() {
+    this.sweep(200, 90, 0.16, "sine", 0.07);
+  }
+
+  alarmCricket() {
+    this.blip(2800, undefined, 0.025, "sine", 0.025);
+  }
+
   private blip(
     freqNote: number,
     when: number | undefined,

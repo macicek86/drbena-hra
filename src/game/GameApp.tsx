@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Heart, Pause, Play, RotateCcw, Share2, Volume2, VolumeX } from "lucide-react";
+import { AlarmCard } from "@/game/GoatAlarmScene";
 import { Runner, emptyHud, type Hud } from "@/game/runner";
 import type { BonusAction } from "@/game/minigames";
 import { fetchStats, playerLabel, previewStats, saveName, savedName, type BoardRow } from "@/game/plays";
@@ -427,6 +428,7 @@ export function GameApp() {
 }
 
 function BonusCard({ bonus, onAct }: { bonus: NonNullable<Hud["bonus"]>; onAct: (action: BonusAction) => void }) {
+  if (bonus.id === "alarm") return <AlarmCard bonus={bonus} onAct={onAct} />;
   return (
     <section className="max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-3xl border-2 border-ink bg-cream p-4 text-center shadow-lg sm:p-6">
       <p className="text-xs font-extrabold tracking-wide text-bow">Ryba z rybníka</p>

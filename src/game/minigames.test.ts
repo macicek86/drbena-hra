@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { bonusAct, createUntangle, fishOffersMini, puzzleCount, puzzleSentence } from "./minigames.ts";
+import { bonusAct, createUntangle, fishOffersMini, puzzleCount, puzzleSentence, type AnyBonus, type BonusState } from "./minigames.ts";
+
+function untangle(state: AnyBonus | null | undefined): BonusState {
+  if (!state || state.id !== "untangle") throw new Error("expected untangle");
+  return state;
+}
 
 test("ryba nabízí minihru jen v polovině hodů", () => {
   assert.equal(fishOffersMini(() => 0), false);
@@ -39,21 +44,21 @@ test("odmítnutí, chyba, oprava, odměna jednou a pokračování", () => {
   assert.equal(playing.resume, false);
   assert.equal(playing.state?.stage, "play");
 
-  let state = playing.state!;
+  let state = untangle(playing.state);
   const wrong = bonusAct(state, { type: "check" });
   assert.equal(wrong.state?.stage, "play");
-  assert.equal(typeof wrong.state?.wrong, "string");
-  assert.ok(wrong.state && wrong.state.wrong.length > 10);
+  const missed = untangle(wrong.state);
+  assert.ok(missed.wrong.length > 10);
   assert.equal(wrong.grant, 0);
 
-  state = wrong.state!;
+  state = missed;
   const goal = [0, 1, 2];
   let guard = 0;
   while (!state.order.every((part, index) => part === goal[index]) && guard++ < 12) {
     const from = state.order.findIndex((part, index) => part !== index);
     const to = state.order.indexOf(from);
-    state = bonusAct(state, { type: "pick", index: from }).state!;
-    state = bonusAct(state, { type: "pick", index: to }).state!;
+    state = untangle(bonusAct(state, { type: "pick", index: from }).state);
+    state = untangle(bonusAct(state, { type: "pick", index: to }).state);
   }
   assert.deepEqual(state.order, goal);
 
@@ -62,7 +67,7 @@ test("odmítnutí, chyba, oprava, odměna jednou a pokračování", () => {
   assert.equal(solved.grant, 50);
   assert.equal(solved.resume, false);
 
-  const again = bonusAct({ ...solved.state!, stage: "play", rewarded: true, order: [0, 1, 2] }, { type: "check" });
+  const again = bonusAct({ ...untangle(solved.state), stage: "play", rewarded: true, order: [0, 1, 2] }, { type: "check" });
   assert.equal(again.grant, 0);
 
   const next = bonusAct(solved.state!, { type: "continue" });

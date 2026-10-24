@@ -1,5 +1,6 @@
 import { Sfx } from "@/game/audio";
-import { bonusAct as actBonus, bonusHud, createUntangle, fishOffersMini, type BonusAction, type BonusHud, type BonusState } from "@/game/minigames";
+import { bonusAct as actBonus, bonusHud, createOfferedMini, fishOffersMini, type AnyBonus, type BonusAction, type BonusHud } from "@/game/minigames";
+import { tickAlarm, type AlarmEvent } from "./goatAlarm.ts";
 import { reportPlayer, submitScore } from "@/game/plays";
 import { publicUrl } from "@/lib/public-url";
 import {
@@ -269,7 +270,7 @@ export class Runner {
   private fishX = 0;
   private lastFish = -1;
   private fishTold = -1;
-  private bonus: BonusState | null = null;
+  private bonus: AnyBonus | null = null;
   private taleTag = "Příhoda";
   private tale = "";
   private taleLife = 0;
@@ -346,12 +347,8 @@ export class Runner {
   bonusAct(action: BonusAction) {
     if (this.phase !== "bonus" || !this.bonus) return;
     const next = actBonus(this.bonus, action);
-    if (next.grant > 0) {
-      this.gossipScore += next.grant;
-      this.pops.push({ x: this.playerX, y: this.feet - this.u * 0.8, text: `+${next.grant}`, life: 0.9 });
-      this.burst(this.playerX, this.feet - this.u * 0.7, "#e8a317", 8);
-      this.sfx.collect(4);
-    }
+    if (next.events?.length) this.playAlarm(next.events);
+    if (next.grant > 0) this.grantBonus(next.grant);
     if (next.resume || !next.state) this.resumeRun();
     else {
       this.bonus = next.state;
@@ -652,6 +649,13 @@ export class Runner {
       if (this.phase === "bonus") {
         this.anim += dt * 3;
         this.fishAge += dt;
+        if (this.bonus?.id === "alarm" && this.bonus.stage === "play") {
+          const next = tickAlarm(this.bonus, dt);
+          this.bonus = next.state;
+          if (next.events.length) this.playAlarm(next.events);
+          if (next.grant > 0) this.grantBonus(next.grant);
+          this.pushHud(true);
+        }
       }
       this.decayJuice(dt);
       return;
@@ -1394,7 +1398,7 @@ export class Runner {
       if (ent.x > x - this.u * 9.2 && ent.x < x + this.u * 8) ent.alive = false;
     }
     if (fishOffersMini()) {
-      this.bonus = createUntangle();
+      this.bonus = createOfferedMini();
       this.phase = "bonus";
       this.fish = 2.6;
       this.talk = 0;
@@ -1416,6 +1420,25 @@ export class Runner {
     this.taleLife = 5.2;
     this.sfx.fact();
     this.pushHud(true);
+  }
+
+  private grantBonus(points: number) {
+    this.gossipScore += points;
+    this.pops.push({ x: this.playerX, y: this.feet - this.u * 0.8, text: `+${points}`, life: 0.9 });
+    this.burst(this.playerX, this.feet - this.u * 0.7, "#e8a317", 8);
+    this.sfx.collect(4);
+  }
+
+  private playAlarm(events: AlarmEvent[]) {
+    for (const event of events) {
+      if (event === "thud") this.sfx.alarmThud();
+      else if (event === "bleat") this.sfx.alarmBleat();
+      else if (event === "honk") this.sfx.alarmHonk();
+      else if (event === "keeper") this.sfx.alarmKeeper();
+      else if (event === "fanfare") this.sfx.alarmFanfare();
+      else if (event === "stumble") this.sfx.alarmStumble();
+      else this.sfx.alarmCricket();
+    }
   }
 
   private resumeRun() {
