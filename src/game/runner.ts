@@ -899,6 +899,20 @@ export class Runner {
     if (this.phase !== "play") return;
     guard = 0;
     while (this.hazardCursor < this.camera + this.viewW + 20 && guard++ < 8) this.spawnWave();
+    this.quietPond();
+  }
+
+  private quietPond() {
+    const u = this.u;
+    for (const pond of this.ents) {
+      if (pond.kind !== "pond" || !pond.alive) continue;
+      const from = pond.x - u * 8;
+      const to = pond.x + u * 8;
+      for (const ent of this.ents) {
+        if (!ent.alive || !HAZARDS.has(ent.kind)) continue;
+        if (ent.x > from && ent.x < to) ent.alive = false;
+      }
+    }
   }
 
   private nearPondMiddle(x: number) {
@@ -916,7 +930,7 @@ export class Runner {
     const base = Math.floor(x / cycle);
     for (let i = base - 1; i <= base + 1; i += 1) {
       const pondX = (i * 4 + 3) * BIOME_LEN + this.viewW * 0.82;
-      const from = pondX + this.u * 0.2;
+      const from = pondX - this.u * 8;
       const to = pondX + this.u * 8;
       if (x >= from && x < to) return to;
     }
@@ -1377,7 +1391,7 @@ export class Runner {
     for (const ent of this.ents) {
       if (ent.kind === "tree" && Math.abs(ent.x - (x - this.u * 1.15)) < this.u * 2.6) ent.alive = false;
       if (!HAZARDS.has(ent.kind) || !ent.alive) continue;
-      if (ent.x > x - this.u * 2.2 && ent.x < x + this.u * 7) ent.alive = false;
+      if (ent.x > x - this.u * 9.2 && ent.x < x + this.u * 8) ent.alive = false;
     }
     if (fishOffersMini()) {
       this.bonus = createUntangle();
