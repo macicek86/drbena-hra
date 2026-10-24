@@ -201,8 +201,8 @@ const PUZZLES: readonly { parts: readonly [string, string, string]; success: str
 
 let lastPuzzle = -1;
 
-export function fishOffersMini(_rng: () => number = Math.random) {
-  return true;
+export function fishOffersMini(rng: () => number = Math.random) {
+  return rng() >= 0.5;
 }
 
 export function createOfferedMini(rng: () => number = Math.random): AnyBonus {
