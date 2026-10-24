@@ -61,23 +61,25 @@ function AlarmScene({ bonus }: { bonus: AlarmHud }) {
   const perfectWidth = Math.max(0.02, (bonus.zoneEnd - bonus.zoneStart) * 0.38);
   return (
     <div className="w-full">
-      <div className="relative aspect-[16/9] overflow-hidden rounded-2xl" style={{ transform: `translateX(${shake}px)` }}>
-        <img src="/game/alarm/inn.webp" alt="" className="absolute inset-0 h-full w-full object-cover" />
-        {WINDOWS.map((spot, index) =>
-          bonus.windows > index ? (
-            <span key={spot.left + spot.top} className="absolute rounded-[2px] bg-[#ffd56a]/80 shadow-[0_0_12px_4px_rgba(255,213,106,0.75)]" style={spot} />
-          ) : null,
-        )}
-        {awake && (
-          <img src="/game/alarm/keeper-head.webp" alt="" className="absolute z-10 w-[9%]" style={{ left: "31.9%", top: "49.5%" }} />
-        )}
+      <div className="relative aspect-[16/9] overflow-hidden rounded-2xl">
+        <div className="absolute inset-0" style={{ transform: `translateX(${shake}px)` }}>
+          <img src="/game/alarm/inn.webp" alt="" className="absolute inset-0 h-full w-full object-cover" />
+          {WINDOWS.map((spot, index) =>
+            bonus.windows > index ? (
+              <span key={spot.left + spot.top} className="absolute rounded-[2px] bg-[#ffd56a]/80 shadow-[0_0_12px_4px_rgba(255,213,106,0.75)]" style={spot} />
+            ) : null,
+          )}
+          {awake && (
+            <img src="/game/alarm/keeper-head.webp" alt="" className="absolute z-10 w-[9%]" style={{ left: "31.9%", top: "49.5%" }} />
+          )}
+        </div>
         <img
           src={gooseUp ? "/game/alarm/goose-honk.webp" : "/game/alarm/goose.webp"}
           alt=""
           className="absolute z-20"
           style={{ left: "68%", bottom: "3%", width: gooseUp ? "13%" : "15%" }}
         />
-        <img src={goat} alt="" className="absolute bottom-0 left-[-2%] z-30 w-[42%]" />
+        <img src={goat} alt="" className="absolute bottom-0 left-[-4%] z-30 w-[36%]" />
       </div>
       <div className="relative mt-2 h-7 overflow-hidden rounded-full border-2 border-[#3a2618] bg-[#24180f]">
         <span className="absolute inset-y-0 bg-[#e8a317]" style={{ left: `${bonus.zoneStart * 100}%`, width: `${(bonus.zoneEnd - bonus.zoneStart) * 100}%` }} />

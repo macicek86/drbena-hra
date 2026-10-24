@@ -147,6 +147,17 @@ export function tickAlarm(state: AlarmState, dt: number): { state: AlarmState; e
   const t = state.t + step;
   const events: AlarmEvent[] = [];
   if (Math.floor(t / 1.8) !== Math.floor(state.t / 1.8)) events.push("cricket");
+  const length = state.grade === "perfect" ? 0.85 : state.grade === "weak" ? 0.5 : state.pose === "hit" ? 0.7 : 0;
+  const before = length - state.poseT;
+  const after = length - poseT;
+  let shake = Math.max(0, state.shake - step * 2.4);
+  if (state.pose === "hit" && before < 0.26 && after >= 0.26) {
+    shake = state.grade === "perfect" ? 1 : state.grade === "good" ? 0.7 : 0.3;
+    events.push("thud");
+    if (state.grade === "perfect") events.push("bleat");
+    if (state.windows === 2) events.push("keeper");
+    if (state.windows === 3) events.push("honk");
+  }
   let next: AlarmState = {
     ...state,
     t,
@@ -154,7 +165,7 @@ export function tickAlarm(state: AlarmState, dt: number): { state: AlarmState; e
     dir,
     pose,
     poseT,
-    shake: Math.max(0, state.shake - step * 2.4),
+    shake,
   };
   if (pose === "ready" && state.windows >= state.goal) return finish(next, false);
   if (pose === "ready" && t >= state.limit && state.windows < state.goal) return finish(next, true);
@@ -167,7 +178,7 @@ export function alarmTap(state: AlarmState): { state: AlarmState; events: AlarmE
   if (grade === "miss") {
     const note = MISSES[state.hits % MISSES.length]!;
     return {
-      state: { ...state, pose: "stumble", poseT: 0.56, grade, note, shake: 0.15 },
+      state: { ...state, pose: "stumble", poseT: 0.56, grade, note, shake: 0 },
       events: ["stumble"],
     };
   }
@@ -176,20 +187,18 @@ export function alarmTap(state: AlarmState): { state: AlarmState; events: AlarmE
       state: {
         ...state,
         pose: "hit",
-        poseT: 0.34,
+        poseT: 0.5,
         grade,
         note: "Skoro! Kozel jen škrábl ostěním.",
-        shake: 0.35,
+        shake: 0,
       },
-      events: ["thud"],
+      events: [],
     };
   }
   const windows = Math.min(state.goal, state.windows + 1);
   const hits = state.hits + 1;
   const zone = zoneFor(hits, state.salt);
-  const events: AlarmEvent[] = grade === "perfect" ? ["thud", "bleat"] : ["thud"];
-  if (state.windows < 2 && windows >= 2) events.push("keeper");
-  if (state.windows < 3 && windows >= 3) events.push("honk");
+  const events: AlarmEvent[] = [];
   return {
     state: {
       ...state,
@@ -201,8 +210,8 @@ export function alarmTap(state: AlarmState): { state: AlarmState; events: AlarmE
       pose: "hit",
       poseT: grade === "perfect" ? 0.85 : 0.7,
       grade,
-      shake: grade === "perfect" ? 1 : 0.62,
-      note: grade === "perfect" ? "Přesně mezi rohy! Hostinec se otřásl." : "Třesk! V okně se rozsvítilo.",
+      shake: 0,
+      note: grade === "perfect" ? "Přesně mezi rohy! Hostinec se otřásl." : "Třesk! Rohy našly dřevo.",
     },
     events,
   };

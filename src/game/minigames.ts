@@ -260,6 +260,12 @@ export function createUntangle(rng: () => number = Math.random, index?: number):
   };
 }
 
+function shownWindows(state: AlarmState) {
+  const length = state.grade === "perfect" ? 0.85 : state.grade === "weak" ? 0.5 : state.pose === "hit" ? 0.7 : 0;
+  const winding = state.pose === "hit" && length - state.poseT < 0.26;
+  return winding ? Math.max(0, state.windows - (state.grade === "weak" ? 0 : 1)) : state.windows;
+}
+
 export function bonusHud(state: AnyBonus): BonusHud {
   if (state.id === "alarm") {
     return {
@@ -274,7 +280,7 @@ export function bonusHud(state: AnyBonus): BonusHud {
       pointer: state.pointer,
       zoneStart: state.zoneStart,
       zoneEnd: state.zoneEnd,
-      windows: state.windows,
+      windows: shownWindows(state),
       goal: state.goal,
       pose: state.pose,
       poseT: state.poseT,
