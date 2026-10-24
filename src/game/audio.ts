@@ -24,7 +24,12 @@ export class Sfx {
   private noise: AudioBuffer | null = null;
   private clarinetWave: PeriodicWave | null = null;
   private brassWave: PeriodicWave | null = null;
+  private hornWave: PeriodicWave | null = null;
   private stringWave: PeriodicWave | null = null;
+  private pianoWave: PeriodicWave | null = null;
+  private hatClosed: AudioBuffer | null = null;
+  private hatOpen: AudioBuffer | null = null;
+  private cymbal: AudioBuffer | null = null;
   private live: Live[] = [];
   private song: SongId | null = null;
   private notes: readonly Note[] = [];
@@ -49,27 +54,45 @@ export class Sfx {
       this.sfxBus = this.ctx.createGain();
       const air = this.ctx.createBiquadFilter();
       air.type = "lowpass";
-      air.frequency.value = 4800;
+      air.frequency.value = 9000;
       air.Q.value = 0.35;
-      this.musicBus.gain.value = 0.5;
+      const comp = this.ctx.createDynamicsCompressor();
+      comp.threshold.value = -16;
+      comp.knee.value = 10;
+      comp.ratio.value = 2.6;
+      comp.attack.value = 0.004;
+      comp.release.value = 0.14;
+      this.musicBus.gain.value = 0.42;
       this.sfxBus.gain.value = 0.85;
-      this.musicBus.connect(air);
+      this.musicBus.connect(comp);
+      comp.connect(air);
       air.connect(this.master);
       this.sfxBus.connect(this.master);
       this.master.connect(this.ctx.destination);
       this.master.gain.value = this.muted ? 0 : 1;
       this.clarinetWave = this.ctx.createPeriodicWave(
-        new Float32Array([0, 1, 0.05, 0.38, 0.04, 0.14, 0.02, 0.06]),
-        new Float32Array(8),
+        new Float32Array([0, 1, 0.04, 0.62, 0.05, 0.34, 0.03, 0.18, 0.02, 0.1, 0.015, 0.05]),
+        new Float32Array(12),
       );
       this.brassWave = this.ctx.createPeriodicWave(
-        new Float32Array([0, 1, 0.55, 0.32, 0.18, 0.1, 0.05, 0.03]),
-        new Float32Array(8),
+        new Float32Array([0, 0.85, 1, 0.92, 0.7, 0.48, 0.32, 0.2, 0.12, 0.07, 0.04, 0.025]),
+        new Float32Array(12),
+      );
+      this.hornWave = this.ctx.createPeriodicWave(
+        new Float32Array([0, 1, 0.58, 0.28, 0.12, 0.05, 0.02]),
+        new Float32Array(7),
       );
       this.stringWave = this.ctx.createPeriodicWave(
-        new Float32Array([0, 1, 0.42, 0.16, 0.08, 0.04]),
-        new Float32Array(6),
+        new Float32Array([0, 1, 0.52, 0.34, 0.24, 0.16, 0.11, 0.07, 0.045, 0.03]),
+        new Float32Array(10),
       );
+      this.pianoWave = this.ctx.createPeriodicWave(
+        new Float32Array([0, 1, 0.38, 0.18, 0.09, 0.045, 0.02]),
+        new Float32Array(7),
+      );
+      this.hatClosed = this.metalBuffer(0.07, [3120, 4570, 5410, 6730], 0.018);
+      this.hatOpen = this.metalBuffer(0.22, [2860, 4210, 5380, 6940], 0.07);
+      this.cymbal = this.metalBuffer(0.42, [2100, 2780, 3460, 4330, 5120, 6400], 0.12);
     }
     if (this.ctx.state === "suspended") void this.ctx.resume();
   }
@@ -224,55 +247,135 @@ export class Sfx {
     const pitch = note[3];
     switch (note[2]) {
       case 0:
-        this.toned(this.clarinetWave, freq(pitch), when, dur, 0.012, 0.15 * vel, 1900);
+        this.reed(freq(pitch), when, dur, 0.16 * vel);
         break;
       case 1:
-        this.toned(this.brassWave, freq(pitch), when, dur, 0.01, 0.12 * vel, 2600);
+        this.brass(freq(pitch), when, dur, 0.13 * vel, 2400, 0.012, 8);
         break;
       case 2:
-        this.toned(this.brassWave, freq(pitch), when, dur, 0.02, 0.11 * vel, 1600);
+        this.brass(freq(pitch), when, dur, 0.12 * vel, 1400, 0.04, 5, this.hornWave);
         break;
       case 3:
-        this.toned(this.brassWave, freq(pitch), when, dur, 0.016, 0.13 * vel, 1400);
+        this.brass(freq(pitch), when, dur, 0.14 * vel, 1200, 0.028, 6, this.hornWave);
         break;
       case 4:
-        this.toned(this.brassWave, freq(pitch), when, dur, 0.012, 0.07 * vel, 2000);
+        this.brass(freq(pitch), when, dur, 0.07 * vel, 1800, 0.02, 12);
         break;
       case 5:
-        this.toned(this.stringWave, freq(pitch), when, dur, Math.min(0.04, dur * 0.25), 0.09 * vel, 1800);
+        this.strings(freq(pitch), when, dur, 0.1 * vel);
         break;
       case 6:
-        this.toned(this.clarinetWave, freq(pitch), when, Math.min(dur, 0.45), 0.006, 0.08 * vel, 2200);
+        this.piano(freq(pitch), when, dur, 0.1 * vel);
         break;
       default:
         this.drum(pitch, when, vel);
     }
   }
 
-  private toned(wave: PeriodicWave | null, frequency: number, when: number, dur: number, attack: number, peak: number, cutoff: number) {
-    if (!this.ctx || !this.musicBus || !wave) return;
-    const amp = this.envelope(when, dur, attack, peak);
+  private reed(frequency: number, when: number, dur: number, peak: number) {
+    this.layered(this.clarinetWave, frequency, when, dur, {
+      attack: 0.016,
+      peak,
+      cutoff: 2100,
+      hold: 0.88,
+      release: 0.06,
+      detune: 0,
+      slide: 1,
+    });
+    this.noiseHit(when, 0.028, "bandpass", 1700, peak * 0.18);
+  }
+
+  private brass(
+    frequency: number,
+    when: number,
+    dur: number,
+    peak: number,
+    cutoff: number,
+    attack: number,
+    detune: number,
+    wave?: PeriodicWave | null,
+  ) {
+    this.layered(wave ?? this.brassWave, frequency, when, dur, {
+      attack,
+      peak,
+      cutoff,
+      hold: 0.9,
+      release: 0.05,
+      detune,
+      slide: 0.982,
+    });
+    this.noiseHit(when, 0.02, "bandpass", Math.min(1800, cutoff), peak * 0.12);
+  }
+
+  private strings(frequency: number, when: number, dur: number, peak: number) {
+    this.layered(this.stringWave, frequency, when, dur, {
+      attack: Math.min(0.07, Math.max(0.03, dur * 0.28)),
+      peak,
+      cutoff: 1700,
+      hold: 0.92,
+      release: 0.08,
+      detune: 9,
+      slide: 1,
+    });
+  }
+
+  private piano(frequency: number, when: number, dur: number, peak: number) {
+    this.layered(this.pianoWave, frequency, when, Math.min(dur, 0.55), {
+      attack: 0.005,
+      peak,
+      cutoff: 2400,
+      hold: 0.28,
+      release: 0.12,
+      detune: 3,
+      slide: 1,
+    });
+    this.noiseHit(when, 0.012, "highpass", 2200, peak * 0.1);
+  }
+
+  private layered(
+    wave: PeriodicWave | null,
+    frequency: number,
+    when: number,
+    dur: number,
+    tone: { attack: number; peak: number; cutoff: number; hold: number; release: number; detune: number; slide: number },
+  ) {
+    if (!this.ctx || !this.musicBus || !wave || frequency < 30) return;
+    const { amp, stop } = this.body(when, dur, tone.attack, tone.peak, tone.hold, tone.release);
     const filter = this.ctx.createBiquadFilter();
     filter.type = "lowpass";
-    filter.Q.value = 0.55;
-    filter.frequency.setValueAtTime(Math.max(400, cutoff * 0.72), when);
-    filter.frequency.linearRampToValueAtTime(cutoff, when + attack + 0.02);
-    const osc = this.ctx.createOscillator();
-    osc.setPeriodicWave(wave);
-    osc.frequency.setValueAtTime(frequency, when);
-    osc.connect(filter);
+    filter.Q.value = 0.85;
+    const open = Math.max(frequency * 2.4, tone.cutoff);
+    filter.frequency.setValueAtTime(Math.max(160, open * 0.28), when);
+    filter.frequency.exponentialRampToValueAtTime(open, when + tone.attack + 0.01);
+    filter.frequency.exponentialRampToValueAtTime(Math.max(180, open * 0.55), when + dur);
+    const oscs = [this.partial(wave, frequency, when, stop, tone.slide, 0)];
+    if (tone.detune) oscs.push(this.partial(wave, frequency, when, stop, tone.slide, tone.detune));
+    const mix = this.ctx.createGain();
+    mix.gain.value = tone.detune ? 0.72 : 1;
+    for (const osc of oscs) osc.connect(mix);
+    mix.connect(filter);
     filter.connect(amp);
+    this.keep(when, amp, oscs, [], [filter, mix]);
+  }
+
+  private partial(wave: PeriodicWave, frequency: number, when: number, stop: number, slide: number, cents: number) {
+    const osc = this.ctx!.createOscillator();
+    osc.setPeriodicWave(wave);
+    const start = frequency * slide;
+    osc.frequency.setValueAtTime(Math.max(30, start), when);
+    if (slide !== 1) osc.frequency.exponentialRampToValueAtTime(frequency, when + 0.04);
+    if (cents) osc.detune.setValueAtTime(cents, when);
     osc.start(when);
-    osc.stop(when + dur + 0.03);
-    this.keep(when, amp, [osc], [], [filter]);
+    osc.stop(stop);
+    return osc;
   }
 
   private drum(pitch: number, when: number, vel: number) {
     if (pitch <= 36) this.kick(when, 0.85 * vel);
     else if (pitch <= 40) this.snare(when, 0.7 * vel);
-    else if (pitch === 46) this.hat(when, 0.09 * vel, 0.16);
-    else if (pitch >= 49) this.hat(when, 0.07 * vel, 0.28);
-    else this.hat(when, 0.045 * vel, 0.04);
+    else if (pitch === 46) this.hat(when, this.hatOpen, 0.16 * vel);
+    else if (pitch >= 49) this.hat(when, this.cymbal, 0.13 * vel);
+    else this.hat(when, this.hatClosed, 0.1 * vel);
   }
 
   private kick(when: number, peak: number) {
@@ -303,8 +406,53 @@ export class Sfx {
     this.keep(when, amp, [body], [], []);
   }
 
-  private hat(when: number, peak: number, dur: number) {
-    this.noiseHit(when, dur, "highpass", 3800, peak);
+  private hat(when: number, buffer: AudioBuffer | null, peak: number) {
+    if (!buffer) return;
+    this.bufferHit(buffer, when, peak);
+  }
+
+  private bufferHit(buffer: AudioBuffer, when: number, peak: number) {
+    if (!this.ctx || !this.musicBus) return;
+    const src = this.ctx.createBufferSource();
+    const amp = this.ctx.createGain();
+    src.buffer = buffer;
+    amp.gain.setValueAtTime(0.0001, when);
+    amp.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), when + 0.004);
+    amp.gain.exponentialRampToValueAtTime(0.0001, when + buffer.duration);
+    src.connect(amp);
+    amp.connect(this.musicBus);
+    src.start(when);
+    src.stop(when + buffer.duration + 0.02);
+    this.keep(when, amp, [], [src], []);
+  }
+
+  private metalBuffer(seconds: number, partials: number[], decay: number) {
+    if (!this.ctx) return null;
+    const rate = this.ctx.sampleRate;
+    const length = Math.floor(rate * seconds);
+    const buffer = this.ctx.createBuffer(1, length, rate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < length; i += 1) {
+      const t = i / rate;
+      const env = Math.exp(-t / decay);
+      let sample = (Math.random() * 2 - 1) * 0.22;
+      for (const partial of partials) sample += Math.sin(2 * Math.PI * partial * t);
+      data[i] = (sample / (partials.length + 0.22)) * env * 0.9;
+    }
+    return buffer;
+  }
+
+  private body(when: number, dur: number, attack: number, peak: number, hold: number, release: number) {
+    const amp = this.ctx!.createGain();
+    const a = Math.max(0.004, Math.min(attack, Math.max(0.004, dur * 0.45)));
+    const off = when + Math.max(dur, a + 0.015);
+    const rel = Math.max(0.035, release);
+    amp.gain.setValueAtTime(0.0001, when);
+    amp.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak), when + a);
+    amp.gain.exponentialRampToValueAtTime(Math.max(0.0002, peak * hold), off);
+    amp.gain.exponentialRampToValueAtTime(0.0001, off + rel);
+    amp.connect(this.musicBus!);
+    return { amp, stop: off + rel + 0.02 };
   }
 
   private noiseHit(when: number, dur: number, type: BiquadFilterType, frequency: number, peak: number) {
