@@ -1,0 +1,9 @@
+Esmeralda – MIDI pro Drběnu
+
+esmeralda_splashscreen.mid: prvních 16 taktů, 0–19,2 s.
+esmeralda_herni_loop.mid: od 16. taktu (19,2 s) do konce dodaného MIDI (přibližně dalších 118 s).
+Zachovány všechny nástrojové stopy, původní MIDI programy i změny tempa.
+Časový údaj platí při původním tempu. MIDI hlavička používá puls čtvrťové noty 200 BPM (odpovídá asi 100 polkovým dvoupulsům za minutu).
+Herní smyčku opakovat od začátku souboru po jeho konci. U konkrétního MIDI syntezátoru otestovat přechod na mobilním zařízení.
+MIDI samo neobsahuje zvuk nástrojů; potřebuje MIDI syntezátor nebo předem vykreslené nástrojové samply.
+Splashscreen v prohlížeči nemůže bez interakce uživatele spolehlivě automaticky přehrát hudbu.

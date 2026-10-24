@@ -597,9 +597,14 @@ export class Runner {
       steps += 1;
     }
     this.draw();
-    const moving = this.phase === "menu" || this.phase === "play";
-    const energy = this.phase === "menu" ? 0.12 : Math.min(1, this.run / (BIOME_LEN * 4));
-    this.sfx.tick(moving, energy);
+    const mode = this.phase === "menu" ? "intro" : this.phase === "play" ? "loop" : "off";
+    let tempo = 1;
+    if (this.phase === "play") {
+      const pace = this.speed0 > 0 ? this.speed / this.speed0 : 1;
+      const running = this.talk <= 0 && this.fish <= 0;
+      tempo = running ? 1 + Math.min(0.1, Math.max(0, (pace - 1) * 0.06)) : 0.98;
+    }
+    this.sfx.tick(mode, tempo);
     this.emitAcc += dt;
     if (this.emitAcc > 0.12) {
       this.emitAcc = 0;
