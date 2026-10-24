@@ -594,7 +594,9 @@ export class Runner {
       steps += 1;
     }
     this.draw();
-    this.sfx.tick(this.phase === "menu" || this.phase === "play");
+    const moving = this.phase === "menu" || this.phase === "play";
+    const energy = this.phase === "menu" ? 0.12 : Math.min(1, this.run / (BIOME_LEN * 4));
+    this.sfx.tick(moving, energy);
     this.emitAcc += dt;
     if (this.emitAcc > 0.12) {
       this.emitAcc = 0;
