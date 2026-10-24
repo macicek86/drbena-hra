@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { Heart, Pause, Play, RotateCcw, Share2, Volume2, VolumeX } from "lucide-react";
 import { Runner, emptyHud, type Hud } from "@/game/runner";
+import type { BonusAction } from "@/game/minigames";
 import { fetchStats, playerLabel, previewStats, saveName, savedName, type BoardRow } from "@/game/plays";
 import { publicUrl } from "@/lib/public-url";
 
@@ -52,7 +53,7 @@ export function GameApp() {
     }
   }
 
-  const playing = hud.phase === "play" || hud.phase === "pause" || hud.phase === "over";
+  const playing = hud.phase === "play" || hud.phase === "pause" || hud.phase === "over" || hud.phase === "bonus";
 
   return (
     <main className="relative h-dvh w-full touch-none overflow-hidden bg-day text-ink select-none">
@@ -274,7 +275,7 @@ export function GameApp() {
               >
                 {hud.muted ? <VolumeX className="size-5" /> : <Volume2 className="size-5" />}
               </button>
-              {hud.phase !== "over" && (
+              {hud.phase !== "over" && hud.phase !== "bonus" && (
                 <button
                   type="button"
                   className="flex size-11 items-center justify-center rounded-full border-2 border-ink bg-cream"
@@ -377,6 +378,15 @@ export function GameApp() {
         </div>
       )}
 
+      {hud.phase === "bonus" && hud.bonus && (
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-ink/40 p-3 sm:p-6">
+          <BonusCard
+            bonus={hud.bonus}
+            onAct={(action) => gameRef.current?.bonusAct(action)}
+          />
+        </div>
+      )}
+
       {hud.phase === "play" && (
         <div className="absolute inset-x-0 bottom-3 flex items-end justify-between gap-3 px-3 sm:bottom-4 sm:justify-end">
           <button
@@ -416,5 +426,81 @@ export function GameApp() {
         </div>
       )}
     </main>
+  );
+}
+
+function BonusCard({ bonus, onAct }: { bonus: NonNullable<Hud["bonus"]>; onAct: (action: BonusAction) => void }) {
+  return (
+    <section className="max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-3xl border-2 border-ink bg-cream p-4 text-center shadow-lg sm:p-6">
+      <p className="text-xs font-extrabold tracking-wide text-bow">Ryba z rybníka</p>
+      <h2 className="mt-1 font-display text-4xl leading-none">{bonus.title}</h2>
+      {bonus.stage !== "done" && <p className="mt-3 text-sm leading-snug text-ink-soft">{bonus.prompt}</p>}
+      {bonus.stage === "offer" && (
+        <div className="mt-5 grid grid-cols-2 gap-2">
+          <button
+            type="button"
+            className="flex h-14 items-center justify-center rounded-full border-2 border-ink bg-bow text-lg font-extrabold text-cream"
+            onClick={() => onAct({ type: "play" })}
+          >
+            Hrát
+          </button>
+          <button
+            type="button"
+            className="flex h-14 items-center justify-center rounded-full border-2 border-ink bg-cream text-lg font-extrabold"
+            onClick={() => onAct({ type: "decline" })}
+          >
+            Ne, díky
+          </button>
+        </div>
+      )}
+      {bonus.stage === "play" && (
+        <>
+          <div className="mt-4 flex flex-col gap-2">
+            {bonus.cards.map((card, index) => (
+              <button
+                key={`${card}-${index}`}
+                type="button"
+                aria-pressed={bonus.picked === index}
+                className={`min-h-16 rounded-2xl border-2 px-4 py-3 text-left text-base font-extrabold leading-snug sm:text-lg ${
+                  bonus.picked === index ? "border-ink bg-gold" : "border-ink bg-[#fff8ea]"
+                }`}
+                onClick={() => onAct({ type: "pick", index })}
+              >
+                {card}
+              </button>
+            ))}
+          </div>
+          <p className="mt-3 text-xs font-extrabold text-ink-soft">Klepni na dvě kartičky a prohoď je.</p>
+          {bonus.wrong && <p className="mt-2 text-sm font-extrabold text-bow">Ještě je to zamotané. Prohoď kartičky a zkus to znovu.</p>}
+          <button
+            type="button"
+            className="mt-4 flex h-14 w-full items-center justify-center rounded-full border-2 border-ink bg-bow text-lg font-extrabold text-cream"
+            onClick={() => onAct({ type: "check" })}
+          >
+            Zkontrolovat
+          </button>
+          <button
+            type="button"
+            className="mt-2 flex h-12 w-full items-center justify-center rounded-full border-2 border-ink bg-cream font-extrabold"
+            onClick={() => onAct({ type: "skip" })}
+          >
+            Přeskočit
+          </button>
+        </>
+      )}
+      {bonus.stage === "done" && (
+        <>
+          <p className="mt-3 text-sm leading-snug">{bonus.success}</p>
+          <p className="mt-3 font-display text-4xl leading-none text-bow">+{bonus.reward}</p>
+          <button
+            type="button"
+            className="mt-5 flex h-14 w-full items-center justify-center rounded-full border-2 border-ink bg-bow text-lg font-extrabold text-cream"
+            onClick={() => onAct({ type: "continue" })}
+          >
+            Pokračovat
+          </button>
+        </>
+      )}
+    </section>
   );
 }

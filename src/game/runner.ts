@@ -1,4 +1,5 @@
 import { Sfx } from "@/game/audio";
+import { bonusAct as actBonus, bonusHud, createUntangle, fishOffersMini, type BonusAction, type BonusHud, type BonusState } from "@/game/minigames";
 import { reportPlayer, submitScore } from "@/game/plays";
 import { publicUrl } from "@/lib/public-url";
 import {
@@ -12,7 +13,7 @@ import {
   type RGB,
 } from "@/game/content";
 
-export type Phase = "loading" | "splash" | "menu" | "play" | "pause" | "over";
+export type Phase = "loading" | "splash" | "menu" | "play" | "pause" | "bonus" | "over";
 
 export type Hud = {
   phase: Phase;
@@ -33,6 +34,7 @@ export type Hud = {
   taleTag: string;
   ready: boolean;
   progress: number;
+  bonus: BonusHud | null;
 };
 
 type Kind =
@@ -189,6 +191,7 @@ export function emptyHud(): Hud {
     taleTag: "Příhoda",
     ready: false,
     progress: 0,
+    bonus: null,
   };
 }
 
@@ -265,6 +268,7 @@ export class Runner {
   private fishX = 0;
   private lastFish = -1;
   private fishTold = -1;
+  private bonus: BonusState | null = null;
   private taleTag = "Příhoda";
   private tale = "";
   private taleLife = 0;
@@ -332,9 +336,26 @@ export class Runner {
   }
 
   togglePause() {
+    if (this.phase === "bonus") return;
     if (this.phase === "play") this.phase = "pause";
     else if (this.phase === "pause") this.phase = "play";
     this.pushHud(true);
+  }
+
+  bonusAct(action: BonusAction) {
+    if (this.phase !== "bonus" || !this.bonus) return;
+    const next = actBonus(this.bonus, action);
+    if (next.grant > 0) {
+      this.gossipScore += next.grant;
+      this.pops.push({ x: this.playerX, y: this.feet - this.u * 0.8, text: `+${next.grant}`, life: 0.9 });
+      this.burst(this.playerX, this.feet - this.u * 0.7, "#e8a317", 8);
+      this.sfx.collect(4);
+    }
+    if (next.resume || !next.state) this.resumeRun();
+    else {
+      this.bonus = next.state;
+      this.pushHud(true);
+    }
   }
 
   begin() {
@@ -377,6 +398,7 @@ export class Runner {
     this.coachDuck = false;
     this.lastFish = -1;
     this.fish = 0;
+    this.bonus = null;
     this.fillWorld();
     this.pushHud(true);
     reportPlayer();
@@ -484,6 +506,7 @@ export class Runner {
     const code = event.code;
     if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(code)) event.preventDefault();
     this.unlock();
+    if (this.phase === "bonus") return;
     if (this.phase === "splash") {
       if (!event.repeat && (code === "Space" || code === "Enter" || code === "ArrowUp" || code === "KeyW")) this.continueSplash();
       return;
@@ -623,7 +646,8 @@ export class Runner {
     this.time += dt;
     this.pollPad();
     if (this.phase === "loading" || this.phase === "splash") return;
-    if (this.phase === "pause") {
+    if (this.phase === "pause" || this.phase === "bonus") {
+      if (this.phase === "bonus") this.anim += dt * 3;
       this.decayJuice(dt);
       return;
     }
@@ -1318,6 +1342,7 @@ export class Runner {
       taleTag: this.taleTag,
       ready: this.ready,
       progress: Math.min(1, this.loaded / this.loadTotal),
+      bonus: this.bonus ? bonusHud(this.bonus) : null,
     });
   }
 
@@ -1338,25 +1363,61 @@ export class Runner {
   }
 
   private startFish(x: number) {
-    let index = Math.floor(Math.random() * FISH.length);
-    if (FISH.length > 1 && index === this.fishTold) index = (index + 1) % FISH.length;
-    this.fishTold = index;
     this.fishX = x;
-    this.fish = 5.2;
-    this.talk = 5.2;
-    this.tale = FISH[index] ?? FISH[0]!;
-    this.taleTag = "Ryba z rybníka";
-    this.taleLife = 5.2;
     this.vy = 0;
     this.onGround = true;
     this.feet = this.groundY;
+    this.releaseInputs();
     for (const ent of this.ents) {
       if (ent.kind === "tree" && Math.abs(ent.x - (x - this.u * 1.15)) < this.u * 2.6) ent.alive = false;
       if (!HAZARDS.has(ent.kind) || !ent.alive) continue;
       if (ent.x > x - this.u * 2.2 && ent.x < x + this.u * 7) ent.alive = false;
     }
+    if (fishOffersMini()) {
+      this.bonus = createUntangle();
+      this.phase = "bonus";
+      this.fish = 2.6;
+      this.talk = 0;
+      this.tale = "";
+      this.taleLife = 0;
+      this.taleTag = "Ryba z rybníka";
+      this.sfx.fact();
+      this.pushHud(true);
+      return;
+    }
+    let index = Math.floor(Math.random() * FISH.length);
+    if (FISH.length > 1 && index === this.fishTold) index = (index + 1) % FISH.length;
+    this.fishTold = index;
+    this.bonus = null;
+    this.fish = 5.2;
+    this.talk = 5.2;
+    this.tale = FISH[index] ?? FISH[0]!;
+    this.taleTag = "Ryba z rybníka";
+    this.taleLife = 5.2;
     this.sfx.fact();
     this.pushHud(true);
+  }
+
+  private resumeRun() {
+    this.bonus = null;
+    this.phase = "play";
+    this.releaseInputs();
+    this.fish = 1.05;
+    this.talk = 1.05;
+    this.tale = "";
+    this.taleLife = 0;
+    this.taleTag = "Příhoda";
+    this.pushHud(true);
+  }
+
+  private releaseInputs() {
+    this.keyJump = false;
+    this.keyDuck = false;
+    this.touchJump = false;
+    this.touchDuck = false;
+    this.jumpEdge = false;
+    this.padJump = false;
+    this.padDuck = false;
   }
 
   private drawFish(ctx: CanvasRenderingContext2D) {
@@ -1365,7 +1426,7 @@ export class Runner {
     if (!(img instanceof HTMLImageElement)) return;
     const duration = 5.2;
     const t = 1 - this.fish / duration;
-    const peek = t < 0.16 ? t / 0.16 : t > 0.84 ? (1 - t) / 0.16 : 1;
+    const peek = this.phase === "bonus" ? 1 : t < 0.16 ? t / 0.16 : t > 0.84 ? (1 - t) / 0.16 : 1;
     const water = this.groundY - this.u * 0.58;
     const x = this.fishX - this.camera;
     const fh = this.u * 1.05;
