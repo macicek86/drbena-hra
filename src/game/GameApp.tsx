@@ -297,7 +297,7 @@ export function GameApp() {
       )}
 
       {hud.showTale && hud.line && hud.phase === "play" && (
-        <article className="pointer-events-none absolute inset-x-0 top-[30vh] z-10 mx-auto w-[min(100%-1.5rem,32rem)] rounded-3xl border-2 border-ink bg-cream px-4 py-3 shadow-lg sm:top-24">
+        <article className="pointer-events-none absolute inset-x-0 top-28 z-10 mx-auto w-[min(100%-1.5rem,32rem)] rounded-3xl border-2 border-ink bg-cream px-4 py-3 shadow-lg sm:top-24">
           <p className="text-xs font-extrabold tracking-wide text-bow">{hud.taleTag}</p>
           <p className="mt-1 text-sm leading-snug">{hud.line}</p>
         </article>
