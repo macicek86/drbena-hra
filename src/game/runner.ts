@@ -265,6 +265,7 @@ export class Runner {
   private loadTotal = 1;
   private ready = false;
   private fish = 0;
+  private fishAge = 0;
   private fishX = 0;
   private lastFish = -1;
   private fishTold = -1;
@@ -398,6 +399,7 @@ export class Runner {
     this.coachDuck = false;
     this.lastFish = -1;
     this.fish = 0;
+    this.fishAge = 0;
     this.bonus = null;
     this.fillWorld();
     this.pushHud(true);
@@ -647,7 +649,10 @@ export class Runner {
     this.pollPad();
     if (this.phase === "loading" || this.phase === "splash") return;
     if (this.phase === "pause" || this.phase === "bonus") {
-      if (this.phase === "bonus") this.anim += dt * 3;
+      if (this.phase === "bonus") {
+        this.anim += dt * 3;
+        this.fishAge += dt;
+      }
       this.decayJuice(dt);
       return;
     }
@@ -1364,6 +1369,7 @@ export class Runner {
 
   private startFish(x: number) {
     this.fishX = x;
+    this.fishAge = 0;
     this.vy = 0;
     this.onGround = true;
     this.feet = this.groundY;
@@ -1426,7 +1432,8 @@ export class Runner {
     if (!(img instanceof HTMLImageElement)) return;
     const duration = 5.2;
     const t = 1 - this.fish / duration;
-    const peek = this.phase === "bonus" ? 1 : t < 0.16 ? t / 0.16 : t > 0.84 ? (1 - t) / 0.16 : 1;
+    const rise = Math.min(1, this.fishAge / 0.85);
+    const peek = this.phase === "bonus" ? rise : t < 0.16 ? t / 0.16 : t > 0.84 ? (1 - t) / 0.16 : 1;
     const water = this.groundY - this.u * 0.58;
     const x = this.fishX - this.camera;
     const fh = this.u * 1.05;
