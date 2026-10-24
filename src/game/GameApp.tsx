@@ -379,7 +379,7 @@ export function GameApp() {
       )}
 
       {hud.phase === "bonus" && hud.bonus && (
-        <div className="pointer-events-none absolute inset-x-0 top-[22%] z-30 flex justify-center px-3">
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-ink/40 p-3 sm:p-6">
           <BonusCard bonus={hud.bonus} onAct={(action) => gameRef.current?.bonusAct(action)} />
         </div>
       )}
@@ -428,7 +428,7 @@ export function GameApp() {
 
 function BonusCard({ bonus, onAct }: { bonus: NonNullable<Hud["bonus"]>; onAct: (action: BonusAction) => void }) {
   return (
-    <section className="pointer-events-auto max-h-[46dvh] w-full max-w-md overflow-y-auto rounded-3xl border-2 border-ink bg-cream p-4 text-center shadow-lg sm:max-h-[52dvh] sm:p-6">
+    <section className="max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-3xl border-2 border-ink bg-cream p-4 text-center shadow-lg sm:p-6">
       <p className="text-xs font-extrabold tracking-wide text-bow">Ryba z rybníka</p>
       <h2 className="mt-1 font-display text-4xl leading-none">{bonus.title}</h2>
       {bonus.stage !== "done" && <p className="mt-3 text-sm leading-snug text-ink-soft">{bonus.prompt}</p>}
