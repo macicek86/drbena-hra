@@ -163,9 +163,6 @@ export function GameApp() {
               </div>
             )}
             <p className="mt-2 text-[11px] font-extrabold tracking-wide text-[#3d2c22]/55">© Kopidlenská drbna | Camledian</p>
-            <p className="mt-1 text-[11px] font-extrabold tracking-wide text-[#3d2c22]/55">
-              Hudba: František Matěj Hilmar – Esmeralda
-            </p>
           </div>
         </div>
       )}
@@ -188,6 +185,9 @@ export function GameApp() {
               Drběna
               <span className="mt-1 block text-3xl text-bow [text-shadow:0_2px_0_#241c16] sm:text-4xl">sbírá drby</span>
             </h1>
+            <p className="mt-2 text-xs font-extrabold text-cream/90 [text-shadow:0_1px_0_#241c16] sm:text-sm">
+              ♪ za doprovodu Esmeraldy od Františka Matěje Hilmara
+            </p>
             <button
               type="button"
               className="mx-auto mt-5 flex h-14 w-full max-w-xs items-center justify-center rounded-full border-2 border-ink bg-bow text-xl font-extrabold text-cream"
