@@ -818,7 +818,10 @@ export class Runner {
           ? ["tree", "bush", "bench", "tree", "bush"]
           : ["tree", "bush", "lamp", "bush", "bench"];
       let kind = bag[Math.floor(Math.random() * bag.length)]!;
-      if (kind === "tree" && this.facingBuilding(this.decorCursor)) kind = Math.random() < 0.5 ? "bush" : "lamp";
+      if (kind === "tree" && (this.facingBuilding(this.decorCursor) || this.nearPondMiddle(this.decorCursor))) {
+        this.decorCursor += this.u * (1.5 + Math.random() * 1.2);
+        continue;
+      }
       this.ents.push({ kind, x: this.decorCursor, lift: 0, anim: 0, alive: true });
       this.decorCursor += this.u * (1.35 + Math.random() * 1.8);
     }
@@ -867,6 +870,16 @@ export class Runner {
     if (this.phase !== "play") return;
     guard = 0;
     while (this.hazardCursor < this.camera + this.viewW + 20 && guard++ < 8) this.spawnWave();
+  }
+
+  private nearPondMiddle(x: number) {
+    const cycle = BIOME_LEN * 4;
+    const base = Math.floor(x / cycle);
+    for (let i = base - 1; i <= base + 1; i += 1) {
+      const pondX = (i * 4 + 3) * BIOME_LEN + this.viewW * 0.82;
+      if (Math.abs(x - pondX) < this.u * 2.6) return true;
+    }
+    return false;
   }
 
   private pondGapEnd(x: number): number | null {
@@ -1338,6 +1351,7 @@ export class Runner {
     this.onGround = true;
     this.feet = this.groundY;
     for (const ent of this.ents) {
+      if (ent.kind === "tree" && Math.abs(ent.x - (x - this.u * 1.15)) < this.u * 2.6) ent.alive = false;
       if (!HAZARDS.has(ent.kind) || !ent.alive) continue;
       if (ent.x > x - this.u * 2.2 && ent.x < x + this.u * 7) ent.alive = false;
     }
@@ -1352,12 +1366,12 @@ export class Runner {
     const duration = 5.2;
     const t = 1 - this.fish / duration;
     const peek = t < 0.16 ? t / 0.16 : t > 0.84 ? (1 - t) / 0.16 : 1;
-    const water = this.groundY - 1.85 * this.u * 0.5;
+    const water = this.groundY - this.u * 0.58;
     const x = this.fishX - this.camera;
     const fh = this.u * 1.05;
     const fw = fh * (img.width / img.height);
     const bob = Math.sin(this.time * 5) * this.u * 0.03;
-    const top = water - peek * fh * 0.78 + bob;
+    const top = water - peek * fh * 0.58 + bob;
     ctx.save();
     ctx.beginPath();
     ctx.rect(-30, -30, this.viewW + 60, water + 8);
