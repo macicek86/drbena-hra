@@ -1371,7 +1371,7 @@ export class Runner {
     const fh = this.u * 1.05;
     const fw = fh * (img.width / img.height);
     const bob = Math.sin(this.time * 5) * this.u * 0.03;
-    const top = water - peek * fh * 0.58 + bob;
+    const top = water - peek * fh * 0.76 + bob;
     ctx.save();
     ctx.beginPath();
     ctx.rect(-30, -30, this.viewW + 60, water + 8);
