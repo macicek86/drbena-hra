@@ -56,8 +56,6 @@ function AlarmScene({ bonus }: { bonus: AlarmHud }) {
     bonus.pose === "hit" ? "/game/alarm/goat-hit.webp" : bonus.pose === "stumble" ? "/game/alarm/goat-miss.webp" : "/game/alarm/goat.webp";
   const awake = bonus.windows >= 2 || (bonus.stage === "done" && !bonus.failed);
   const gooseUp = bonus.windows >= 3 || (bonus.stage === "done" && !bonus.failed);
-  const shift = bonus.pose === "hit" ? "16%" : bonus.pose === "stumble" ? "-6%" : "-1%";
-  const tilt = bonus.pose === "stumble" ? -14 : bonus.pose === "hit" ? -6 : 0;
   const shake = Math.sin(bonus.shake * 28) * bonus.shake * 8;
   const perfectStart = bonus.zoneStart + (bonus.zoneEnd - bonus.zoneStart) * 0.31;
   const perfectWidth = Math.max(0.02, (bonus.zoneEnd - bonus.zoneStart) * 0.38);
@@ -67,33 +65,19 @@ function AlarmScene({ bonus }: { bonus: AlarmHud }) {
         <img src="/game/alarm/inn.webp" alt="" className="absolute inset-0 h-full w-full object-cover" />
         {WINDOWS.map((spot, index) =>
           bonus.windows > index ? (
-            <span
-              key={spot.left + spot.top}
-              className="absolute rounded-sm bg-[#ffd56a] shadow-[0_0_18px_8px_rgba(255,213,106,0.85)]"
-              style={spot}
-            />
+            <span key={spot.left + spot.top} className="absolute rounded-[2px] bg-[#ffd56a]/80 shadow-[0_0_12px_4px_rgba(255,213,106,0.75)]" style={spot} />
           ) : null,
         )}
         {awake && (
-          <img src="/game/alarm/keeper.webp" alt="" className="absolute z-10 w-[14%] drop-shadow-md" style={{ left: "39%", top: "34%" }} />
+          <img src="/game/alarm/keeper-head.webp" alt="" className="absolute z-10 w-[9%]" style={{ left: "31.9%", top: "49.5%" }} />
         )}
         <img
           src={gooseUp ? "/game/alarm/goose-honk.webp" : "/game/alarm/goose.webp"}
           alt=""
-          className="absolute z-20 drop-shadow-md"
-          style={{ left: "64%", bottom: "5%", width: gooseUp ? "14%" : "18%" }}
+          className="absolute z-20"
+          style={{ left: "68%", bottom: "3%", width: gooseUp ? "13%" : "15%" }}
         />
-        <img
-          src={goat}
-          alt=""
-          className="absolute z-30 w-[34%] drop-shadow-lg transition-all duration-150"
-          style={{
-            left: shift,
-            bottom: "0%",
-            transform: `rotate(${tilt}deg)`,
-            transformOrigin: "80% 90%",
-          }}
-        />
+        <img src={goat} alt="" className="absolute bottom-0 left-[-2%] z-30 w-[42%]" />
       </div>
       <div className="relative mt-2 h-7 overflow-hidden rounded-full border-2 border-[#3a2618] bg-[#24180f]">
         <span className="absolute inset-y-0 bg-[#e8a317]" style={{ left: `${bonus.zoneStart * 100}%`, width: `${(bonus.zoneEnd - bonus.zoneStart) * 100}%` }} />
@@ -105,8 +89,8 @@ function AlarmScene({ bonus }: { bonus: AlarmHud }) {
 }
 
 const WINDOWS = [
-  { left: "30.2%", top: "45.2%", width: "7.4%", height: "9.2%" },
-  { left: "40.4%", top: "45.2%", width: "7.4%", height: "9.2%" },
-  { left: "30.2%", top: "59.2%", width: "7.4%", height: "9.2%" },
-  { left: "40.4%", top: "59.2%", width: "7.4%", height: "9.2%" },
+  { left: "33.7%", top: "47.4%", width: "5.5%", height: "11.6%" },
+  { left: "42.6%", top: "47.4%", width: "5.5%", height: "11.6%" },
+  { left: "33.7%", top: "61.8%", width: "5.5%", height: "10.8%" },
+  { left: "42.6%", top: "61.8%", width: "5.5%", height: "10.8%" },
 ];
