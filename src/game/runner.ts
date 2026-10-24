@@ -212,6 +212,7 @@ export class Runner {
   private camera = 0;
   private run = 0;
   private speed = 220;
+  private ro: ResizeObserver | null = null;
   private phase: Phase = "loading";
   private feet = 400;
   private vy = 0;
@@ -301,6 +302,7 @@ export class Runner {
 
   destroy() {
     this.alive = false;
+    this.sfx.stopMusic();
     cancelAnimationFrame(this.raf);
     window.removeEventListener("keydown", this.onKeyDown);
     window.removeEventListener("keyup", this.onKeyUp);
@@ -337,6 +339,7 @@ export class Runner {
 
   begin() {
     this.unlock();
+    this.sfx.restartMusic();
     this.phase = "play";
     this.camera = 0;
     this.run = 0;
