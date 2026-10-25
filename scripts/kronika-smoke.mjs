@@ -23,6 +23,30 @@ async function smoke(label, viewport) {
 
   const menuBook = page.getByRole("button", { name: /Kronika Kopidlna/ });
   await menuBook.waitFor({ timeout: 10000 });
+  // The main menu must be centered and entirely visible without scrolling.
+  await page.waitForTimeout(100);
+  const layout = await page.evaluate(() => {
+    const menu = document.querySelector(".menu-fit");
+    const section = menu?.querySelector("section");
+    if (!menu || !section) return null;
+    const rect = section.getBoundingClientRect();
+    return {
+      top: rect.top,
+      bottom: rect.bottom,
+      center: (rect.top + rect.bottom) / 2,
+      viewportHeight: menu.clientHeight,
+      menuFont: parseFloat(getComputedStyle(menu).fontSize),
+      overflowY: getComputedStyle(menu).overflowY,
+      scrollable: menu.scrollHeight > menu.clientHeight + 1,
+    };
+  });
+  assert.ok(layout, label + ": main menu must be rendered");
+  assert.equal(layout.overflowY, "hidden", label + ": menu must not scroll");
+  assert.equal(layout.scrollable, false, label + ": menu must not overflow");
+  assert.ok(layout.top >= -1 && layout.bottom <= layout.viewportHeight + 1, label + ": menu must fit on screen");
+  assert.ok(Math.abs(layout.center - layout.viewportHeight / 2) < 4, label + ": menu must be centered");
+  if (label === "malý notebook") assert.ok(layout.menuFont >= 11, label + ": menu must not be miniature");
+  console.log("FIT", label, JSON.stringify(layout));
   assert.match(await menuBook.innerText(), /0\/60/);
   await menuBook.click();
 
@@ -47,6 +71,8 @@ async function smoke(label, viewport) {
 
 try {
   await smoke("mobil", { width: 390, height: 844 });
+  await smoke("malý mobil", { width: 360, height: 640 });
+  await smoke("malý notebook", { width: 1024, height: 600 });
   await smoke("desktop", { width: 1280, height: 800 });
 } finally {
   await browser.close();
