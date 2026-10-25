@@ -57,4 +57,4 @@ jobs:
       - name: Smoke test panelu na ruznych displejich
         run: |
           npx vite --config vite.pages.config.ts --host 127.0.0.1 --port 4174 > /tmp/panel-fit-vite.log 2>&1 &
-          node scripts/panel-fit-smoke.mjs
+          node scripts/panel-fit-smoke.mjs || { cat /tmp/panel-fit-vite.log; exit 1; }
