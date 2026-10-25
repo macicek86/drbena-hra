@@ -39,7 +39,7 @@ async function smoke(label, viewport) {
   await page.getByRole("button", { name: "Kronika 0/60" }).click();
   await book.waitFor();
   await page.getByRole("button", { name: "Zavřít kroniku" }).click();
-  await page.getByRole("button", { name: "Pokračovat" }).waitFor();
+  await page.getByRole("heading", { name: "Pauza" }).waitFor();
   assert.deepEqual(errors, [], label + ": no uncaught browser errors expected");
   console.log("OK", label, "kronika v menu i během pauzy");
   await context.close();
