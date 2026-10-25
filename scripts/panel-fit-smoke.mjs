@@ -4,6 +4,7 @@ import { chromium } from "playwright";
 const browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
 const sizes = [
   ["malý mobil", 320, 480],
+  ["mobil na šířku", 667, 375],
   ["mobil", 390, 844],
   ["malý notebook", 1024, 600],
   ["notebook", 1366, 768],
