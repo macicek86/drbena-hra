@@ -2,6 +2,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { BookOpen, Heart, Pause, Play, RotateCcw, Share2, Volume2, VolumeX } from "lucide-react";
 import { AlarmCard } from "@/game/GoatAlarmScene";
 import { ChronicleBook } from "@/game/ChronicleBook";
+import { FitOverlay } from "@/game/FitOverlay";
 import { Runner, emptyHud, type Hud } from "@/game/runner";
 import { chronicleBook } from "@/game/chronicle";
 import { BONUS_CALM, BONUS_PARDON, type BonusAction } from "@/game/minigames";
@@ -435,7 +436,7 @@ export function GameApp() {
       )}
 
       {hud.phase === "pause" && (
-        <div className="absolute inset-0 flex items-center justify-center bg-ink/30 p-4">
+        <FitOverlay testId="pause" className="bg-ink/30">
           <section className="w-full max-w-sm rounded-3xl border-2 border-ink bg-cream p-6 text-center">
             <h2 className="font-display text-4xl">Pauza</h2>
             <p className="mt-2 text-ink-soft">Drby počkají. Kopidlno nikam neuteče.</p>
@@ -454,12 +455,12 @@ export function GameApp() {
               <BookOpen className="size-5" /> Kronika {bookProgress.known}/{bookProgress.total}
             </button>
           </section>
-        </div>
+        </FitOverlay>
       )}
 
       {hud.phase === "over" && (
-        <div className="absolute inset-0 flex items-center justify-center bg-ink/35 p-4">
-          <section className="max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-3xl border-2 border-ink bg-cream p-6 text-center">
+        <FitOverlay testId="over" className="bg-ink/35">
+          <section className="w-full max-w-sm rounded-3xl border-2 border-ink bg-cream p-6 text-center">
             <p className="text-sm font-extrabold text-bow">Příhoda</p>
             <h2 className="mt-1 font-display text-4xl leading-none">Dneska už stačilo</h2>
             <p className="mt-2 text-ink-soft">{hud.line}</p>
@@ -532,13 +533,13 @@ export function GameApp() {
               www.kopidlenskadrbna.org
             </a>
           </section>
-        </div>
+        </FitOverlay>
       )}
 
       {hud.phase === "bonus" && hud.bonus && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-ink/40 p-3 sm:p-6">
+        <FitOverlay testId="bonus" className="z-30 bg-ink/40">
           <BonusCard bonus={hud.bonus} lives={hud.lives} gained={hud.bonusLife} onAct={(action) => gameRef.current?.bonusAct(action)} />
-        </div>
+        </FitOverlay>
       )}
 
       {hud.phase === "play" && (
@@ -597,7 +598,7 @@ function BonusCard({
 }) {
   if (bonus.id === "alarm") return <AlarmCard bonus={bonus} lives={lives} gained={gained} onAct={onAct} />;
   return (
-    <section className="bonus-fit max-h-[88dvh] w-full max-w-[28em] overflow-y-auto rounded-[1.5em] border-2 border-ink bg-cream p-[1em] text-center shadow-lg sm:p-[1.5em]">
+    <section className="bonus-fit w-full max-w-[28em] rounded-[1.5em] border-2 border-ink bg-cream p-[1em] text-center shadow-lg sm:p-[1.5em]">
       <p className="text-[0.75em] font-extrabold tracking-wide text-bow">Ryba z rybníka</p>
       <h2 className="mt-[0.25em] leading-none">
         <span className="font-display text-[2.25em]">{bonus.title}</span>
