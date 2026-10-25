@@ -17,7 +17,7 @@ function Fixture() {
         {mode === "over" ? (
           <section className="w-full max-w-sm rounded-3xl border-2 border-ink bg-cream p-6 text-center" data-testid="actual-panel">
             <p className="text-sm font-extrabold text-bow">Příhoda</p>
-            <h2 className="mt-1 font-display text-4xl leading-none">Drběna se nevzdává!</h2>
+            <h2 className="mt-1 whitespace-nowrap font-display text-[clamp(1rem,5vw,1.625rem)] leading-none">Drběna se nevzdává!</h2>
             <p className="mt-2 text-ink-soft">Drběna se protáhla kolem plotu, ale husa už ji dneska nepustila dál.</p>
             <p className="mt-4 font-display text-5xl leading-none">12540</p>
             <p className="mt-1 font-extrabold">86 drbů · nový rekord</p>
