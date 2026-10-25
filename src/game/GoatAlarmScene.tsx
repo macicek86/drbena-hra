@@ -14,7 +14,7 @@ export function AlarmCard({
 }) {
   if (bonus.stage === "offer") {
     return (
-      <section className="bonus-fit max-h-[88dvh] w-full max-w-[28em] overflow-y-auto rounded-[1.5em] border-2 border-ink bg-cream p-[1em] text-center shadow-lg sm:p-[1.5em]">
+      <section className="bonus-fit w-full max-w-[28em] rounded-[1.5em] border-2 border-ink bg-cream p-[1em] text-center shadow-lg sm:p-[1.5em]">
         <p className="text-[0.75em] font-extrabold tracking-wide text-bow">Ryba z rybníka</p>
         <h2 className="mt-[0.25em] leading-none">
           <span className="font-display text-[2.25em]">{bonus.title}</span>
@@ -35,7 +35,7 @@ export function AlarmCard({
   }
   const ended = bonus.stage === "done";
   return (
-    <section className="bonus-fit max-h-[92dvh] w-full max-w-[32em] overflow-y-auto rounded-[1.5em] border-2 border-ink bg-[#172033] p-[0.75em] text-center text-cream shadow-lg">
+    <section className="bonus-fit w-full max-w-[32em] rounded-[1.5em] border-2 border-ink bg-[#172033] p-[0.75em] text-center text-cream shadow-lg">
       <p className="text-[0.75em] font-extrabold tracking-wide text-gold">Noční Kopidlno</p>
       <h2 className="leading-none text-cream">
         <span className="font-display text-[1.875em]">{bonus.title}</span>
