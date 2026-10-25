@@ -849,8 +849,8 @@ export class Runner {
       this.chronicleNew += 1;
       this.scrollsKnown = knownIds().length;
       this.fact = { title: fact.title, text: "" };
-      this.factLabel = "Odemčena stránka";
-      this.factLife = 2.4;
+      this.factLabel = "Nové tajemství odhaleno!";
+      this.factLife = 3.1;
       this.taleLife = 0;
       this.sfx.prize();
     } else {

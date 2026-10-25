@@ -1,0 +1,39 @@
+name: Kontrola herni kroniky
+
+on:
+  pull_request:
+    paths:
+      - "src/game/**"
+      - "scripts/kronika-smoke.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - "vite.pages.config.ts"
+      - ".github/workflows/kronika-check.yml"
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Typecheck
+        run: npm run typecheck
+      - name: Cloudflare Pages build
+        run: npm run build:pages
+        env:
+          CF_PAGES: "1"
+      - name: Install Chromium
+        run: npx playwright install --with-deps chromium
+      - name: Smoke test v prohlizeci
+        run: |
+          CF_PAGES=1 npx vite preview --config vite.pages.config.ts --host 127.0.0.1 --port 4173 > /tmp/kronika-vite.log 2>&1 &
+          node scripts/kronika-smoke.mjs
