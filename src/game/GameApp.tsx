@@ -466,7 +466,7 @@ export function GameApp() {
         >
           <section className="w-full max-w-sm rounded-3xl border-2 border-ink bg-cream p-6 text-center">
             <p className="text-sm font-extrabold text-bow">Příhoda</p>
-            <h2 className="mt-1 font-display text-4xl leading-none">Drběna se nevzdává!</h2>
+            <h2 className="mt-1 whitespace-nowrap font-display text-[clamp(1rem,5vw,1.625rem)] leading-none">Drběna se nevzdává!</h2>
             <p className="mt-2 text-ink-soft">{hud.line}</p>
             <p className="mt-4 font-display text-5xl leading-none">{hud.score}</p>
             <p className="mt-1 font-extrabold">
