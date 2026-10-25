@@ -73,6 +73,7 @@ try {
   await smoke("mobil", { width: 390, height: 844 });
   await smoke("malý mobil", { width: 360, height: 640 });
   await smoke("malý notebook", { width: 1024, height: 600 });
+  await smoke("notebook", { width: 1366, height: 768 });
   await smoke("desktop", { width: 1280, height: 800 });
 } finally {
   await browser.close();
