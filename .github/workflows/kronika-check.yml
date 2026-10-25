@@ -7,6 +7,9 @@ on:
       - "src/game/**"
       - "src/styles.css"
       - "scripts/kronika-smoke.mjs"
+      - "scripts/panel-fit-smoke.mjs"
+      - "scripts/panel-fit-fixture.tsx"
+      - "scripts/panel-fit-fixture.html"
       - "package.json"
       - "package-lock.json"
       - "vite.pages.config.ts"
@@ -16,6 +19,9 @@ on:
       - "src/game/**"
       - "src/styles.css"
       - "scripts/kronika-smoke.mjs"
+      - "scripts/panel-fit-smoke.mjs"
+      - "scripts/panel-fit-fixture.tsx"
+      - "scripts/panel-fit-fixture.html"
       - "package.json"
       - "package-lock.json"
       - "vite.pages.config.ts"
@@ -48,3 +54,7 @@ jobs:
         run: |
           CF_PAGES=1 npx vite preview --config vite.pages.config.ts --host 127.0.0.1 --port 4173 > /tmp/kronika-vite.log 2>&1 &
           node scripts/kronika-smoke.mjs
+      - name: Smoke test panelu na ruznych displejich
+        run: |
+          npx vite --config vite.pages.config.ts --host 127.0.0.1 --port 4174 > /tmp/panel-fit-vite.log 2>&1 &
+          node scripts/panel-fit-smoke.mjs
