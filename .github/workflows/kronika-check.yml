@@ -5,6 +5,7 @@ on:
     branches: ["main"]
     paths:
       - "src/game/**"
+      - "src/styles.css"
       - "scripts/kronika-smoke.mjs"
       - "package.json"
       - "package-lock.json"
@@ -13,6 +14,7 @@ on:
   pull_request:
     paths:
       - "src/game/**"
+      - "src/styles.css"
       - "scripts/kronika-smoke.mjs"
       - "package.json"
       - "package-lock.json"
