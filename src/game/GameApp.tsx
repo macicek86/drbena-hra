@@ -459,7 +459,11 @@ export function GameApp() {
       )}
 
       {hud.phase === "over" && (
-        <FitOverlay testId="over" className="bg-ink/35">
+        <FitOverlay
+          testId="over"
+          className="bg-ink/35"
+          fitKey={`${hud.line}:${hud.score}:${hud.chronicleNew}:${players}:${copied}:${JSON.stringify(board)}`}
+        >
           <section className="w-full max-w-sm rounded-3xl border-2 border-ink bg-cream p-6 text-center">
             <p className="text-sm font-extrabold text-bow">Příhoda</p>
             <h2 className="mt-1 font-display text-4xl leading-none">Dneska už stačilo</h2>
@@ -537,7 +541,11 @@ export function GameApp() {
       )}
 
       {hud.phase === "bonus" && hud.bonus && (
-        <FitOverlay testId="bonus" className="z-30 bg-ink/40">
+        <FitOverlay
+          testId="bonus"
+          className="z-30 bg-ink/40"
+          fitKey={`${hud.bonus.id}:${hud.bonus.stage}:${hud.bonus.wrong}:${hud.bonus.id === "alarm" ? hud.bonus.note : hud.bonus.success}:${hud.bonusLife}:${hud.lives}`}
+        >
           <BonusCard bonus={hud.bonus} lives={hud.lives} gained={hud.bonusLife} onAct={(action) => gameRef.current?.bonusAct(action)} />
         </FitOverlay>
       )}
