@@ -13,7 +13,7 @@ function Fixture() {
         <button type="button" className="bg-white p-1" data-testid="switch-mode" onClick={() => setMode(mode === "over" ? "bonus" : "over")}>Přepnout</button>
         <button type="button" className="bg-white p-1" data-testid="add-row" onClick={() => setRows(Math.min(10, rows + 1))}>Více</button>
       </div>
-      <FitOverlay testId={mode} className="bg-ink/35">
+      <FitOverlay testId={mode} fitKey={`${mode}:${rows}`} className="bg-ink/35">
         {mode === "over" ? (
           <section className="w-full max-w-sm rounded-3xl border-2 border-ink bg-cream p-6 text-center" data-testid="actual-panel">
             <p className="text-sm font-extrabold text-bow">Příhoda</p>
