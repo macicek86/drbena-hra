@@ -35,5 +35,5 @@ jobs:
         run: npx playwright install --with-deps chromium
       - name: Smoke test v prohlizeci
         run: |
-          npx vite preview --config vite.pages.config.ts --host 127.0.0.1 --port 4173 > /tmp/kronika-vite.log 2>&1 &
+          CF_PAGES=1 npx vite preview --config vite.pages.config.ts --host 127.0.0.1 --port 4173 > /tmp/kronika-vite.log 2>&1 &
           node scripts/kronika-smoke.mjs
