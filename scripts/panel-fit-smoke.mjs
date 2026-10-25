@@ -4,6 +4,7 @@ import { chromium } from "playwright";
 const browser = await chromium.launch({ headless: true, args: ["--no-sandbox"] });
 const sizes = [
   ["malý mobil", 320, 480],
+  ["mobil na šířku", 667, 375],
   ["mobil", 390, 844],
   ["malý notebook", 1024, 600],
   ["notebook", 1366, 768],
@@ -52,7 +53,25 @@ try {
     const page = await context.newPage();
     const errors = [];
     page.on("pageerror", (err) => errors.push(err.message));
-    await page.goto("http://127.0.0.1:4174/scripts/panel-fit-fixture.html", { waitUntil: "domcontentloaded" });
+    page.on("console", (msg) => { if (msg.type() === "error") errors.push("console: " + msg.text()); });
+    const fixtureUrl = "http://127.0.0.1:4174/scripts/panel-fit-fixture.html";
+    let ready = false;
+    for (let attempt = 0; attempt < 60; attempt++) {
+      try {
+        const ping = await fetch(fixtureUrl);
+        if (ping.ok) { ready = true; break; }
+      } catch { /* dev server still starting */ }
+      await new Promise((resolve) => setTimeout(resolve, 200));
+    }
+    assert.ok(ready, "Vite fixture server must start before testing");
+    const response = await page.goto(fixtureUrl, { waitUntil: "domcontentloaded" });
+    console.log("FIXTURE", name, response?.status(), await page.title(), page.url());
+    try {
+      await page.locator('[data-fit-overlay="over"]').waitFor({ timeout: 10000 });
+    } catch (error) {
+      console.log("FIXTURE ERROR", JSON.stringify({ body: (await page.locator("body").innerText()).slice(0, 1000), errors, source: (await page.content()).slice(0, 1300) }));
+      throw error;
+    }
     await assertPanelFits(page, name, "over");
     await page.getByTestId("add-row").click();
     await assertPanelFits(page, name + " extended", "over");

@@ -9,10 +9,12 @@ export function FitOverlay({
   children,
   className = "",
   testId,
+  fitKey,
 }: {
   children: ReactNode;
   className?: string;
   testId?: string;
+  fitKey?: string | number;
 }) {
   const overlayRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -67,10 +69,11 @@ export function FitOverlay({
     };
   }, []);
 
-  // Re-measure when the content changes (e.g. new leaderboard rows or mini-game stage).
+  // Avoid layout remeasurement on every frame of an animated mini-game.
+  // Callers update fitKey only when the content's size can materially change.
   useLayoutEffect(() => {
     fitRef.current();
-  });
+  }, [fitKey]);
 
   return (
     <div
