@@ -14,8 +14,6 @@
   --font-sans: "Nunito", ui-sans-serif, system-ui, sans-serif;
 }
 
-@custom-variant short (@media (max-height: 760px));
-
 html,
 body {
   height: 100%;
@@ -30,6 +28,20 @@ body {
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
+}
+
+/* 16px od výšky asi 780px, níž se celá karta zmenší najednou. */
+.bonus-fit {
+  font-size: clamp(11px, 2.05dvh, 16px);
+}
+
+/* Úvod je vysoký, proto se na nízké obrazovce zmenší dřív. */
+.menu-fit {
+  font-size: clamp(9px, 1.65dvh, 16px);
+}
+
+.chronicle-fit {
+  font-size: clamp(12px, 2.15dvh, 16px);
 }
 
 .story-leaf {

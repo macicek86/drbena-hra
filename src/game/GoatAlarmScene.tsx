@@ -14,16 +14,20 @@ export function AlarmCard({
 }) {
   if (bonus.stage === "offer") {
     return (
-      <section className="max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-3xl border-2 border-ink bg-cream p-4 text-center shadow-lg sm:p-6">
-        <p className="text-xs font-extrabold tracking-wide text-bow">Ryba z rybníka</p>
-        <h2 className="mt-1 font-display text-4xl leading-none">{bonus.title}</h2>
-        <p className="mt-3 text-sm leading-snug text-ink-soft">{bonus.prompt}</p>
-        <div className="mt-5 grid grid-cols-2 gap-2">
-          <button type="button" className="flex h-14 items-center justify-center rounded-full border-2 border-ink bg-bow text-lg font-extrabold text-cream" onClick={() => onAct({ type: "play" })}>
-            Hrát
+      <section className="bonus-fit max-h-[88dvh] w-full max-w-[28em] overflow-y-auto rounded-[1.5em] border-2 border-ink bg-cream p-[1em] text-center shadow-lg sm:p-[1.5em]">
+        <p className="text-[0.75em] font-extrabold tracking-wide text-bow">Ryba z rybníka</p>
+        <h2 className="mt-[0.25em] leading-none">
+          <span className="font-display text-[2.25em]">{bonus.title}</span>
+        </h2>
+        <p className="mt-[0.75em]">
+          <span className="text-[0.875em] leading-snug text-ink-soft">{bonus.prompt}</span>
+        </p>
+        <div className="mt-[1.25em] grid grid-cols-2 gap-[0.5em]">
+          <button type="button" className="flex h-[3.5em] items-center justify-center rounded-full border-2 border-ink bg-bow font-extrabold text-cream" onClick={() => onAct({ type: "play" })}>
+            <span className="text-[1.125em]">Hrát</span>
           </button>
-          <button type="button" className="flex h-14 items-center justify-center rounded-full border-2 border-ink bg-cream text-lg font-extrabold" onClick={() => onAct({ type: "decline" })}>
-            Ne, díky
+          <button type="button" className="flex h-[3.5em] items-center justify-center rounded-full border-2 border-ink bg-cream font-extrabold" onClick={() => onAct({ type: "decline" })}>
+            <span className="text-[1.125em]">Ne, díky</span>
           </button>
         </div>
       </section>
@@ -31,12 +35,14 @@ export function AlarmCard({
   }
   const ended = bonus.stage === "done";
   return (
-    <section className="max-h-[92dvh] w-full max-w-lg overflow-y-auto rounded-3xl border-2 border-ink bg-[#172033] p-3 text-center text-cream shadow-lg">
-      <p className="text-xs font-extrabold tracking-wide text-gold">Noční Kopidlno</p>
-      <h2 className="font-display text-3xl leading-none text-cream">{bonus.title}</h2>
+    <section className="bonus-fit max-h-[92dvh] w-full max-w-[32em] overflow-y-auto rounded-[1.5em] border-2 border-ink bg-[#172033] p-[0.75em] text-center text-cream shadow-lg">
+      <p className="text-[0.75em] font-extrabold tracking-wide text-gold">Noční Kopidlno</p>
+      <h2 className="leading-none text-cream">
+        <span className="font-display text-[1.875em]">{bonus.title}</span>
+      </h2>
       <button
         type="button"
-        className="mt-2 block w-full rounded-2xl"
+        className="mt-[0.5em] block w-full rounded-[1em]"
         aria-label={`Klepni ve zlatém poli. Rozsvíceno ${bonus.windows} z ${bonus.goal} oken.`}
         onClick={() => {
           if (!ended) onAct({ type: "tap" });
@@ -44,26 +50,32 @@ export function AlarmCard({
       >
         <AlarmScene bonus={bonus} />
       </button>
-      <p className="mt-2 min-h-10 text-sm font-extrabold leading-snug text-[#f6e7c1]">{bonus.note}</p>
+      <p className="mt-[0.5em] min-h-[2.5em]">
+        <span className="text-[0.875em] font-extrabold leading-snug text-[#f6e7c1]">{bonus.note}</span>
+      </p>
       {!ended && (
-        <button type="button" className="mt-2 flex h-11 w-full items-center justify-center rounded-full border-2 border-cream/70 font-extrabold" onClick={() => onAct({ type: "skip" })}>
+        <button type="button" className="mt-[0.5em] flex h-[2.75em] w-full items-center justify-center rounded-full border-2 border-cream/70 font-extrabold" onClick={() => onAct({ type: "skip" })}>
           Přeskočit
         </button>
       )}
       {ended && (
         <>
-          {!bonus.failed && <p className="mt-1 font-display text-4xl leading-none text-gold">+{bonus.reward}</p>}
           {!bonus.failed && (
-            <div className="mt-2">
-              <div className="flex items-center justify-center gap-1" aria-label={gained ? BONUS_PARDON : `Klid: ${lives}`}>
+            <p className="mt-[0.25em] leading-none text-gold">
+              <span className="font-display text-[2.25em]">+{bonus.reward}</span>
+            </p>
+          )}
+          {!bonus.failed && (
+            <div className="mt-[0.5em]">
+              <div className="flex items-center justify-center gap-[0.25em]" aria-label={gained ? BONUS_PARDON : `Klid: ${lives}`}>
                 {Array.from({ length: Math.max(3, lives) }, (_, i) => (
-                  <Heart key={i} className={`size-7 ${i < lives ? "fill-bow text-bow" : "text-cream/30"} ${gained && i === lives - 1 ? "scale-125" : ""}`} />
+                  <Heart key={i} className={`size-[1.75em] ${i < lives ? "fill-bow text-bow" : "text-cream/30"} ${gained && i === lives - 1 ? "scale-125" : ""}`} />
                 ))}
               </div>
-              <p className={`mt-1 font-extrabold ${gained ? "text-gold" : "text-cream/70"}`}>{gained ? BONUS_PARDON : BONUS_CALM}</p>
+              <p className={`mt-[0.25em] font-extrabold ${gained ? "text-gold" : "text-cream/70"}`}>{gained ? BONUS_PARDON : BONUS_CALM}</p>
             </div>
           )}
-          <button type="button" className="mt-3 flex h-12 w-full items-center justify-center rounded-full border-2 border-ink bg-bow font-extrabold text-cream" onClick={() => onAct({ type: "continue" })}>
+          <button type="button" className="mt-[0.75em] flex h-[3em] w-full items-center justify-center rounded-full border-2 border-ink bg-bow font-extrabold text-cream" onClick={() => onAct({ type: "continue" })}>
             Pokračovat
           </button>
         </>
@@ -102,7 +114,7 @@ function AlarmScene({ bonus }: { bonus: AlarmHud }) {
         />
         <img src={goat} alt="" className="absolute bottom-0 left-[-4%] z-30 w-[36%]" />
       </div>
-      <div className="relative mt-2 h-7 overflow-hidden rounded-full border-2 border-[#3a2618] bg-[#24180f]">
+      <div className="relative mt-[0.5em] h-[1.75em] overflow-hidden rounded-full border-2 border-[#3a2618] bg-[#24180f]">
         <span className="absolute inset-y-0 bg-[#e8a317]" style={{ left: `${bonus.zoneStart * 100}%`, width: `${(bonus.zoneEnd - bonus.zoneStart) * 100}%` }} />
         <span className="absolute inset-y-1 rounded-full bg-[#fff1c4]" style={{ left: `${perfectStart * 100}%`, width: `${perfectWidth * 100}%` }} />
         <span className="absolute top-0 h-full w-3 -translate-x-1/2 rounded-full border-2 border-[#241c16] bg-[#f4efe4]" style={{ left: `${bonus.pointer * 100}%` }} />

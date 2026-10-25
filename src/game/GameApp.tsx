@@ -173,100 +173,107 @@ export function GameApp() {
       )}
 
       {hud.phase === "menu" && (
-        <div
-          className="absolute inset-0 flex items-end justify-center bg-gradient-to-t from-ink/80 via-ink/20 to-transparent p-4 pb-6 sm:p-8"
-          onClick={() => gameRef.current?.begin()}
-        >
-          <section className="w-full max-w-sm text-center">
-            <img
-              src={publicUrl("/game/portrait.webp")}
-              alt="Drběna, černobílá koza s růžovou mašlí"
-              className="mx-auto size-24 rounded-full border-4 border-cream bg-ink object-cover shadow-lg sm:size-28"
-            />
-            <p className="mt-3 text-xs font-extrabold tracking-[0.22em] text-cream [text-shadow:0_2px_0_#241c16]">
-              KOPIDLNO
-            </p>
-            <h1 className="font-display text-6xl leading-[0.85] text-cream [text-shadow:0_3px_0_#241c16] sm:text-7xl">
-              Drběna
-              <span className="mt-1 block text-3xl text-bow [text-shadow:0_2px_0_#241c16] sm:text-4xl">sbírá drby</span>
-            </h1>
-            <p className="mt-2 text-xs font-extrabold text-cream/90 [text-shadow:0_1px_0_#241c16] sm:text-sm">
-              ♪ za doprovodu Esmeraldy od Františka Matěje Hilmara
-            </p>
-            <button
-              type="button"
-              className="mx-auto mt-5 flex h-14 w-full max-w-xs items-center justify-center rounded-full border-2 border-ink bg-bow text-xl font-extrabold text-cream"
-              onClick={(event) => {
-                event.stopPropagation();
-                gameRef.current?.begin();
-              }}
-            >
-              Vyrazit
-            </button>
-            <p className="mt-3 text-sm font-extrabold text-cream [text-shadow:0_1px_0_#241c16]">
-              Klepni a skoč. Táhni dolů a pokrč se.
-            </p>
-            {hud.best > 0 && (
-              <p className="mt-1 text-sm font-extrabold text-gold [text-shadow:0_1px_0_#241c16]">
-                Rekord {hud.best}
-                {hud.bestGossips > 0 ? ` · ${hud.bestGossips} drbů` : ""}
+        <div className="menu-fit absolute inset-0 overflow-y-auto bg-gradient-to-t from-ink/80 via-ink/20 to-transparent" onClick={() => gameRef.current?.begin()}>
+          <div className="flex min-h-full items-end justify-center p-[1em] pb-[1.25em] sm:p-[2em]">
+            <section className="w-full max-w-[24em] text-center">
+              <img
+                src={publicUrl("/game/portrait.webp")}
+                alt="Drběna, černobílá koza s růžovou mašlí"
+                className="mx-auto size-[6em] rounded-full border-4 border-cream bg-ink object-cover shadow-lg"
+              />
+              <p className="mt-[0.75em]">
+                <span className="text-[0.75em] font-extrabold tracking-[0.22em] text-cream [text-shadow:0_2px_0_#241c16]">KOPIDLNO</span>
               </p>
-            )}
-            <button
-              type="button"
-              className="mx-auto mt-3 flex h-10 items-center justify-center rounded-full border-2 border-cream/80 px-5 text-sm font-extrabold text-cream"
-              onClick={(event) => {
-                event.stopPropagation();
-                setChronicle(true);
-              }}
-            >
-              Kronika
-            </button>
-            {players != null && (
-              <p className="mt-1 text-sm font-extrabold text-cream [text-shadow:0_1px_0_#241c16]">{playerLabel(players)}</p>
-            )}
-            {players != null && (
-              <label className="mx-auto mt-3 block max-w-xs text-left" onClick={(event) => event.stopPropagation()}>
-                <span className="text-xs font-extrabold tracking-wide text-cream [text-shadow:0_1px_0_#241c16]">Jméno do žebříčku</span>
-                <input
-                  value={name}
-                  maxLength={16}
-                  placeholder="Drběna"
-                  className="mt-1 h-10 w-full rounded-full border-2 border-ink bg-cream px-4 font-extrabold text-ink outline-none"
-                  onChange={(event) => {
-                    setName(event.target.value);
-                    saveName(event.target.value);
-                  }}
-                />
-              </label>
-            )}
-            {board.length > 0 && (
-              <ol className="mx-auto mt-3 w-full max-w-xs rounded-3xl border-2 border-ink bg-cream/95 px-4 py-2 text-left text-sm font-extrabold">
-                {board.slice(0, 5).map((row, index) => (
-                  <li key={`${row.name}-${row.score}-${index}`} className="flex justify-between gap-3 py-0.5">
-                    <span>
-                      {index + 1}. {row.name}
-                    </span>
-                    <span>
-                      {row.score}
-                      {row.gossips > 0 ? ` · ${row.gossips}` : ""}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-            )}
-            {previewStats && (
-              <p className="mt-1 text-xs font-extrabold text-cream/80 [text-shadow:0_1px_0_#241c16]">Náhled, ještě to není venku</p>
-            )}
-            <p className="mt-3 text-[11px] font-extrabold tracking-wide text-cream/75 [text-shadow:0_1px_0_#241c16]">
-              © Kopidlenská drbna | Camledian
-            </p>
-          </section>
+              <h1 className="mt-[0.15em] text-cream [text-shadow:0_3px_0_#241c16]">
+                <span className="block font-display text-[3.75em] leading-[0.85]">Drběna</span>
+                <span className="block font-display text-[1.875em] leading-none text-bow [text-shadow:0_2px_0_#241c16]">sbírá drby</span>
+              </h1>
+              <p className="mt-[0.5em]">
+                <span className="text-[0.75em] font-extrabold text-cream/90 [text-shadow:0_1px_0_#241c16]">
+                  ♪ za doprovodu Esmeraldy od Františka Matěje Hilmara
+                </span>
+              </p>
+              <button
+                type="button"
+                className="mx-auto mt-[1em] flex h-[3.5em] w-full max-w-[20em] items-center justify-center rounded-full border-2 border-ink bg-bow font-extrabold text-cream"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  gameRef.current?.begin();
+                }}
+              >
+                <span className="text-[1.25em]">Vyrazit</span>
+              </button>
+              <p className="mt-[0.65em]">
+                <span className="text-[0.875em] font-extrabold text-cream [text-shadow:0_1px_0_#241c16]">Klepni a skoč. Táhni dolů a pokrč se.</span>
+              </p>
+              {hud.best > 0 && (
+                <p className="mt-[0.25em]">
+                  <span className="text-[0.875em] font-extrabold text-gold [text-shadow:0_1px_0_#241c16]">
+                    Rekord {hud.best}
+                    {hud.bestGossips > 0 ? ` · ${hud.bestGossips} drbů` : ""}
+                  </span>
+                </p>
+              )}
+              <button
+                type="button"
+                className="mx-auto mt-[0.65em] flex h-[2.4em] items-center justify-center rounded-full border-2 border-cream/80 px-[1.25em] font-extrabold text-cream"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setChronicle(true);
+                }}
+              >
+                <span className="text-[0.875em]">Kronika</span>
+              </button>
+              {players != null && (
+                <p className="mt-[0.25em]">
+                  <span className="text-[0.875em] font-extrabold text-cream [text-shadow:0_1px_0_#241c16]">{playerLabel(players)}</span>
+                </p>
+              )}
+              {players != null && (
+                <label className="mx-auto mt-[0.65em] block max-w-[20em] text-left" onClick={(event) => event.stopPropagation()}>
+                  <span className="text-[0.75em] font-extrabold tracking-wide text-cream [text-shadow:0_1px_0_#241c16]">Jméno do žebříčku</span>
+                  <input
+                    value={name}
+                    maxLength={16}
+                    placeholder="Drběna"
+                    className="mt-[0.25em] h-[2.5em] w-full rounded-full border-2 border-ink bg-cream px-[1em] font-extrabold text-ink outline-none"
+                    onChange={(event) => {
+                      setName(event.target.value);
+                      saveName(event.target.value);
+                    }}
+                  />
+                </label>
+              )}
+              {board.length > 0 && (
+                <ol className="mx-auto mt-[0.65em] w-full max-w-[20em] rounded-[1.5em] border-2 border-ink bg-cream/95 px-[1em] py-[0.4em] text-left font-extrabold">
+                  {board.slice(0, 5).map((row, index) => (
+                    <li key={`${row.name}-${row.score}-${index}`} className="flex justify-between gap-[0.75em] py-[0.1em] text-[0.875em]">
+                      <span>
+                        {index + 1}. {row.name}
+                      </span>
+                      <span>
+                        {row.score}
+                        {row.gossips > 0 ? ` · ${row.gossips}` : ""}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              )}
+              {previewStats && (
+                <p className="mt-[0.25em]">
+                  <span className="text-[0.75em] font-extrabold text-cream/80 [text-shadow:0_1px_0_#241c16]">Náhled, ještě to není venku</span>
+                </p>
+              )}
+              <p className="mt-[0.65em]">
+                <span className="text-[0.7em] font-extrabold tracking-wide text-cream/75 [text-shadow:0_1px_0_#241c16]">© Kopidlenská drbna | Camledian</span>
+              </p>
+            </section>
+          </div>
         </div>
       )}
 
       {playing && (
-        <header className={`pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-3 sm:p-4 ${hud.phase === "bonus" ? "z-40" : ""}`}>
+        <header className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-3 sm:p-4">
           <div className="pointer-events-auto rounded-3xl border-2 border-ink bg-cream/95 px-3 py-2">
             <p className="font-display text-3xl leading-none">{hud.score}</p>
             <p className="text-sm font-extrabold text-ink-soft">
@@ -403,12 +410,9 @@ export function GameApp() {
       )}
 
       {hud.phase === "bonus" && hud.bonus && (
-        <>
-          <div className="absolute inset-0 z-30 bg-ink/40" />
-          <div className="absolute inset-x-0 top-24 bottom-0 z-30 flex items-center justify-center overflow-hidden px-3 py-2 sm:top-28">
-            <BonusCard bonus={hud.bonus} lives={hud.lives} gained={hud.bonusLife} onAct={(action) => gameRef.current?.bonusAct(action)} />
-          </div>
-        </>
+        <div className="absolute inset-0 z-30 flex items-center justify-center bg-ink/40 p-3 sm:p-6">
+          <BonusCard bonus={hud.bonus} lives={hud.lives} gained={hud.bonusLife} onAct={(action) => gameRef.current?.bonusAct(action)} />
+        </div>
       )}
 
       {hud.phase === "play" && (
@@ -467,78 +471,90 @@ function BonusCard({
 }) {
   if (bonus.id === "alarm") return <AlarmCard bonus={bonus} lives={lives} gained={gained} onAct={onAct} />;
   return (
-    <section className="flex min-h-0 max-h-full w-full max-w-md flex-col overflow-hidden rounded-3xl border-2 border-ink bg-cream px-3 py-3 text-center shadow-lg short:py-2 sm:px-5">
-      <p className="text-xs font-extrabold tracking-wide text-bow">Ryba z rybníka</p>
-      <h2 className="mt-1 font-display text-3xl leading-none short:text-2xl">{bonus.title}</h2>
+    <section className="bonus-fit max-h-[88dvh] w-full max-w-[28em] overflow-y-auto rounded-[1.5em] border-2 border-ink bg-cream p-[1em] text-center shadow-lg sm:p-[1.5em]">
+      <p className="text-[0.75em] font-extrabold tracking-wide text-bow">Ryba z rybníka</p>
+      <h2 className="mt-[0.25em] leading-none">
+        <span className="font-display text-[2.25em]">{bonus.title}</span>
+      </h2>
       {bonus.stage !== "done" && (
-        <p className="mt-1.5 line-clamp-2 text-sm leading-snug text-ink-soft short:line-clamp-1">{bonus.prompt}</p>
+        <p className="mt-[0.75em]">
+          <span className="text-[0.875em] leading-snug text-ink-soft">{bonus.prompt}</span>
+        </p>
       )}
       {bonus.stage === "offer" && (
-        <div className="mt-4 grid grid-cols-2 gap-2 short:mt-3">
+        <div className="mt-[1.25em] grid grid-cols-2 gap-[0.5em]">
           <button
             type="button"
-            className="flex h-12 items-center justify-center rounded-full border-2 border-ink bg-bow text-lg font-extrabold text-cream"
+            className="flex h-[3.5em] items-center justify-center rounded-full border-2 border-ink bg-bow font-extrabold text-cream"
             onClick={() => onAct({ type: "play" })}
           >
-            Hrát
+            <span className="text-[1.125em]">Hrát</span>
           </button>
           <button
             type="button"
-            className="flex h-12 items-center justify-center rounded-full border-2 border-ink bg-cream text-lg font-extrabold"
+            className="flex h-[3.5em] items-center justify-center rounded-full border-2 border-ink bg-cream font-extrabold"
             onClick={() => onAct({ type: "decline" })}
           >
-            Ne, díky
+            <span className="text-[1.125em]">Ne, díky</span>
           </button>
         </div>
       )}
       {bonus.stage === "play" && (
         <>
-          <div className="mt-2 flex min-h-0 flex-1 flex-col gap-1.5 short:mt-1.5 short:gap-1">
+          <div className="mt-[1em] flex flex-col gap-[0.5em]">
             {bonus.cards.map((card, index) => (
               <button
                 key={`${card}-${index}`}
                 type="button"
                 aria-pressed={bonus.picked === index}
-                className={`min-h-0 rounded-2xl border-2 px-3 py-2 text-left text-sm font-extrabold leading-snug short:py-1.5 ${
+                className={`rounded-[0.75em] border-2 px-[0.75em] py-[0.3em] text-left font-extrabold leading-snug ${
                   bonus.picked === index ? "border-ink bg-gold" : "border-ink bg-[#fff8ea]"
                 }`}
                 onClick={() => onAct({ type: "pick", index })}
               >
-                {card}
+                <span className="text-[1em] sm:text-[1.125em]">{card}</span>
               </button>
             ))}
           </div>
-          <div className="shrink-0">
-            <p className="mt-1.5 text-xs font-extrabold text-ink-soft">Klepni na dvě kartičky a prohoď je.</p>
-            {bonus.wrong && <p className="mt-1 line-clamp-2 text-sm font-extrabold leading-snug text-bow">{bonus.wrong}</p>}
-            <button
-              type="button"
-              className="mt-2 flex h-11 w-full items-center justify-center rounded-full border-2 border-ink bg-bow text-base font-extrabold text-cream short:mt-1.5"
-              onClick={() => onAct({ type: "check" })}
-            >
-              Zkontrolovat
-            </button>
-            <button
-              type="button"
-              className="mt-1.5 flex h-11 w-full items-center justify-center rounded-full border-2 border-ink bg-cream font-extrabold short:mt-1"
-              onClick={() => onAct({ type: "skip" })}
-            >
-              Přeskočit
-            </button>
-          </div>
+          <p className="mt-[0.75em]">
+            <span className="text-[0.75em] font-extrabold text-ink-soft">Klepni na dvě kartičky a prohoď je.</span>
+          </p>
+          {bonus.wrong && (
+            <p className="mt-[0.5em]">
+              <span className="text-[0.875em] font-extrabold text-bow">{bonus.wrong}</span>
+            </p>
+          )}
+          <button
+            type="button"
+            className="mt-[1em] flex h-[3.5em] w-full items-center justify-center rounded-full border-2 border-ink bg-bow font-extrabold text-cream"
+            onClick={() => onAct({ type: "check" })}
+          >
+            <span className="text-[1.125em]">Zkontrolovat</span>
+          </button>
+          <button
+            type="button"
+            className="mt-[0.5em] flex h-[3em] w-full items-center justify-center rounded-full border-2 border-ink bg-cream font-extrabold"
+            onClick={() => onAct({ type: "skip" })}
+          >
+            Přeskočit
+          </button>
         </>
       )}
       {bonus.stage === "done" && (
         <>
-          <p className="mt-2 line-clamp-3 text-sm leading-snug short:line-clamp-2">{bonus.success}</p>
-          <p className="mt-2 font-display text-4xl leading-none text-bow short:text-3xl">+{bonus.reward}</p>
+          <p className="mt-[0.75em]">
+            <span className="text-[0.875em] leading-snug">{bonus.success}</span>
+          </p>
+          <p className="mt-[0.75em] leading-none text-bow">
+            <span className="font-display text-[2.25em]">+{bonus.reward}</span>
+          </p>
           <LifeReward lives={lives} gained={gained} />
           <button
             type="button"
-            className="mt-3 flex h-11 w-full shrink-0 items-center justify-center rounded-full border-2 border-ink bg-bow text-base font-extrabold text-cream short:mt-2"
+            className="mt-[1.25em] flex h-[3.5em] w-full items-center justify-center rounded-full border-2 border-ink bg-bow font-extrabold text-cream"
             onClick={() => onAct({ type: "continue" })}
           >
-            Pokračovat
+            <span className="text-[1.125em]">Pokračovat</span>
           </button>
         </>
       )}
@@ -548,16 +564,16 @@ function BonusCard({
 
 function LifeReward({ lives, gained }: { lives: number; gained: boolean }) {
   return (
-    <div className="mt-2 short:mt-1">
-      <div className="flex items-center justify-center gap-1" aria-label={gained ? BONUS_PARDON : `Klid: ${lives}`}>
+    <div className="mt-[0.5em]">
+      <div className="flex items-center justify-center gap-[0.25em]" aria-label={gained ? BONUS_PARDON : `Klid: ${lives}`}>
         {Array.from({ length: Math.max(3, lives) }, (_, i) => (
           <Heart
             key={i}
-            className={`size-7 ${i < lives ? "fill-bow text-bow" : "text-ink/25"} ${gained && i === lives - 1 ? "scale-125" : ""}`}
+            className={`size-[1.75em] ${i < lives ? "fill-bow text-bow" : "text-ink/25"} ${gained && i === lives - 1 ? "scale-125" : ""}`}
           />
         ))}
       </div>
-      <p className={`mt-1 font-extrabold ${gained ? "text-bow" : "text-ink-soft"}`}>{gained ? BONUS_PARDON : BONUS_CALM}</p>
+      <p className={`mt-[0.25em] font-extrabold ${gained ? "text-bow" : "text-ink-soft"}`}>{gained ? BONUS_PARDON : BONUS_CALM}</p>
     </div>
   );
 }

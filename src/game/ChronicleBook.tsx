@@ -10,9 +10,16 @@ export function ChronicleBook({ onClose }: { onClose: () => void }) {
   const [chapterId, setChapterId] = useState(book.chapters[0]?.id ?? "");
   const [pageId, setPageId] = useState<string | null>(null);
   const chapter = book.chapters.find((item) => item.id === chapterId) ?? book.chapters[0];
+  const chapterIndex = book.chapters.findIndex((item) => item.id === chapter?.id);
   const flat = book.chapters.flatMap((item) => item.pages.map((page) => ({ chapterId: item.id, page })));
   const index = flat.findIndex((item) => item.page.id === pageId);
   const current = index >= 0 ? flat[index] : null;
+  const rows = Math.max(1, ...book.chapters.map((item) => Math.ceil(item.pages.length / 2)));
+
+  function showContents(nextChapter = chapter?.id) {
+    if (nextChapter) setChapterId(nextChapter);
+    setPageId(null);
+  }
 
   function openSlot(nextChapter: string, page: ShelfPage) {
     setChapterId(nextChapter);
@@ -20,139 +27,128 @@ export function ChronicleBook({ onClose }: { onClose: () => void }) {
   }
 
   function step(dir: -1 | 1) {
+    if (!current) {
+      const next = book.chapters[chapterIndex + dir];
+      if (next) showContents(next.id);
+      return;
+    }
     const next = flat[index + dir];
     if (!next) return;
     openSlot(next.chapterId, next.page);
   }
 
+  const atStart = current ? index <= 0 : chapterIndex <= 0;
+  const atEnd = current ? index >= flat.length - 1 : chapterIndex >= book.chapters.length - 1;
+
   return (
-    <div className="absolute inset-0 z-50 flex bg-ink/55 p-2 sm:p-4" onClick={onClose}>
+    <div className="absolute inset-0 z-50 flex bg-ink/55 p-[0.4em] sm:p-[0.8em]" onClick={onClose}>
       <section
-        className="story-leaf mx-auto flex h-full w-full max-w-lg flex-col overflow-hidden rounded-[1.6rem] border-4 border-ink text-left shadow-lg ring-4 ring-gold"
+        className="chronicle-fit story-leaf mx-auto flex h-full w-full max-w-[46em] flex-col overflow-hidden rounded-[1.2em] border-4 border-ink text-left shadow-lg ring-4 ring-gold"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="flex shrink-0 items-center gap-3 px-4 pt-4">
-          <img src={seal} alt="" className="size-14 shrink-0 object-contain drop-shadow-md" />
+        <div className="flex shrink-0 items-center gap-[0.6em] px-[0.8em] pt-[0.7em]">
+          <img src={seal} alt="" className="size-[2.4em] shrink-0 object-contain" />
           <div className="min-w-0 flex-1">
-            <p className="text-[11px] font-extrabold tracking-[0.22em] text-bow">KNIHA O KOPIDLNĚ</p>
-            <h2 className="font-display text-4xl leading-none">Kronika</h2>
-            <p className="mt-1 font-display text-sm text-ink-soft">
-              {book.total > 0 ? `${book.known} otevřených z ${book.total}` : "Zatím prázdné desky"}
+            <h2 className="font-display text-[1.7em] leading-none">Kronika</h2>
+            <p className="text-[0.75em] font-extrabold text-ink-soft">
+              {book.total > 0 ? `${book.known} z ${book.total}` : "Zatím prázdné desky"}
             </p>
           </div>
           <button
             type="button"
-            className="flex size-11 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-gold text-ink"
+            className="flex size-[2.5em] shrink-0 items-center justify-center rounded-full border-2 border-ink bg-gold text-ink"
             aria-label="Zavřít kroniku"
             onClick={onClose}
           >
-            <X className="size-5" />
+            <X className="size-[1.1em]" />
           </button>
         </div>
-        <Flourish />
 
-        {book.chapters.length > 0 && (
-          <div className="flex shrink-0 gap-2 overflow-x-auto px-4 pb-1">
-            {book.chapters.map((item) => {
-              const active = item.id === chapter?.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  className={`shrink-0 border-2 border-ink px-3 py-1.5 font-display text-sm ${
-                    active ? "bg-gold text-ink" : "bg-cream-deep/70 text-ink-soft"
-                  }`}
-                  onClick={() => {
-                    setChapterId(item.id);
-                    setPageId(null);
-                  }}
-                >
-                  {item.name}
-                  <span className="ml-1 text-xs font-extrabold">
-                    {item.known}/{item.total}
-                  </span>
-                </button>
-              );
-            })}
+        {chapter && (
+          <div className="flex shrink-0 items-center gap-[0.4em] px-[0.8em] pt-[0.45em]">
+            <p className="min-w-0 flex-1 truncate text-center font-display text-[1.15em] leading-tight">{chapter.name}</p>
+            <p className="shrink-0 text-[0.75em] font-extrabold text-ink-soft">
+              {current ? `${index + 1}/${flat.length}` : `${chapter.known}/${chapter.total}`}
+            </p>
           </div>
         )}
+        <Flourish />
 
-        <div className="mt-2 min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-[0.8em] pb-[0.4em]">
           {!current && chapter && (
-            <ul className="flex flex-col">
+            <div
+              className="grid min-h-0 flex-1 gap-[0.35em] overflow-hidden"
+              style={{
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gridTemplateRows: `repeat(${rows}, minmax(0, 1fr))`,
+              }}
+            >
               {chapter.pages.map((page) => (
-                <li key={page.id} className="border-b border-ink/15">
-                  <button
-                    type="button"
-                    className="flex min-h-14 w-full items-center gap-3 py-2 text-left"
-                    onClick={() => openSlot(chapter.id, page)}
-                  >
-                    {page.open ? (
-                      <>
-                        <span className="font-display text-2xl leading-none text-bow" aria-hidden="true">
-                          {page.title.slice(0, 1)}
-                        </span>
-                        <span className="min-w-0">
-                          <span className="block font-display text-lg leading-tight">{page.title}</span>
-                          <span className="block text-xs font-extrabold text-ink-soft">{page.on}</span>
-                        </span>
-                      </>
-                    ) : (
-                      <>
-                        <img src={seal} alt="" className="size-9 shrink-0 object-contain opacity-70" />
-                        <span className="font-display text-lg text-ink-soft">Zapečetěno</span>
-                      </>
-                    )}
-                  </button>
-                </li>
+                <button
+                  key={page.id}
+                  type="button"
+                  className="flex h-full min-h-0 items-center gap-[0.45em] overflow-hidden rounded-[0.7em] border-2 border-ink/30 px-[0.55em] text-left"
+                  onClick={() => openSlot(chapter.id, page)}
+                >
+                  {page.open ? (
+                    <span className="min-w-0">
+                      <span className="line-clamp-2 font-display text-[0.95em] leading-tight">{page.title}</span>
+                      <span className="block truncate text-[0.68em] font-extrabold text-ink-soft">{page.on}</span>
+                    </span>
+                  ) : (
+                    <>
+                      <img src={seal} alt="" className="size-[1.5em] shrink-0 object-contain opacity-70" />
+                      <span className="truncate font-display text-[0.95em] text-ink-soft">Zapečetěno</span>
+                    </>
+                  )}
+                </button>
               ))}
-            </ul>
+            </div>
           )}
 
           {current && !current.page.open && (
-            <div className="flex min-h-56 flex-col items-center justify-center px-4 text-center">
-              <img src={seal} alt="" className="h-36 w-auto object-contain drop-shadow-md" />
-              <p className="mt-3 font-display text-4xl leading-none">Zapečetěno</p>
-              <p className="mt-2 max-w-xs text-sm leading-relaxed text-ink-soft">
+            <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-[0.5em] text-center">
+              <img src={seal} alt="" className="h-[7em] w-auto object-contain" />
+              <p className="mt-[0.4em] font-display text-[2em] leading-none">Zapečetěno</p>
+              <p className="mt-[0.35em] max-w-[16em] text-[0.9em] leading-snug text-ink-soft">
                 Pečeť se zlomí, až Drběna najde další pergamen.
               </p>
             </div>
           )}
 
-          {current?.page.open && <PageReading page={current.page} />}
+          {current?.page.open && <ArticleView page={current.page} />}
         </div>
 
-        {current && (
-          <div className="grid shrink-0 grid-cols-3 gap-2 border-t-2 border-gold/70 bg-cream-deep/50 px-3 py-3">
-            <button
-              type="button"
-              className="flex h-12 items-center justify-center gap-1 rounded-full border-2 border-ink bg-cream font-display disabled:opacity-35"
-              aria-label="Předchozí stránka"
-              disabled={index <= 0}
-              onClick={() => step(-1)}
-            >
-              <ChevronLeft className="size-5" />
-              zpět
-            </button>
-            <button
-              type="button"
-              className="flex h-12 items-center justify-center rounded-full border-2 border-ink bg-gold font-display"
-              onClick={() => setPageId(null)}
-            >
-              obsah
-            </button>
-            <button
-              type="button"
-              className="flex h-12 items-center justify-center gap-1 rounded-full border-2 border-ink bg-cream font-display disabled:opacity-35"
-              aria-label="Další stránka"
-              disabled={index < 0 || index >= flat.length - 1}
-              onClick={() => step(1)}
-            >
-              dál
-              <ChevronRight className="size-5" />
-            </button>
-          </div>
-        )}
+        <div className="grid shrink-0 grid-cols-3 gap-[0.4em] border-t-2 border-gold/70 bg-cream-deep/50 px-[0.6em] py-[0.55em]">
+          <button
+            type="button"
+            className="flex h-[2.6em] items-center justify-center gap-[0.15em] rounded-full border-2 border-ink bg-cream font-display disabled:opacity-35"
+            aria-label={current ? "Předchozí článek" : "Předchozí kapitola"}
+            disabled={atStart}
+            onClick={() => step(-1)}
+          >
+            <ChevronLeft className="size-[1.1em]" />
+            zpět
+          </button>
+          <button
+            type="button"
+            className="flex h-[2.6em] items-center justify-center rounded-full border-2 border-ink bg-gold font-display disabled:opacity-35"
+            disabled={!current}
+            onClick={() => showContents()}
+          >
+            obsah
+          </button>
+          <button
+            type="button"
+            className="flex h-[2.6em] items-center justify-center gap-[0.15em] rounded-full border-2 border-ink bg-cream font-display disabled:opacity-35"
+            aria-label={current ? "Další článek" : "Další kapitola"}
+            disabled={atEnd}
+            onClick={() => step(1)}
+          >
+            dál
+            <ChevronRight className="size-[1.1em]" />
+          </button>
+        </div>
       </section>
     </div>
   );
@@ -160,75 +156,54 @@ export function ChronicleBook({ onClose }: { onClose: () => void }) {
 
 function Flourish() {
   return (
-    <div className="mx-4 my-3 flex items-center gap-3" aria-hidden="true">
+    <div className="mx-[0.8em] my-[0.35em] flex items-center gap-[0.6em]" aria-hidden="true">
       <span className="h-px flex-1 bg-gold" />
-      <span className="size-2 rotate-45 border-2 border-gold bg-bow" />
+      <span className="size-[0.45em] rotate-45 border-2 border-gold bg-bow" />
       <span className="h-px flex-1 bg-gold" />
     </div>
   );
 }
 
-function PageReading({ page }: { page: Extract<ShelfPage, { open: true }> }) {
+function ArticleView({ page }: { page: Extract<ShelfPage, { open: true }> }) {
   const body = page.page;
   return (
-    <article>
-      <p className="text-xs font-extrabold tracking-[0.18em] text-bow">{page.on}</p>
-      <h3 className="mt-1 font-display text-4xl leading-none">{body.title}</h3>
-      <Flourish />
-      {body.intro && <DropLead text={body.intro} />}
-      {body.paragraphs.map((paragraph, index) => (
-        <p key={index} className="mt-3 font-display text-lg leading-relaxed">
-          {paragraph}
-        </p>
-      ))}
-      {body.curiosities.length > 0 && (
-        <section className="mt-5 rounded-2xl border-2 border-gold/80 bg-cream/70 px-3 py-3">
-          <h4 className="font-display text-xl leading-none text-bow">Zajímavosti</h4>
-          <ul className="mt-2 flex flex-col gap-2">
-            {body.curiosities.map((item, index) => (
-              <li key={index} className="text-sm leading-relaxed">
-                {item}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-      {body.sources.length > 0 && (
-        <section className="mt-5">
-          <h4 className="text-xs font-extrabold tracking-[0.18em] text-bow">ZDROJE</h4>
-          <ul className="mt-2 flex flex-col gap-2">
-            {body.sources.map((item, index) => (
-              <li key={index} className="text-sm leading-relaxed text-ink-soft">
-                {item}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-      {body.link && (
-        <a
-          href={body.link.href}
-          target="_blank"
-          rel="noreferrer"
-          className="mt-5 inline-block font-display text-lg text-bow underline decoration-gold decoration-2 underline-offset-4"
-        >
-          {body.link.label}
-        </a>
-      )}
+    <article className="flex min-h-0 flex-1 flex-col overflow-hidden">
+      <p className="text-[0.68em] font-extrabold tracking-[0.16em] text-bow">{page.on}</p>
+      <h3 className="mt-[0.1em] font-display text-[1.35em] leading-tight">{body.title}</h3>
+      <div className="mt-[0.45em] grid min-h-0 flex-1 grid-cols-2 gap-[0.7em] overflow-hidden">
+        <div className="min-h-0 overflow-hidden border-r border-gold/70 pr-[0.55em]">
+          <Part label="Úvod" lines={body.intro ? [body.intro] : []} />
+          <Part label="Příběh" lines={body.paragraphs} />
+        </div>
+        <div className="min-h-0 overflow-hidden">
+          <Part label="Zajímavost" lines={body.curiosities} />
+          <Part label="Zdroj" lines={body.sources} />
+          {body.link && (
+            <a
+              href={body.link.href}
+              target="_blank"
+              rel="noreferrer"
+              className="mt-[0.45em] block font-display text-[0.95em] leading-tight text-bow underline decoration-gold decoration-2 underline-offset-2"
+            >
+              {body.link.label}
+            </a>
+          )}
+        </div>
+      </div>
     </article>
   );
 }
 
-function DropLead({ text }: { text: string }) {
-  const first = text.slice(0, 1);
-  const rest = text.slice(1);
-  if (!first || first === " ") {
-    return <p className="text-base leading-relaxed">{text}</p>;
-  }
+function Part({ label, lines }: { label: string; lines: string[] }) {
+  if (lines.length === 0) return null;
   return (
-    <p className="text-base leading-relaxed">
-      <span className="float-left mr-2 mt-1 font-display text-5xl leading-[0.75] text-bow">{first}</span>
-      {rest}
-    </p>
+    <section className="mt-[0.45em] first:mt-0">
+      <h4 className="text-[0.68em] font-extrabold tracking-[0.14em] text-bow">{label}</h4>
+      {lines.map((line, index) => (
+        <p key={index} className="mt-[0.2em] text-[0.86em] leading-snug">
+          {line}
+        </p>
+      ))}
+    </section>
   );
 }
