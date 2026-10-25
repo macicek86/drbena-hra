@@ -186,6 +186,7 @@ function Flourish() {
 
 function ArticleView({ page }: { page: Extract<ShelfPage, { open: true }> }) {
   const body = page.page;
+  const relatedTitle = body.sources[0]?.replace(/^Kopidlenská drbna:\s*/i, "").trim();
   return (
     <article className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <p className="text-[0.68em] font-extrabold tracking-[0.16em] text-bow">{page.on}</p>
@@ -194,7 +195,6 @@ function ArticleView({ page }: { page: Extract<ShelfPage, { open: true }> }) {
         <Part label="Úvod" lines={body.intro ? [body.intro] : []} />
         <Part label="Příběh" lines={body.paragraphs} />
         <Part label="Zajímavost" lines={body.curiosities} />
-        <Part label="Zdroj" lines={body.sources} />
         {body.link && (
           <a
             href={body.link.href}
@@ -202,7 +202,7 @@ function ArticleView({ page }: { page: Extract<ShelfPage, { open: true }> }) {
             rel="noreferrer"
             className="mt-[0.7em] inline-block font-display text-[1.05em] leading-tight text-bow underline decoration-gold decoration-2 underline-offset-4"
           >
-            {body.link.label}
+            Přečtěte si na Kopidlenské drbně{relatedTitle ? `: ${relatedTitle}` : ""}
           </a>
         )}
       </div>
