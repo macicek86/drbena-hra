@@ -6,15 +6,17 @@ import { publicUrl } from "@/lib/public-url";
 const seal = publicUrl("/game/scroll.webp");
 const OPEN = "otevrene";
 
-export function ChronicleBook({ onClose }: { onClose: () => void }) {
+export function ChronicleBook({ onClose, startAtNewest = false }: { onClose: () => void; startAtNewest?: boolean }) {
   const book = chronicleBook();
   const placeName = new Map(book.chapters.map((chapter) => [chapter.id, chapter.name]));
   const shelves =
     book.opened.length > 0
       ? [{ id: OPEN, name: "Otevřené", known: book.opened.length, total: book.opened.length, pages: book.opened }, ...book.chapters]
       : book.chapters;
-  const [chapterId, setChapterId] = useState(shelves[0]?.id ?? "");
-  const [pageId, setPageId] = useState<string | null>(null);
+  const [chapterId, setChapterId] = useState(startAtNewest && book.opened.length ? OPEN : (shelves[0]?.id ?? ""));
+  const [pageId, setPageId] = useState<string | null>(
+    startAtNewest ? (book.opened.find((page) => page.open && page.fresh) ?? book.opened[0])?.id ?? null : null,
+  );
   const chapter = shelves.find((item) => item.id === chapterId) ?? shelves[0];
   const chapterIndex = shelves.findIndex((item) => item.id === chapter?.id);
   const openedFlat = book.opened.map((page) => ({ chapterId: OPEN, page }));
