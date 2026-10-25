@@ -44,6 +44,17 @@ async function assertPanelFits(page, name, mode) {
   assert.equal(m.panelOverflow, false, name + " " + mode + ": no internal panel scrollbar");
   assert.equal(m.contentOverflow, false, name + " " + mode + ": no wrapper overflow");
   assert.equal(m.overlayOverflow, "hidden", name + " " + mode + ": no overlay scroll");
+  if (mode === "over") {
+    const title = await overlay.locator("h2").first().evaluate((heading) => ({
+      text: heading.textContent?.trim(),
+      whiteSpace: getComputedStyle(heading).whiteSpace,
+      scrollWidth: heading.scrollWidth,
+      clientWidth: heading.clientWidth,
+    }));
+    assert.equal(title.text, "Drběna se nevzdává!", name + ": correct game-over heading");
+    assert.equal(title.whiteSpace, "nowrap", name + ": heading stays on one line");
+    assert.ok(title.scrollWidth <= title.clientWidth + 1, name + ": heading fits without clipping");
+  }
   console.log("FIT", name, mode, JSON.stringify(m));
 }
 
