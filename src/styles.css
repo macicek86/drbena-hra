@@ -30,9 +30,9 @@ body {
   }
 }
 
-/* 16px od výšky asi 780px, níž se celá karta zmenší najednou. */
+/* Minihry se zvětšují na plnou velikost; FitOverlay je zmenší pouze při nedostatku místa. */
 .bonus-fit {
-  font-size: clamp(11px, 2.05dvh, 16px);
+  font-size: 16px;
 }
 
 /* Výchozí plná velikost úvodního menu. Jen když se skutečný obsah
