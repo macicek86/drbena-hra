@@ -53,7 +53,15 @@ try {
     const page = await context.newPage();
     const errors = [];
     page.on("pageerror", (err) => errors.push(err.message));
-    await page.goto("http://127.0.0.1:4174/scripts/panel-fit-fixture.html", { waitUntil: "domcontentloaded" });
+    page.on("console", (msg) => { if (msg.type() === "error") errors.push("console: " + msg.text()); });
+    const response = await page.goto("http://127.0.0.1:4174/scripts/panel-fit-fixture.html", { waitUntil: "domcontentloaded" });
+    console.log("FIXTURE", name, response?.status(), await page.title(), page.url());
+    try {
+      await page.locator('[data-fit-overlay="over"]').waitFor({ timeout: 10000 });
+    } catch (error) {
+      console.log("FIXTURE ERROR", JSON.stringify({ body: (await page.locator("body").innerText()).slice(0, 1000), errors, source: (await page.content()).slice(0, 1300) }));
+      throw error;
+    }
     await assertPanelFits(page, name, "over");
     await page.getByTestId("add-row").click();
     await assertPanelFits(page, name + " extended", "over");
