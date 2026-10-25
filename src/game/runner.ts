@@ -1428,6 +1428,10 @@ export class Runner {
     this.pops.push({ x: this.playerX, y: this.feet - this.u * 0.8, text: `+${points}`, life: 0.9 });
     this.burst(this.playerX, this.feet - this.u * 0.7, "#e8a317", 8);
     this.sfx.collect(4);
+    if (this.lives < 3) {
+      this.lives += 1;
+      this.sfx.collect(2);
+    }
   }
 
   private playAlarm(events: AlarmEvent[]) {
