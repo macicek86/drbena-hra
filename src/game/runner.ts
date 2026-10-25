@@ -1,4 +1,4 @@
-import { rememberFact } from "@/game/chronicle";
+import { knownIds, pageIds, rememberFact } from "@/game/chronicle";
 import { Sfx } from "@/game/audio";
 import { bonusAct as actBonus, bonusHud, BONUS_PARDON_TALE, createOfferedMini, fishOffersMini, healFromBonus, type AnyBonus, type BonusAction, type BonusHud } from "@/game/minigames";
 import { tickAlarm, type AlarmEvent } from "./goatAlarm.ts";
@@ -29,6 +29,8 @@ export type Hud = {
   fact: { title: string; text: string } | null;
   factLabel: string;
   chronicleNew: number;
+  scrolls: number;
+  scrollsTotal: number;
   newBest: boolean;
   muted: boolean;
   coach: boolean;
@@ -75,6 +77,7 @@ type Bit = {
   max: number;
   color: string;
   size: number;
+  star: boolean;
 };
 
 type Pop = { x: number; y: number; text: string; life: number };
@@ -143,7 +146,7 @@ const SPEC: Record<Kind, { h: number; hitW: number; hitH: number; lift: number }
   branch: { h: 1.02, hitW: 0.84, hitH: 0.52, lift: 0 },
   gossip: { h: 0.42, hitW: 0.62, hitH: 0.62, lift: 0.14 },
   heart: { h: 0.32, hitW: 0.7, hitH: 0.7, lift: 0.72 },
-  scroll: { h: 0.72, hitW: 0.55, hitH: 0.62, lift: 0.48 },
+  scroll: { h: 0.5, hitW: 0.55, hitH: 0.62, lift: 0.48 },
   bush: { h: 0.46, hitW: 0, hitH: 0, lift: 0 },
   lamp: { h: 1.42, hitW: 0, hitH: 0, lift: 0 },
   tree: { h: 1.85, hitW: 0, hitH: 0, lift: 0 },
@@ -190,6 +193,8 @@ export function emptyHud(): Hud {
     fact: null,
     factLabel: "",
     chronicleNew: 0,
+    scrolls: 0,
+    scrollsTotal: 0,
     newBest: false,
     muted: false,
     coach: true,
@@ -252,6 +257,8 @@ export class Runner {
   private factLabel = "";
   private factLife = 0;
   private chronicleNew = 0;
+  private scrollsKnown = 0;
+  private readonly scrollsTotal = pageIds().length;
   private ents: Ent[] = [];
   private pops: Pop[] = [];
   private bits: Bit[] = Array.from({ length: 80 }, () => ({
@@ -264,8 +271,12 @@ export class Runner {
     max: 1,
     color: "#fff",
     size: 3,
+    star: false,
   }));
   private hazardCursor = 400;
+  private nextScroll = 0;
+  private scrolls = 0;
+  private scrollsRun = 0;
   private decorCursor = 0;
   private nextChunk = 0;
   private lastHazard: Kind | null = null;
@@ -392,9 +403,12 @@ export class Runner {
     this.factLabel = "";
     this.factLife = 0;
     this.chronicleNew = 0;
+    this.scrollsKnown = knownIds().length;
     this.ents = [];
     this.pops = [];
     this.hazardCursor = this.viewW * 0.92;
+    this.nextScroll = this.viewW * (0.35 + Math.random() * 0.7);
+    this.scrollsRun = 0;
     this.decorCursor = -20;
     this.nextChunk = 0;
     this.lastHazard = null;
@@ -446,7 +460,9 @@ export class Runner {
     const rest = Promise.all([
       this.loadFramesCounted("jump"),
       this.loadFramesCounted("duck"),
-      ...names.map((name) => this.loadCounted(publicUrl(`/game/${name}.webp`))),
+      ...names.map((name) =>
+        this.loadCounted(publicUrl(name === "scroll" ? "/game/scroll-prize.webp" : `/game/${name}.webp`)),
+      ),
     ]).then((loaded) => {
       if (!this.alive) return;
       const [jump, duck, ...singles] = loaded;
@@ -828,14 +844,15 @@ export class Runner {
       text: `+${pts}`,
       life: 0.9,
     });
-    this.burst(ent.x - this.camera, this.groundY - ent.lift * this.u, "#e8a317", 8);
+    this.stars(ent.x - this.camera, this.groundY - ent.lift * this.u, 14);
     if (fact) {
       this.chronicleNew += 1;
+      this.scrollsKnown = knownIds().length;
       this.fact = { title: fact.title, text: "" };
       this.factLabel = "Odemčena stránka";
       this.factLife = 2.4;
       this.taleLife = 0;
-      this.sfx.fact();
+      this.sfx.prize();
     } else {
       this.fact = null;
       this.factLabel = "";
@@ -843,7 +860,7 @@ export class Runner {
       this.tale = "Dnešek už v kronice je.";
       this.taleTag = "Kronika";
       this.taleLife = 2.6;
-      this.sfx.collect(2);
+      this.sfx.prize();
     }
     this.pushHud(true);
   }
@@ -1035,6 +1052,19 @@ export class Runner {
       this.hazardCursor += 4 * u * 0.4 + speed * 0.62;
       return;
     }
+    if (this.run > 280 && x >= this.nextScroll && !this.scrollAhead()) {
+      const low = this.scrolls < 2;
+      const early = this.scrollsRun < 2;
+      const lift = low ? 0.1 + Math.random() * 0.12 : 0.78 + Math.random() * 0.28;
+      this.ents.push({ kind: "scroll", x: x + Math.random() * u * 1.15, lift, anim: Math.random() * 6, alive: true });
+      this.scrolls += 1;
+      this.scrollsRun += 1;
+      this.save();
+      const gap = early ? 1.7 + Math.random() * 1.8 : 4.5 + Math.random() * 7;
+      this.hazardCursor += speed * (0.7 + Math.random() * 0.45);
+      this.nextScroll = this.hazardCursor + speed * gap;
+      return;
+    }
     const roll = Math.random();
     if (roll < 0.22) {
       const n = 3 + (Math.random() < 0.45 ? 2 : 0);
@@ -1045,12 +1075,7 @@ export class Runner {
       this.hazardCursor += n * u * 0.4 + speed * 0.5;
       return;
     }
-    if (roll < 0.34 && this.run > 400 && !this.scrollAhead()) {
-      this.ents.push({ kind: "scroll", x, lift: 0.36, anim: 0, alive: true });
-      this.hazardCursor += speed * 0.9;
-      return;
-    }
-    if (roll < 0.4 && this.lives < 3 && this.run > 500) {
+    if (roll < 0.28 && this.lives < 3 && this.run > 500) {
       this.ents.push({ kind: "heart", x, lift: 0.72, anim: 0, alive: true });
       this.hazardCursor += speed * 0.8;
       return;
@@ -1110,7 +1135,7 @@ export class Runner {
       bit.life -= dt;
       bit.x += bit.vx * dt;
       bit.y += bit.vy * dt;
-      bit.vy += 500 * dt;
+      bit.vy += (bit.star ? 70 : 500) * dt;
       if (bit.life <= 0) bit.on = false;
     }
   }
@@ -1129,6 +1154,27 @@ export class Runner {
       bit.max = bit.life;
       bit.color = color;
       bit.size = 2 + Math.random() * 3;
+      bit.star = false;
+      left -= 1;
+    }
+  }
+
+  private stars(x: number, y: number, n: number) {
+    const colors = ["#fff6e8", "#ffe38a", "#e8a317", "#fff"];
+    let left = n;
+    for (const bit of this.bits) {
+      if (left <= 0) break;
+      if (bit.on) continue;
+      bit.on = true;
+      bit.star = true;
+      bit.x = x;
+      bit.y = y;
+      bit.vx = (Math.random() - 0.5) * 170;
+      bit.vy = -240 - Math.random() * 280;
+      bit.life = 0.8 + Math.random() * 0.45;
+      bit.max = bit.life;
+      bit.color = colors[left % colors.length]!;
+      bit.size = 4 + Math.random() * 3.5;
       left -= 1;
     }
   }
@@ -1255,9 +1301,12 @@ export class Runner {
       if (!bit.on) continue;
       ctx.globalAlpha = Math.max(0, bit.life / bit.max);
       ctx.fillStyle = bit.color;
-      ctx.beginPath();
-      ctx.arc(bit.x, bit.y, bit.size, 0, Math.PI * 2);
-      ctx.fill();
+      if (bit.star) drawStar(ctx, bit.x, bit.y, bit.size, bit.life);
+      else {
+        ctx.beginPath();
+        ctx.arc(bit.x, bit.y, bit.size, 0, Math.PI * 2);
+        ctx.fill();
+      }
       ctx.globalAlpha = 1;
     }
     ctx.font = `800 ${Math.round(this.u * 0.16)}px Nunito, sans-serif`;
@@ -1427,6 +1476,8 @@ export class Runner {
       fact: this.fact,
       factLabel: this.factLabel,
       chronicleNew: this.chronicleNew,
+      scrolls: this.scrollsKnown,
+      scrollsTotal: this.scrollsTotal,
       newBest: this.newBest,
       muted: this.muted,
       coach: this.phase === "play" && !this.taleLife && (!this.coachJump || !this.coachDuck) && this.run < 1400,
@@ -1581,11 +1632,12 @@ export class Runner {
     try {
       const raw = localStorage.getItem(SAVE_KEY);
       if (!raw) return;
-      const data = JSON.parse(raw) as { v?: number; best?: number; gossips?: number; mute?: boolean };
+      const data = JSON.parse(raw) as { v?: number; best?: number; gossips?: number; mute?: boolean; scrolls?: number };
       if (data.v !== 1) return;
       this.best = data.best ?? 0;
       this.bestGossips = data.gossips ?? 0;
       this.muted = Boolean(data.mute);
+      this.scrolls = data.scrolls ?? 0;
     } catch {
       /* ignore broken saves */
     }
@@ -1595,7 +1647,7 @@ export class Runner {
     try {
       localStorage.setItem(
         SAVE_KEY,
-        JSON.stringify({ v: 1, best: this.best, gossips: this.bestGossips, mute: this.muted }),
+        JSON.stringify({ v: 1, best: this.best, gossips: this.bestGossips, mute: this.muted, scrolls: this.scrolls }),
       );
     } catch {
       /* private mode */
@@ -1619,6 +1671,24 @@ function box(cx: number, feet: number, w: number, h: number) {
 
 function overlap(a: { l: number; r: number; t: number; b: number }, b: { l: number; r: number; t: number; b: number }) {
   return a.l < b.r && a.r > b.l && a.t < b.b && a.b > b.t;
+}
+
+function drawStar(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, life: number) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(life * 5);
+  ctx.beginPath();
+  for (let i = 0; i < 8; i += 1) {
+    const angle = -Math.PI / 2 + (i * Math.PI) / 4;
+    const rad = i % 2 === 0 ? r : r * 0.38;
+    const px = Math.cos(angle) * rad;
+    const py = Math.sin(angle) * rad;
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
 }
 
 function drawHeart(ctx: CanvasRenderingContext2D, x: number, y: number, s: number) {

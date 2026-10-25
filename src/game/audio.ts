@@ -159,6 +159,14 @@ export class Sfx {
     });
   }
 
+  prize() {
+    const now = this.ctx?.currentTime ?? 0;
+    [659, 784, 988, 1175, 1568].forEach((f, i) => {
+      this.blip(f, now + i * 0.05, 0.14, "sine", 0.18);
+    });
+    this.blip(1976, now + 0.26, 0.22, "triangle", 0.09);
+  }
+
   private useSong(id: SongId) {
     this.hush();
     this.song = id;

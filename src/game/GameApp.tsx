@@ -279,6 +279,22 @@ export function GameApp() {
             <p className="text-sm font-extrabold text-ink-soft">
               {hud.gossips} drbů{hud.combo > 1 ? ` · ×${hud.combo}` : ""}
             </p>
+            {hud.scrollsTotal > 0 && (
+              <div className="mt-1.5 w-36" aria-label={`Pergameny ${hud.scrolls} z ${hud.scrollsTotal}, zbývá ${hud.scrollsTotal - hud.scrolls}`}>
+                <div className="flex items-center gap-1">
+                  <span className="size-3 shrink-0 rounded-full border-2 border-ink bg-gold" aria-hidden="true" />
+                  <span className="relative h-2.5 flex-1 overflow-hidden rounded-full border-2 border-ink bg-cream-deep">
+                    <span
+                      className="absolute inset-y-0 left-0 bg-gold"
+                      style={{ width: `${Math.round((hud.scrolls / hud.scrollsTotal) * 100)}%` }}
+                    />
+                  </span>
+                </div>
+                <p className="mt-0.5 text-[11px] font-extrabold text-ink-soft">
+                  {hud.scrolls}/{hud.scrollsTotal} pergamenů
+                </p>
+              </div>
+            )}
           </div>
           <div className="pointer-events-auto flex flex-col items-end gap-2">
             <div className="flex items-center gap-2">
@@ -312,21 +328,21 @@ export function GameApp() {
       )}
 
       {hud.showTale && hud.line && hud.phase === "play" && (
-        <article className="pointer-events-none absolute inset-x-0 top-28 z-10 mx-auto w-[min(100%-1.5rem,32rem)] rounded-3xl border-2 border-ink bg-cream px-4 py-3 shadow-lg sm:top-24">
+        <article className="pointer-events-none absolute inset-x-0 top-40 z-10 mx-auto w-[min(100%-1.5rem,32rem)] rounded-3xl border-2 border-ink bg-cream px-4 py-3 shadow-lg sm:top-36">
           <p className="text-xs font-extrabold tracking-wide text-bow">{hud.taleTag}</p>
           <p className="mt-1 text-sm leading-snug">{hud.line}</p>
         </article>
       )}
 
       {hud.fact && !hud.showTale && hud.phase === "play" && (
-        <article className="pointer-events-none absolute inset-x-0 top-28 z-10 mx-auto w-[min(100%-1.5rem,32rem)] rounded-3xl border-2 border-ink bg-cream px-4 py-3 shadow-lg sm:top-24">
+        <article className="pointer-events-none absolute inset-x-0 top-40 z-10 mx-auto w-[min(100%-1.5rem,32rem)] rounded-3xl border-2 border-ink bg-cream px-4 py-3 shadow-lg sm:top-36">
           <p className="text-xs font-extrabold tracking-wide text-bow">{hud.factLabel || "Odemčena stránka"}</p>
           <h2 className="font-display text-xl leading-tight">{hud.fact.title}</h2>
         </article>
       )}
 
       {hud.coach && !hud.fact && !hud.showTale && hud.phase === "play" && (
-        <p className="pointer-events-none absolute inset-x-3 top-28 text-center text-sm font-extrabold text-ink sm:top-24">
+        <p className="pointer-events-none absolute inset-x-3 top-40 text-center text-sm font-extrabold text-ink sm:top-36">
           <span className="rounded-full border-2 border-ink bg-cream/95 px-4 py-2">
             Klepni = skok. Táhni dolů = pokrč se.
           </span>

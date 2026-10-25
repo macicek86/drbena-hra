@@ -32,7 +32,7 @@ export type ChroniclePage = {
 
 export type ShelfPage =
   | { id: string; open: false }
-  | { id: string; open: true; title: string; on: string; page: ChroniclePage };
+  | { id: string; open: true; title: string; on: string; fresh: boolean; page: ChroniclePage };
 
 export type ShelfChapter = {
   id: string;
@@ -42,7 +42,7 @@ export type ShelfChapter = {
   pages: ShelfPage[];
 };
 
-export type ChronicleShelf = { known: number; total: number; chapters: ShelfChapter[] };
+export type ChronicleShelf = { known: number; total: number; chapters: ShelfChapter[]; opened: ShelfPage[] };
 
 type Saved = Record<string, string>;
 
@@ -106,27 +106,30 @@ export function chronicleBook(): ChronicleShelf {
   return chronicleBookFrom(load());
 }
 
-export function chronicleBookFrom(found: Saved): ChronicleShelf {
+export function chronicleBookFrom(found: Saved, today = todayStamp()): ChronicleShelf {
   const known = pages.filter((page) => found[page.id]).length;
-  return {
-    known,
-    total: pages.length,
-    chapters: chapters.map((chapter) => {
-      const inChapter = pages.filter((page) => page.place === chapter.id);
-      const slots: ShelfPage[] = inChapter.map((page) => {
-        const on = found[page.id];
-        if (!on) return { id: page.id, open: false };
-        return { id: page.id, open: true, title: page.title, on: czechDate(on), page };
-      });
-      return {
-        id: chapter.id,
-        name: chapter.name,
-        known: slots.filter((slot) => slot.open).length,
-        total: slots.length,
-        pages: slots,
-      };
-    }),
-  };
+  const order = new Map(Object.keys(found).map((id, index) => [id, index]));
+  const chaptersOut = chapters.map((chapter) => {
+    const inChapter = pages.filter((page) => page.place === chapter.id);
+    const slots: ShelfPage[] = inChapter.map((page) => openSlot(page, found[page.id], today));
+    return {
+      id: chapter.id,
+      name: chapter.name,
+      known: slots.filter((slot) => slot.open).length,
+      total: slots.length,
+      pages: slots,
+    };
+  });
+  const opened = chaptersOut
+    .flatMap((chapter) => chapter.pages)
+    .filter((slot) => slot.open)
+    .sort((a, b) => (order.get(b.id) ?? 0) - (order.get(a.id) ?? 0));
+  return { known, total: pages.length, chapters: chaptersOut, opened };
+}
+
+function openSlot(page: ChroniclePage, on: string | undefined, today: string): ShelfPage {
+  if (!on) return { id: page.id, open: false };
+  return { id: page.id, open: true, title: page.title, on: czechDate(on), fresh: on === today, page };
 }
 
 function normalizeChapters(raw: unknown, list: ChroniclePage[]): { id: string; name: string }[] {
