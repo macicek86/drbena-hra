@@ -10,8 +10,15 @@ async function smoke(label, viewport) {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
 
-  await page.goto(BASE, { waitUntil: "domcontentloaded" });
-  await page.getByText("Klepni a pokračuj").waitFor({ timeout: 45000 });
+  page.on("console", (msg) => { if (msg.type() === "error") errors.push("console: " + msg.text()); });
+  const response = await page.goto(BASE, { waitUntil: "domcontentloaded" });
+  console.log("Loaded", label, page.url(), response?.status(), await page.title());
+  try {
+    await page.getByText("Klepni a pokračuj").waitFor({ timeout: 18000 });
+  } catch (error) {
+    console.log("DIAGNOSTIC", label, JSON.stringify({ title: await page.title(), body: (await page.locator("body").innerText()).slice(0, 1500), errors, url: page.url() }));
+    throw error;
+  }
   await page.getByText("Klepni a pokračuj").click();
 
   const menuBook = page.getByRole("button", { name: /Kronika Kopidlna/ });
