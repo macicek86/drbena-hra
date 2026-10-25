@@ -1,6 +1,15 @@
 name: Kontrola herni kroniky
 
 on:
+  push:
+    branches: ["main"]
+    paths:
+      - "src/game/**"
+      - "scripts/kronika-smoke.mjs"
+      - "package.json"
+      - "package-lock.json"
+      - "vite.pages.config.ts"
+      - ".github/workflows/kronika-check.yml"
   pull_request:
     paths:
       - "src/game/**"
