@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
-import { Heart, Pause, Play, RotateCcw, Share2, Volume2, VolumeX } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { BookOpen, Heart, Pause, Play, RotateCcw, Share2, Volume2, VolumeX } from "lucide-react";
 import { AlarmCard } from "@/game/GoatAlarmScene";
 import { ChronicleBook } from "@/game/ChronicleBook";
 import { Runner, emptyHud, type Hud } from "@/game/runner";
-import { entryLine } from "@/game/chronicle";
+import { chronicleBook } from "@/game/chronicle";
 import { BONUS_CALM, BONUS_PARDON, type BonusAction } from "@/game/minigames";
 import { fetchStats, playerLabel, previewStats, saveName, savedName, type BoardRow } from "@/game/plays";
 import { publicUrl } from "@/lib/public-url";
@@ -17,6 +17,14 @@ export function GameApp() {
   const [board, setBoard] = useState<BoardRow[]>(previewStats?.board ?? []);
   const [name, setName] = useState(savedName);
   const [chronicle, setChronicle] = useState(false);
+  const [chronicleNewFirst, setChronicleNewFirst] = useState(false);
+  // Recompute saved progress when the game phase or the number of new entries changes.
+  const bookProgress = useMemo(() => chronicleBook(), [hud.phase, hud.chronicleNew]);
+
+  function openChronicle(showNewest = false) {
+    setChronicleNewFirst(showNewest);
+    setChronicle(true);
+  }
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -216,13 +224,28 @@ export function GameApp() {
               )}
               <button
                 type="button"
-                className="mx-auto mt-[0.65em] flex h-[2.4em] items-center justify-center rounded-full border-2 border-cream/80 px-[1.25em] font-extrabold text-cream"
+                className="mx-auto mt-[0.75em] flex w-full max-w-[20em] items-center gap-[0.7em] rounded-[1.25em] border-[3px] border-gold bg-cream/95 px-[0.8em] py-[0.7em] text-left text-ink shadow-lg transition-transform hover:scale-[1.02] focus-visible:outline focus-visible:outline-4 focus-visible:outline-bow"
                 onClick={(event) => {
                   event.stopPropagation();
-                  setChronicle(true);
+                  openChronicle();
                 }}
               >
-                <span className="text-[0.875em]">Kronika</span>
+                <BookOpen className="size-[2.2em] shrink-0 text-bow" aria-hidden="true" />
+                <span className="min-w-0 flex-1">
+                  <span className="flex items-center justify-between gap-2 font-display text-[1.15em] leading-tight">
+                    <span>Kronika Kopidlna</span>
+                    <span className="shrink-0 text-[0.85em]">{bookProgress.known}/{bookProgress.total}</span>
+                  </span>
+                  <span className="mt-[0.1em] block text-[0.75em] font-extrabold text-ink-soft">
+                    Objev {bookProgress.total} příběhů a tajemství Kopidlna!
+                  </span>
+                  <span className="mt-[0.4em] block h-[0.45em] overflow-hidden rounded-full border border-ink/30 bg-cream-deep">
+                    <span
+                      className="block h-full rounded-full bg-gold"
+                      style={{ width: `${bookProgress.total ? (bookProgress.known / bookProgress.total) * 100 : 0}%` }}
+                    />
+                  </span>
+                </span>
               </button>
               {players != null && (
                 <p className="mt-[0.25em]">
@@ -280,7 +303,7 @@ export function GameApp() {
               {hud.gossips} drbů{hud.combo > 1 ? ` · ×${hud.combo}` : ""}
             </p>
             {hud.scrollsTotal > 0 && (
-              <div className="mt-1.5 w-36" aria-label={`Pergameny ${hud.scrolls} z ${hud.scrollsTotal}, zbývá ${hud.scrollsTotal - hud.scrolls}`}>
+              <div className="mt-1.5 w-36" aria-label={`Kronika ${hud.scrolls} z ${hud.scrollsTotal}, zbývá ${hud.scrollsTotal - hud.scrolls} neodemčených příběhů`}>
                 <div className="flex items-center gap-1">
                   <span className="size-3 shrink-0 rounded-full border-2 border-ink bg-gold" aria-hidden="true" />
                   <span className="relative h-2.5 flex-1 overflow-hidden rounded-full border-2 border-ink bg-cream-deep">
@@ -291,7 +314,7 @@ export function GameApp() {
                   </span>
                 </div>
                 <p className="mt-0.5 text-[11px] font-extrabold text-ink-soft">
-                  {hud.scrolls}/{hud.scrollsTotal} pergamenů
+                  Kronika {hud.scrolls}/{hud.scrollsTotal}
                 </p>
               </div>
             )}
@@ -335,9 +358,19 @@ export function GameApp() {
       )}
 
       {hud.fact && !hud.showTale && hud.phase === "play" && (
-        <article className="pointer-events-none absolute inset-x-0 top-40 z-10 mx-auto w-[min(100%-1.5rem,32rem)] rounded-3xl border-2 border-ink bg-cream px-4 py-3 shadow-lg sm:top-36">
-          <p className="text-xs font-extrabold tracking-wide text-bow">{hud.factLabel || "Odemčena stránka"}</p>
-          <h2 className="font-display text-xl leading-tight">{hud.fact.title}</h2>
+        <article
+          className="pointer-events-none absolute inset-x-0 top-40 z-10 mx-auto w-[min(100%-1.5rem,32rem)] rounded-3xl border-[3px] border-gold bg-cream px-4 py-3 shadow-[0_0_0_4px_rgba(232,163,23,0.22),0_12px_26px_rgba(32,27,20,0.2)] sm:top-36"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="flex items-center gap-2">
+            <BookOpen className="size-6 shrink-0 text-bow" aria-hidden="true" />
+            <div className="min-w-0">
+              <p className="text-xs font-extrabold tracking-wide text-bow">{hud.factLabel || "Nové tajemství odhaleno!"}</p>
+              <h2 className="font-display text-xl leading-tight">{hud.fact.title}</h2>
+              <p className="mt-1 text-sm font-bold text-ink-soft">Nový příběh čeká v kronice.</p>
+            </div>
+          </div>
         </article>
       )}
 
@@ -361,13 +394,20 @@ export function GameApp() {
             >
               <Play className="size-5" /> Pokračovat
             </button>
+            <button
+              type="button"
+              className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-full border-2 border-ink bg-cream-deep font-extrabold"
+              onClick={() => openChronicle()}
+            >
+              <BookOpen className="size-5" /> Kronika {bookProgress.known}/{bookProgress.total}
+            </button>
           </section>
         </div>
       )}
 
       {hud.phase === "over" && (
         <div className="absolute inset-0 flex items-center justify-center bg-ink/35 p-4">
-          <section className="w-full max-w-sm rounded-3xl border-2 border-ink bg-cream p-6 text-center">
+          <section className="max-h-[calc(100dvh-2rem)] w-full max-w-sm overflow-y-auto rounded-3xl border-2 border-ink bg-cream p-6 text-center">
             <p className="text-sm font-extrabold text-bow">Příhoda</p>
             <h2 className="mt-1 font-display text-4xl leading-none">Dneska už stačilo</h2>
             <p className="mt-2 text-ink-soft">{hud.line}</p>
@@ -376,14 +416,32 @@ export function GameApp() {
               {hud.gossips} drbů
               {hud.newBest ? " · nový rekord" : hud.best > 0 ? ` · rekord ${hud.best}` : ""}
             </p>
-            <p className="mt-2 text-sm font-extrabold text-ink-soft">{entryLine(hud.chronicleNew)}</p>
-            <button
-              type="button"
-              className="mt-3 flex h-11 w-full items-center justify-center rounded-full border-2 border-ink bg-gold font-extrabold"
-              onClick={() => setChronicle(true)}
-            >
-              Otevřít kroniku
-            </button>
+            <div className="mt-3 rounded-2xl border-2 border-gold bg-cream-deep/70 p-3 text-left">
+              <div className="flex items-center gap-2">
+                <BookOpen className="size-6 shrink-0 text-bow" aria-hidden="true" />
+                <p className="font-display text-lg leading-tight">
+                  {hud.chronicleNew === 1
+                    ? "Drběna našla nový příběh!"
+                    : hud.chronicleNew > 1 && hud.chronicleNew < 5
+                      ? `Drběna našla ${hud.chronicleNew} nové příběhy!`
+                      : hud.chronicleNew >= 5
+                        ? `Drběna našla ${hud.chronicleNew} nových příběhů!`
+                        : bookProgress.known === bookProgress.total
+                          ? "Kronika je kompletní!"
+                          : "Další tajemství čekají na objevení!"}
+                </p>
+              </div>
+              <p className="mt-1 text-sm font-extrabold text-ink-soft">
+                Už znáš {bookProgress.known} z {bookProgress.total} příběhů Kopidlna.
+              </p>
+              <button
+                type="button"
+                className="mt-2 flex h-11 w-full items-center justify-center gap-2 rounded-full border-2 border-ink bg-gold font-extrabold"
+                onClick={() => openChronicle(hud.chronicleNew > 0)}
+              >
+                {hud.chronicleNew > 0 ? "Prohlédnout nové příběhy" : "Otevřít kroniku"}
+              </button>
+            </div>
             {players != null && <p className="mt-2 text-sm font-extrabold text-ink-soft">{playerLabel(players)}</p>}
             {board.length > 0 && (
               <ol className="mt-3 text-left text-sm font-extrabold">
@@ -469,7 +527,7 @@ export function GameApp() {
           </button>
         </div>
       )}
-      {chronicle && <ChronicleBook onClose={() => setChronicle(false)} />}
+      {chronicle && <ChronicleBook startAtNewest={chronicleNewFirst} onClose={() => setChronicle(false)} />}
     </main>
   );
 }
