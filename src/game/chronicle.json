@@ -1,0 +1,216 @@
+{
+  "chapters": [
+    {
+      "id": "namesti",
+      "name": "Náměstí"
+    },
+    {
+      "id": "skola",
+      "name": "Stará škola"
+    },
+    {
+      "id": "zamek",
+      "name": "Zámek"
+    },
+    {
+      "id": "sklenik",
+      "name": "Palmový skleník"
+    },
+    {
+      "id": "park",
+      "name": "Zámecký park"
+    }
+  ],
+  "pages": [
+    {
+      "id": "urad",
+      "place": "namesti",
+      "title": "Úřad na náměstí",
+      "intro": "Městský úřad stojí na kopidlnském náměstí, v řadě domů nad cestou.",
+      "paragraphs": [],
+      "curiosities": [],
+      "sources": [],
+      "link": null
+    },
+    {
+      "id": "infocentrum",
+      "place": "namesti",
+      "title": "Informační centrum",
+      "intro": "Turistické informační centrum je hned na začátku, těsně před městským úřadem. Je zhruba o polovinu nižší.",
+      "paragraphs": [],
+      "curiosities": [],
+      "sources": [],
+      "link": null
+    },
+    {
+      "id": "sousosi",
+      "place": "namesti",
+      "title": "Mariánské sousoší",
+      "intro": "Sousoší stojí na náměstí kousek dál od úřadu. Drběna ho mine dřív, než doběhne ke kostelu.",
+      "paragraphs": [],
+      "curiosities": [],
+      "sources": [],
+      "link": null
+    },
+    {
+      "id": "kostel",
+      "place": "namesti",
+      "title": "Kostel na náměstí",
+      "intro": "Kostel s věží a hodinami je pořád ještě na náměstí, až za sousoším.",
+      "paragraphs": [],
+      "curiosities": [],
+      "sources": [],
+      "link": null
+    },
+    {
+      "id": "hradby",
+      "place": "namesti",
+      "title": "Město bez hradeb",
+      "intro": "Městská práva získalo Kopidlno roku 1514. Místo hradeb spoléhalo na bažiny a okolní krajinu.",
+      "paragraphs": [],
+      "curiosities": [],
+      "sources": [],
+      "link": null
+    },
+    {
+      "id": "jmeno",
+      "place": "namesti",
+      "title": "Odkud je jméno",
+      "intro": "Jméno Kopidlno se tradicí váže k léčivé bylině zvané kopidlo. Jiná pověst ho odvozuje od kopí.",
+      "paragraphs": [],
+      "curiosities": [],
+      "sources": [],
+      "link": null
+    },
+    {
+      "id": "jicin",
+      "place": "namesti",
+      "title": "Kousek od Jičína",
+      "intro": "Město leží asi 13 kilometrů jihozápadně od Jičína a žije v něm zhruba 2 200 lidí. Kousek je to i do Rumcajsova kraje.",
+      "paragraphs": [],
+      "curiosities": [],
+      "sources": [],
+      "link": null
+    },
+    {
+      "id": "medvedi",
+      "place": "namesti",
+      "title": "Medvědí dědeček",
+      "intro": "Kopidlno znají i diváci večerníčku Pojďte pane, budeme si hrát. Prý tu bydlel dědeček medvídků.",
+      "paragraphs": [],
+      "curiosities": [],
+      "sources": [],
+      "link": null
+    },
+    {
+      "id": "stara-skola",
+      "place": "skola",
+      "title": "Stará škola",
+      "intro": "Za kostelem, už mimo náměstí, stojí stará škola a bývalé muzeum. Dnes je z ní komunitní a vzdělávací centrum.",
+      "paragraphs": [],
+      "curiosities": [],
+      "sources": [],
+      "link": null
+    },
+    {
+      "id": "tvrz",
+      "place": "zamek",
+      "title": "Z tvrze zámek",
+      "intro": "Zámek Kopidlno stojí na místě středověké vodní tvrze. První známý pán, Petr z Kopidlna, je v pramenech k roku 1322.",
+      "paragraphs": [],
+      "curiosities": [],
+      "sources": [],
+      "link": null
+    },
+    {
+      "id": "zahradnici",
+      "place": "zamek",
+      "title": "Škola v zámku",
+      "intro": "Od roku 1948 sídlí v zámku zahradnická škola. Vzácné dřeviny v parku mají na starosti její studenti a učitelé.",
+      "paragraphs": [],
+      "curiosities": [],
+      "sources": [],
+      "link": null
+    },
+    {
+      "id": "pamatka",
+      "place": "zamek",
+      "title": "Kdo zámek hlídá",
+      "intro": "Zámek je kulturní památkou od roku 1958. Patří Královéhradeckému kraji a park za ním je otevřený na procházku.",
+      "paragraphs": [],
+      "curiosities": [],
+      "sources": [],
+      "link": null
+    },
+    {
+      "id": "viden",
+      "place": "sklenik",
+      "title": "Skleník jako z Vídně",
+      "intro": "Palmový skleník v zámeckém parku stavěli v letech 1893–1894 podle návrhu Josefa Podhajského. Je to zmenšenina slavného skleníku v schönbrunnském parku.",
+      "paragraphs": [],
+      "curiosities": [],
+      "sources": [],
+      "link": null
+    },
+    {
+      "id": "palmy",
+      "place": "sklenik",
+      "title": "Palmy do nebe",
+      "intro": "Uprostřed skleníku rostou palmy vysoké kolem deseti metrů. Skleněná kopule i dnes patří k technickým památkám, které se dají navštívit.",
+      "paragraphs": [],
+      "curiosities": [],
+      "sources": [],
+      "link": null
+    },
+    {
+      "id": "bazina",
+      "place": "park",
+      "title": "Rybník z bažiny",
+      "intro": "Zámecký rybník vznikl v polovině 16. století tam, kde dřív byla bažina. Leží v parku až za zámkem a skleníkem.",
+      "paragraphs": [],
+      "curiosities": [],
+      "sources": [],
+      "link": null
+    },
+    {
+      "id": "anglicky",
+      "place": "park",
+      "title": "Anglický park",
+      "intro": "Kolem zámku je přírodně krajinářský park o ploše asi 7,7 hektaru. Dnešní podoba pochází z úprav na konci 19. století.",
+      "paragraphs": [],
+      "curiosities": [],
+      "sources": [],
+      "link": null
+    },
+    {
+      "id": "stromy",
+      "place": "park",
+      "title": "Stoleté stromy",
+      "intro": "V parku rostou metasekvoje čínská, tisovec dvouřadý nebo dub velkoplodý. Řada stromů pamatuje stejnou dobu jako skleník.",
+      "paragraphs": [],
+      "curiosities": [],
+      "sources": [],
+      "link": null
+    },
+    {
+      "id": "fik",
+      "place": "park",
+      "title": "Fíkovna a oranžérie",
+      "intro": "V parku kdysi stály i fíkovna a oranžérie. Dnes parku vévodí palmový skleník.",
+      "paragraphs": [],
+      "curiosities": [],
+      "sources": [],
+      "link": null
+    },
+    {
+      "id": "sluzka",
+      "place": "park",
+      "title": "Socha služky",
+      "intro": "V zámeckém parku připomíná místní pověst takzvaná socha služky. Drbů je tu víc než záhonů.",
+      "paragraphs": [],
+      "curiosities": [],
+      "sources": [],
+      "link": null
+    }
+  ]
+}

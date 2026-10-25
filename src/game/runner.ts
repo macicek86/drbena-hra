@@ -831,9 +831,9 @@ export class Runner {
     this.burst(ent.x - this.camera, this.groundY - ent.lift * this.u, "#e8a317", 8);
     if (fact) {
       this.chronicleNew += 1;
-      this.fact = { title: fact.title, text: fact.text };
-      this.factLabel = "Zapsáno do kroniky";
-      this.factLife = 6.2;
+      this.fact = { title: fact.title, text: "" };
+      this.factLabel = "Odemčena stránka";
+      this.factLife = 2.4;
       this.taleLife = 0;
       this.sfx.fact();
     } else {

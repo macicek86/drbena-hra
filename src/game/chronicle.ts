@@ -1,14 +1,6 @@
-import { FACTS, type Fact, type PlaceId } from "./content.ts";
+import bookData from "./chronicle.json" with { type: "json" };
 
 const KEY = "drbena-kronika-v1";
-
-const CHAPTERS: { id: PlaceId; name: string; of: string }[] = [
-  { id: "namesti", name: "Náměstí", of: "z náměstí" },
-  { id: "skola", name: "Stará škola", of: "ze staré školy" },
-  { id: "zamek", name: "Zámek", of: "ze zámku" },
-  { id: "sklenik", name: "Palmový skleník", of: "z palmového skleníku" },
-  { id: "park", name: "Zámecký park", of: "ze zámeckého parku" },
-];
 
 const MONTHS = [
   "ledna",
@@ -25,35 +17,62 @@ const MONTHS = [
   "prosince",
 ];
 
-export type ChronicleEntry = { title: string; text: string; on: string };
+export type ChronicleLink = { label: string; href: string };
 
-export type ChronicleChapter = {
-  name: string;
-  line: string;
-  entries: ChronicleEntry[];
+export type ChroniclePage = {
+  id: string;
+  place: string;
+  title: string;
+  intro: string;
+  paragraphs: string[];
+  curiosities: string[];
+  sources: string[];
+  link: ChronicleLink | null;
 };
+
+export type ShelfPage =
+  | { id: string; open: false }
+  | { id: string; open: true; title: string; on: string; page: ChroniclePage };
+
+export type ShelfChapter = {
+  id: string;
+  name: string;
+  known: number;
+  total: number;
+  pages: ShelfPage[];
+};
+
+export type ChronicleShelf = { known: number; total: number; chapters: ShelfChapter[] };
 
 type Saved = Record<string, string>;
 
-export function nextFact(place: PlaceId, known: readonly string[]): Fact | null {
+const pages = normalizePages(bookData);
+const chapters = normalizeChapters(bookData, pages);
+
+export function pageIds(): string[] {
+  return pages.map((page) => page.id);
+}
+
+export function nextFact(place: string, known: readonly string[]): ChroniclePage | null {
   const have = new Set(known);
-  const order = CHAPTERS.map((chapter) => chapter.id);
+  const order = chapters.map((chapter) => chapter.id);
   const start = Math.max(0, order.indexOf(place));
-  for (let step = 0; step < order.length; step += 1) {
-    const id = order[(start + step) % order.length]!;
-    const fact = FACTS.find((item) => item.place === id && !have.has(item.id));
-    if (fact) return fact;
+  for (let step = 0; step < Math.max(order.length, 1); step += 1) {
+    const id = order.length ? order[(start + step) % order.length]! : place;
+    const page = pages.find((item) => item.place === id && !have.has(item.id));
+    if (page) return page;
+    if (!order.length) break;
   }
   return null;
 }
 
-export function rememberFact(place: PlaceId, today = todayStamp()): Fact | null {
-  const fact = nextFact(place, knownIds());
-  if (!fact) return null;
+export function rememberFact(place: string, today = todayStamp()): ChroniclePage | null {
+  const page = nextFact(place, knownIds());
+  if (!page) return null;
   const saved = load();
-  saved[fact.id] = today;
+  saved[page.id] = today;
   store(saved);
-  return fact;
+  return page;
 }
 
 export function knownIds(): string[] {
@@ -73,20 +92,109 @@ export function czechDate(iso = todayStamp()): string {
   return `${d}. ${MONTHS[m - 1] ?? ""} ${y}`;
 }
 
-export function chronicleBook(): { known: number; total: number; chapters: ChronicleChapter[] } {
-  const saved = load();
-  const chapters = CHAPTERS.map((chapter) => {
-    const facts = FACTS.filter((fact) => fact.place === chapter.id);
-    const entries = facts
-      .filter((fact) => saved[fact.id])
-      .map((fact) => ({ title: fact.title, text: fact.text, on: czechDate(saved[fact.id]) }));
-    return {
-      name: chapter.name,
-      line: `${chapter.of} zná ${entries.length} z ${facts.length}`,
-      entries,
-    };
-  }).filter((chapter) => chapter.entries.length > 0);
-  return { known: Object.keys(saved).length, total: FACTS.length, chapters };
+export function parseFound(raw: string | null): Saved {
+  if (!raw) return {};
+  try {
+    const data = JSON.parse(raw) as { found?: unknown };
+    return foundMap(data?.found);
+  } catch {
+    return {};
+  }
+}
+
+export function chronicleBook(): ChronicleShelf {
+  return chronicleBookFrom(load());
+}
+
+export function chronicleBookFrom(found: Saved): ChronicleShelf {
+  const known = pages.filter((page) => found[page.id]).length;
+  return {
+    known,
+    total: pages.length,
+    chapters: chapters.map((chapter) => {
+      const inChapter = pages.filter((page) => page.place === chapter.id);
+      const slots: ShelfPage[] = inChapter.map((page) => {
+        const on = found[page.id];
+        if (!on) return { id: page.id, open: false };
+        return { id: page.id, open: true, title: page.title, on: czechDate(on), page };
+      });
+      return {
+        id: chapter.id,
+        name: chapter.name,
+        known: slots.filter((slot) => slot.open).length,
+        total: slots.length,
+        pages: slots,
+      };
+    }),
+  };
+}
+
+function normalizeChapters(raw: unknown, list: ChroniclePage[]): { id: string; name: string }[] {
+  const data = raw as { chapters?: unknown };
+  const declared = Array.isArray(data.chapters) ? data.chapters : [];
+  const chapters: { id: string; name: string }[] = [];
+  const seen = new Set<string>();
+  for (const item of declared) {
+    if (!item || typeof item !== "object") continue;
+    const row = item as { id?: unknown; name?: unknown };
+    if (typeof row.id !== "string" || !row.id || seen.has(row.id)) continue;
+    seen.add(row.id);
+    chapters.push({ id: row.id, name: typeof row.name === "string" && row.name ? row.name : row.id });
+  }
+  for (const page of list) {
+    if (seen.has(page.place)) continue;
+    seen.add(page.place);
+    chapters.push({ id: page.place, name: page.place });
+  }
+  return chapters;
+}
+
+function normalizePages(raw: unknown): ChroniclePage[] {
+  const data = raw as { pages?: unknown };
+  if (!Array.isArray(data.pages)) return [];
+  const pages: ChroniclePage[] = [];
+  const seen = new Set<string>();
+  for (const item of data.pages) {
+    if (!item || typeof item !== "object") continue;
+    const row = item as Record<string, unknown>;
+    if (typeof row.id !== "string" || !row.id || seen.has(row.id)) continue;
+    if (typeof row.place !== "string" || !row.place) continue;
+    if (typeof row.title !== "string") continue;
+    seen.add(row.id);
+    pages.push({
+      id: row.id,
+      place: row.place,
+      title: row.title,
+      intro: typeof row.intro === "string" ? row.intro : "",
+      paragraphs: stringList(row.paragraphs),
+      curiosities: stringList(row.curiosities),
+      sources: stringList(row.sources),
+      link: linkOf(row.link),
+    });
+  }
+  return pages;
+}
+
+function stringList(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((item): item is string => typeof item === "string" && item.length > 0);
+}
+
+function linkOf(value: unknown): ChronicleLink | null {
+  if (!value || typeof value !== "object") return null;
+  const row = value as { label?: unknown; href?: unknown };
+  if (typeof row.href !== "string" || !row.href) return null;
+  const label = typeof row.label === "string" && row.label ? row.label : row.href;
+  return { label, href: row.href };
+}
+
+function foundMap(value: unknown): Saved {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
+  const found: Saved = {};
+  for (const [id, date] of Object.entries(value)) {
+    if (typeof date === "string" && date) found[id] = date;
+  }
+  return found;
 }
 
 function todayStamp() {
@@ -98,12 +206,7 @@ function todayStamp() {
 
 function load(): Saved {
   try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return {};
-    const data = JSON.parse(raw) as { found?: Saved };
-    const found = data.found;
-    if (!found || typeof found !== "object") return {};
-    return found;
+    return parseFound(localStorage.getItem(KEY));
   } catch {
     return {};
   }

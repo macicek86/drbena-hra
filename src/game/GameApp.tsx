@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from "react";
-import { Heart, Pause, Play, RotateCcw, Share2, Volume2, VolumeX, X } from "lucide-react";
+import { Heart, Pause, Play, RotateCcw, Share2, Volume2, VolumeX } from "lucide-react";
 import { AlarmCard } from "@/game/GoatAlarmScene";
+import { ChronicleBook } from "@/game/ChronicleBook";
 import { Runner, emptyHud, type Hud } from "@/game/runner";
-import { chronicleBook, czechDate, entryLine } from "@/game/chronicle";
+import { entryLine } from "@/game/chronicle";
 import { BONUS_CALM, BONUS_PARDON, type BonusAction } from "@/game/minigames";
 import { fetchStats, playerLabel, previewStats, saveName, savedName, type BoardRow } from "@/game/plays";
 import { publicUrl } from "@/lib/public-url";
@@ -312,9 +313,8 @@ export function GameApp() {
 
       {hud.fact && !hud.showTale && hud.phase === "play" && (
         <article className="pointer-events-none absolute inset-x-0 top-28 z-10 mx-auto w-[min(100%-1.5rem,32rem)] rounded-3xl border-2 border-ink bg-cream px-4 py-3 shadow-lg sm:top-24">
-          <p className="text-xs font-extrabold tracking-wide text-bow">{hud.factLabel || "Zapsáno do kroniky"}</p>
+          <p className="text-xs font-extrabold tracking-wide text-bow">{hud.factLabel || "Odemčena stránka"}</p>
           <h2 className="font-display text-xl leading-tight">{hud.fact.title}</h2>
-          <p className="mt-1 text-sm leading-snug text-ink-soft">{hud.fact.text}</p>
         </article>
       )}
 
@@ -558,57 +558,6 @@ function LifeReward({ lives, gained }: { lives: number; gained: boolean }) {
         ))}
       </div>
       <p className={`mt-1 font-extrabold ${gained ? "text-bow" : "text-ink-soft"}`}>{gained ? BONUS_PARDON : BONUS_CALM}</p>
-    </div>
-  );
-}
-
-function ChronicleBook({ onClose }: { onClose: () => void }) {
-  const book = chronicleBook();
-  return (
-    <div className="absolute inset-0 z-50 flex items-center justify-center bg-ink/45 p-3" onClick={onClose}>
-      <section
-        className="flex max-h-full w-full max-w-md flex-col overflow-hidden rounded-3xl border-2 border-ink bg-cream text-left shadow-lg"
-        onClick={(event) => event.stopPropagation()}
-      >
-        <div className="flex items-start justify-between gap-3 px-4 pt-4">
-          <div>
-            <p className="text-xs font-extrabold tracking-wide text-bow">{czechDate()}</p>
-            <h2 className="font-display text-4xl leading-none">Kronika</h2>
-            <p className="mt-1 text-sm font-extrabold text-ink-soft">
-              {book.known > 0 ? `Zapsáno ${book.known} z ${book.total}` : "Ještě tu nic není"}
-            </p>
-          </div>
-          <button
-            type="button"
-            className="flex size-11 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-cream"
-            aria-label="Zavřít kroniku"
-            onClick={onClose}
-          >
-            <X className="size-5" />
-          </button>
-        </div>
-        <div className="mt-3 min-h-0 flex-1 overflow-y-auto px-4 pb-4">
-          {book.chapters.length === 0 ? (
-            <p className="text-sm leading-snug text-ink-soft">
-              Kronika je prázdná. Až Drběna sebere pergamen na cestě, věta tu zůstane.
-            </p>
-          ) : (
-            book.chapters.map((chapter) => (
-              <section key={chapter.name} className="mt-4 first:mt-0">
-                <h3 className="font-display text-2xl leading-none">{chapter.name}</h3>
-                <p className="mt-1 text-xs font-extrabold text-ink-soft">{chapter.line}</p>
-                {chapter.entries.map((entry) => (
-                  <article key={entry.title} className="mt-3 border-t border-ink/15 pt-3">
-                    <p className="text-xs font-extrabold text-bow">{entry.on}</p>
-                    <h4 className="mt-0.5 font-extrabold">{entry.title}</h4>
-                    <p className="mt-1 text-sm leading-snug text-ink-soft">{entry.text}</p>
-                  </article>
-                ))}
-              </section>
-            ))
-          )}
-        </div>
-      </section>
     </div>
   );
 }
