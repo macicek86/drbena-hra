@@ -169,26 +169,22 @@ function ArticleView({ page }: { page: Extract<ShelfPage, { open: true }> }) {
   return (
     <article className="flex min-h-0 flex-1 flex-col overflow-hidden">
       <p className="text-[0.68em] font-extrabold tracking-[0.16em] text-bow">{page.on}</p>
-      <h3 className="mt-[0.1em] font-display text-[1.35em] leading-tight">{body.title}</h3>
-      <div className="mt-[0.45em] grid min-h-0 flex-1 grid-cols-2 gap-[0.7em] overflow-hidden">
-        <div className="min-h-0 overflow-hidden border-r border-gold/70 pr-[0.55em]">
-          <Part label="Úvod" lines={body.intro ? [body.intro] : []} />
-          <Part label="Příběh" lines={body.paragraphs} />
-        </div>
-        <div className="min-h-0 overflow-hidden">
-          <Part label="Zajímavost" lines={body.curiosities} />
-          <Part label="Zdroj" lines={body.sources} />
-          {body.link && (
-            <a
-              href={body.link.href}
-              target="_blank"
-              rel="noreferrer"
-              className="mt-[0.45em] block font-display text-[0.95em] leading-tight text-bow underline decoration-gold decoration-2 underline-offset-2"
-            >
-              {body.link.label}
-            </a>
-          )}
-        </div>
+      <h3 className="mt-[0.1em] shrink-0 font-display text-[1.45em] leading-tight">{body.title}</h3>
+      <div className="chronicle-scroll mt-[0.45em] min-h-0 flex-1 pr-[0.7em]">
+        <Part label="Úvod" lines={body.intro ? [body.intro] : []} />
+        <Part label="Příběh" lines={body.paragraphs} />
+        <Part label="Zajímavost" lines={body.curiosities} />
+        <Part label="Zdroj" lines={body.sources} />
+        {body.link && (
+          <a
+            href={body.link.href}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-[0.7em] inline-block font-display text-[1.05em] leading-tight text-bow underline decoration-gold decoration-2 underline-offset-4"
+          >
+            {body.link.label}
+          </a>
+        )}
       </div>
     </article>
   );
@@ -200,7 +196,7 @@ function Part({ label, lines }: { label: string; lines: string[] }) {
     <section className="mt-[0.45em] first:mt-0">
       <h4 className="text-[0.68em] font-extrabold tracking-[0.14em] text-bow">{label}</h4>
       {lines.map((line, index) => (
-        <p key={index} className="mt-[0.2em] text-[0.86em] leading-snug">
+        <p key={index} className="mt-[0.25em] text-[0.95em] leading-relaxed">
           {line}
         </p>
       ))}
