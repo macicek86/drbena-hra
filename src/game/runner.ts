@@ -1,3 +1,4 @@
+import { rememberFact } from "@/game/chronicle";
 import { Sfx } from "@/game/audio";
 import { bonusAct as actBonus, bonusHud, BONUS_PARDON_TALE, createOfferedMini, fishOffersMini, healFromBonus, type AnyBonus, type BonusAction, type BonusHud } from "@/game/minigames";
 import { tickAlarm, type AlarmEvent } from "./goatAlarm.ts";
@@ -6,7 +7,6 @@ import { publicUrl } from "@/lib/public-url";
 import {
   BIOME_LEN,
   BIOMES,
-  FACTS,
   biomeMix,
   lerpRgb,
   rgbCss,
@@ -27,7 +27,8 @@ export type Hud = {
   bonusLife: boolean;
   biome: string;
   fact: { title: string; text: string } | null;
-  pips: number;
+  factLabel: string;
+  chronicleNew: number;
   newBest: boolean;
   muted: boolean;
   coach: boolean;
@@ -48,6 +49,7 @@ type Kind =
   | "branch"
   | "gossip"
   | "heart"
+  | "scroll"
   | "bush"
   | "lamp"
   | "tree"
@@ -82,7 +84,7 @@ type Art = Record<string, HTMLImageElement | HTMLImageElement[] | null>;
 const SAVE_KEY = "drbena-kopidlno-v1";
 
 const HAZARDS = new Set<Kind>(["fence", "pot", "dog", "gardener", "car", "branch"]);
-const PICKUPS = new Set<Kind>(["gossip", "heart"]);
+const PICKUPS = new Set<Kind>(["gossip", "heart", "scroll"]);
 const LANDMARKS = new Set<Kind>(["houses", "castle", "greenhouse", "pond"]);
 const DECOR = new Set<Kind>(["bush", "lamp", "tree", "bench", "column", "church", "school", "info"]);
 
@@ -141,6 +143,7 @@ const SPEC: Record<Kind, { h: number; hitW: number; hitH: number; lift: number }
   branch: { h: 1.02, hitW: 0.84, hitH: 0.52, lift: 0 },
   gossip: { h: 0.42, hitW: 0.62, hitH: 0.62, lift: 0.14 },
   heart: { h: 0.32, hitW: 0.7, hitH: 0.7, lift: 0.72 },
+  scroll: { h: 0.72, hitW: 0.55, hitH: 0.62, lift: 0.48 },
   bush: { h: 0.46, hitW: 0, hitH: 0, lift: 0 },
   lamp: { h: 1.42, hitW: 0, hitH: 0, lift: 0 },
   tree: { h: 1.85, hitW: 0, hitH: 0, lift: 0 },
@@ -185,7 +188,8 @@ export function emptyHud(): Hud {
     bonusLife: false,
     biome: "Náměstí",
     fact: null,
-    pips: 0,
+    factLabel: "",
+    chronicleNew: 0,
     newBest: false,
     muted: false,
     coach: true,
@@ -245,8 +249,9 @@ export class Runner {
   private combo = 0;
   private lastCollect = -10;
   private fact: { title: string; text: string } | null = null;
+  private factLabel = "";
   private factLife = 0;
-  private factIndex = 0;
+  private chronicleNew = 0;
   private ents: Ent[] = [];
   private pops: Pop[] = [];
   private bits: Bit[] = Array.from({ length: 80 }, () => ({
@@ -384,7 +389,9 @@ export class Runner {
     this.combo = 0;
     this.lastCollect = -10;
     this.fact = null;
+    this.factLabel = "";
     this.factLife = 0;
+    this.chronicleNew = 0;
     this.ents = [];
     this.pops = [];
     this.hazardCursor = this.viewW * 0.92;
@@ -429,6 +436,7 @@ export class Runner {
       "info",
       "dog",
       "gossip",
+      "scroll",
       "fish",
     ] as const;
     const frames = ["jump", "duck", "run", "idle"] as const;
@@ -719,7 +727,10 @@ export class Runner {
     this.decayJuice(dt);
     if (this.factLife > 0) {
       this.factLife -= dt;
-      if (this.factLife <= 0) this.fact = null;
+      if (this.factLife <= 0) {
+        this.fact = null;
+        this.factLabel = "";
+      }
     }
   }
 
@@ -783,6 +794,7 @@ export class Runner {
       if (PICKUPS.has(ent.kind)) {
         ent.alive = false;
         if (ent.kind === "gossip") this.grabGossip(ent);
+        else if (ent.kind === "scroll") this.takeScroll(ent);
         else if (ent.kind === "heart" && this.lives < 3) {
           this.lives += 1;
           this.sfx.collect(2);
@@ -804,16 +816,36 @@ export class Runner {
     this.sfx.collect(this.combo);
     this.pops.push({ x: ent.x - this.camera, y: this.groundY - ent.lift * this.u, text: `+${pts}`, life: 0.7 });
     this.burst(ent.x - this.camera, this.groundY - ent.lift * this.u, "#e8a317", 7);
-    if (this.gossips > 0 && this.gossips % 10 === 0) {
-      const here = this.placeAt(this.camera + this.playerX).id;
-      const pool = FACTS.filter((item) => item.place === here);
-      const fact = pool[this.factIndex % pool.length]!;
-      this.factIndex += 1;
-      this.fact = fact;
+  }
+
+  private takeScroll(ent: Ent) {
+    const fact = rememberFact(this.placeAt(ent.x).id);
+    const pts = fact ? 40 : 16;
+    this.gossipScore += pts;
+    this.pops.push({
+      x: ent.x - this.camera,
+      y: this.groundY - ent.lift * this.u,
+      text: `+${pts}`,
+      life: 0.9,
+    });
+    this.burst(ent.x - this.camera, this.groundY - ent.lift * this.u, "#e8a317", 8);
+    if (fact) {
+      this.chronicleNew += 1;
+      this.fact = { title: fact.title, text: fact.text };
+      this.factLabel = "Zapsáno do kroniky";
       this.factLife = 6.2;
+      this.taleLife = 0;
       this.sfx.fact();
-      this.pushHud(true);
+    } else {
+      this.fact = null;
+      this.factLabel = "";
+      this.factLife = 0;
+      this.tale = "Dnešek už v kronice je.";
+      this.taleTag = "Kronika";
+      this.taleLife = 2.6;
+      this.sfx.collect(2);
     }
+    this.pushHud(true);
   }
 
   private hurt(ent: Ent) {
@@ -1013,7 +1045,12 @@ export class Runner {
       this.hazardCursor += n * u * 0.4 + speed * 0.5;
       return;
     }
-    if (roll < 0.28 && this.lives < 3 && this.run > 500) {
+    if (roll < 0.34 && this.run > 400 && !this.scrollAhead()) {
+      this.ents.push({ kind: "scroll", x, lift: 0.36, anim: 0, alive: true });
+      this.hazardCursor += speed * 0.9;
+      return;
+    }
+    if (roll < 0.4 && this.lives < 3 && this.run > 500) {
       this.ents.push({ kind: "heart", x, lift: 0.72, anim: 0, alive: true });
       this.hazardCursor += speed * 0.8;
       return;
@@ -1032,6 +1069,10 @@ export class Runner {
     const bulk = kind === "car" ? u * 1.7 : kind === "branch" ? u * 1.2 : kind === "pot" ? u * 0.85 : kind === "gardener" ? u * 0.85 : u * 0.55;
     this.hazardCursor += bulk + speed * 1.08;
     this.lastHazard = kind;
+  }
+
+  private scrollAhead() {
+    return this.ents.some((ent) => ent.alive && ent.kind === "scroll" && ent.x > this.camera - this.u);
   }
 
   private rollHazard(): Kind {
@@ -1278,9 +1319,9 @@ export class Runner {
 
   private drawEnt(ctx: CanvasRenderingContext2D, ent: Ent) {
     const spec = SPEC[ent.kind];
-    const pulse = ent.kind === "gossip" ? 1 + Math.sin(this.time * 5 + ent.anim) * 0.06 : 1;
+    const pulse = ent.kind === "gossip" || ent.kind === "scroll" ? 1 + Math.sin(this.time * 5 + ent.anim) * 0.06 : 1;
     const h = spec.h * this.u * pulse;
-    let bob = ent.kind === "gossip" ? Math.sin(this.time * 4 + ent.anim) * this.u * 0.04 : 0;
+    let bob = ent.kind === "gossip" || ent.kind === "scroll" ? Math.sin(this.time * 4 + ent.anim) * this.u * 0.04 : 0;
     let rot = 0;
     if (ent.kind === "dog") {
       bob = Math.abs(Math.sin(this.time * 11 + ent.anim)) * this.u * 0.04;
@@ -1384,7 +1425,8 @@ export class Runner {
       bonusLife: this.bonusLife,
       biome: this.placeAt(this.camera + this.playerX).name,
       fact: this.fact,
-      pips: this.gossips % 10,
+      factLabel: this.factLabel,
+      chronicleNew: this.chronicleNew,
       newBest: this.newBest,
       muted: this.muted,
       coach: this.phase === "play" && !this.taleLife && (!this.coachJump || !this.coachDuck) && this.run < 1400,

@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { Heart, Pause, Play, RotateCcw, Share2, Volume2, VolumeX } from "lucide-react";
+import { Heart, Pause, Play, RotateCcw, Share2, Volume2, VolumeX, X } from "lucide-react";
 import { AlarmCard } from "@/game/GoatAlarmScene";
 import { Runner, emptyHud, type Hud } from "@/game/runner";
+import { chronicleBook, czechDate, entryLine } from "@/game/chronicle";
 import { BONUS_CALM, BONUS_PARDON, type BonusAction } from "@/game/minigames";
 import { fetchStats, playerLabel, previewStats, saveName, savedName, type BoardRow } from "@/game/plays";
 import { publicUrl } from "@/lib/public-url";
@@ -14,6 +15,7 @@ export function GameApp() {
   const [players, setPlayers] = useState<number | null>(previewStats?.players ?? null);
   const [board, setBoard] = useState<BoardRow[]>(previewStats?.board ?? []);
   const [name, setName] = useState(savedName);
+  const [chronicle, setChronicle] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -209,6 +211,16 @@ export function GameApp() {
                 {hud.bestGossips > 0 ? ` · ${hud.bestGossips} drbů` : ""}
               </p>
             )}
+            <button
+              type="button"
+              className="mx-auto mt-3 flex h-10 items-center justify-center rounded-full border-2 border-cream/80 px-5 text-sm font-extrabold text-cream"
+              onClick={(event) => {
+                event.stopPropagation();
+                setChronicle(true);
+              }}
+            >
+              Kronika
+            </button>
             {players != null && (
               <p className="mt-1 text-sm font-extrabold text-cream [text-shadow:0_1px_0_#241c16]">{playerLabel(players)}</p>
             )}
@@ -259,11 +271,6 @@ export function GameApp() {
             <p className="text-sm font-extrabold text-ink-soft">
               {hud.gossips} drbů{hud.combo > 1 ? ` · ×${hud.combo}` : ""}
             </p>
-            <div className="mt-1 flex gap-1" aria-hidden="true">
-              {Array.from({ length: 10 }, (_, i) => (
-                <span key={i} className={i < hud.pips ? "size-1.5 rounded-full bg-gold" : "size-1.5 rounded-full bg-ink/15"} />
-              ))}
-            </div>
           </div>
           <div className="pointer-events-auto flex flex-col items-end gap-2">
             <div className="flex items-center gap-2">
@@ -305,7 +312,7 @@ export function GameApp() {
 
       {hud.fact && !hud.showTale && hud.phase === "play" && (
         <article className="pointer-events-none absolute inset-x-0 top-28 z-10 mx-auto w-[min(100%-1.5rem,32rem)] rounded-3xl border-2 border-ink bg-cream px-4 py-3 shadow-lg sm:top-24">
-          <p className="text-xs font-extrabold tracking-wide text-bow">Drb z Kopidlna</p>
+          <p className="text-xs font-extrabold tracking-wide text-bow">{hud.factLabel || "Zapsáno do kroniky"}</p>
           <h2 className="font-display text-xl leading-tight">{hud.fact.title}</h2>
           <p className="mt-1 text-sm leading-snug text-ink-soft">{hud.fact.text}</p>
         </article>
@@ -346,6 +353,14 @@ export function GameApp() {
               {hud.gossips} drbů
               {hud.newBest ? " · nový rekord" : hud.best > 0 ? ` · rekord ${hud.best}` : ""}
             </p>
+            <p className="mt-2 text-sm font-extrabold text-ink-soft">{entryLine(hud.chronicleNew)}</p>
+            <button
+              type="button"
+              className="mt-3 flex h-11 w-full items-center justify-center rounded-full border-2 border-ink bg-gold font-extrabold"
+              onClick={() => setChronicle(true)}
+            >
+              Otevřít kroniku
+            </button>
             {players != null && <p className="mt-2 text-sm font-extrabold text-ink-soft">{playerLabel(players)}</p>}
             {board.length > 0 && (
               <ol className="mt-3 text-left text-sm font-extrabold">
@@ -434,6 +449,7 @@ export function GameApp() {
           </button>
         </div>
       )}
+      {chronicle && <ChronicleBook onClose={() => setChronicle(false)} />}
     </main>
   );
 }
@@ -542,6 +558,57 @@ function LifeReward({ lives, gained }: { lives: number; gained: boolean }) {
         ))}
       </div>
       <p className={`mt-1 font-extrabold ${gained ? "text-bow" : "text-ink-soft"}`}>{gained ? BONUS_PARDON : BONUS_CALM}</p>
+    </div>
+  );
+}
+
+function ChronicleBook({ onClose }: { onClose: () => void }) {
+  const book = chronicleBook();
+  return (
+    <div className="absolute inset-0 z-50 flex items-center justify-center bg-ink/45 p-3" onClick={onClose}>
+      <section
+        className="flex max-h-full w-full max-w-md flex-col overflow-hidden rounded-3xl border-2 border-ink bg-cream text-left shadow-lg"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-start justify-between gap-3 px-4 pt-4">
+          <div>
+            <p className="text-xs font-extrabold tracking-wide text-bow">{czechDate()}</p>
+            <h2 className="font-display text-4xl leading-none">Kronika</h2>
+            <p className="mt-1 text-sm font-extrabold text-ink-soft">
+              {book.known > 0 ? `Zapsáno ${book.known} z ${book.total}` : "Ještě tu nic není"}
+            </p>
+          </div>
+          <button
+            type="button"
+            className="flex size-11 shrink-0 items-center justify-center rounded-full border-2 border-ink bg-cream"
+            aria-label="Zavřít kroniku"
+            onClick={onClose}
+          >
+            <X className="size-5" />
+          </button>
+        </div>
+        <div className="mt-3 min-h-0 flex-1 overflow-y-auto px-4 pb-4">
+          {book.chapters.length === 0 ? (
+            <p className="text-sm leading-snug text-ink-soft">
+              Kronika je prázdná. Až Drběna sebere pergamen na cestě, věta tu zůstane.
+            </p>
+          ) : (
+            book.chapters.map((chapter) => (
+              <section key={chapter.name} className="mt-4 first:mt-0">
+                <h3 className="font-display text-2xl leading-none">{chapter.name}</h3>
+                <p className="mt-1 text-xs font-extrabold text-ink-soft">{chapter.line}</p>
+                {chapter.entries.map((entry) => (
+                  <article key={entry.title} className="mt-3 border-t border-ink/15 pt-3">
+                    <p className="text-xs font-extrabold text-bow">{entry.on}</p>
+                    <h4 className="mt-0.5 font-extrabold">{entry.title}</h4>
+                    <p className="mt-1 text-sm leading-snug text-ink-soft">{entry.text}</p>
+                  </article>
+                ))}
+              </section>
+            ))
+          )}
+        </div>
+      </section>
     </div>
   );
 }
