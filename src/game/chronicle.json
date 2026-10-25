@@ -19,6 +19,18 @@
     {
       "id": "park",
       "name": "Zámecký park"
+    },
+    {
+      "id": "lide",
+      "name": "Lidé a jejich příběhy"
+    },
+    {
+      "id": "zivot",
+      "name": "Život v Kopidlně"
+    },
+    {
+      "id": "vsi",
+      "name": "Okolní vesnice"
     }
   ],
   "pages": [
@@ -381,6 +393,785 @@
       "link": {
         "label": "Přečíst celý příběh na Kopidlenské drbně",
         "href": "https://www.kopidlenskadrbna.org/o-kopidlne/socha-sluzky-v-zameckem-parku"
+      }
+    },
+    {
+      "id": "znak-kozla-1523",
+      "place": "namesti",
+      "title": "Kozel, kterému je přes 500 let",
+      "intro": "Drběna není první slavná koza z Kopidlna. Kozlí hlava má ve městě své místo už celá staletí.",
+      "paragraphs": [
+        "Král Ludvík Jagellonský udělil Kopidlnu roku 1523 znak s černobílou kozlí hlavou na modrém štítu. Kozla měli ve svém erbu už dávno předtím páni z Kopidlna."
+      ],
+      "curiosities": [
+        "Proč si dávní páni vybrali právě kozla, se přesně neví. To je pořád záhada!"
+      ],
+      "sources": [
+        "Kopidlenská drbna: Znak Kopidlna (erbovní listina, městské dějiny)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/znak-kopidlna"
+      }
+    },
+    {
+      "id": "stara-drevena-radnice",
+      "place": "namesti",
+      "title": "Radnice, která zmizela z náměstí",
+      "intro": "Představ si, že místo silnice stojí uprostřed náměstí dřevěná radnice. Kdysi to tak opravdu bylo.",
+      "paragraphs": [
+        "Původní radnice byla dřevěná a stála uprostřed náměstí. Nechyběla u ní šatlava, kovárna ani masné krámy. Roku 1822 ji zbourali, protože překážela stavbě nové silnice."
+      ],
+      "curiosities": [
+        "Dnešní budova, které se říká Radnice, stojí na jiném místě a je mnohem mladší."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Radnice na náměstí (městská kronika)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/radnice-na-namesti"
+      }
+    },
+    {
+      "id": "sochy-na-cestach",
+      "place": "namesti",
+      "title": "Kamenní světci na cestách",
+      "intro": "Sochy kolem kostela vypadají, jako by tam stály odjakživa. Některé však procestovaly kus Kopidlenska.",
+      "paragraphs": [
+        "U kostela svatého Jakuba stojí barokní sochy z různých míst. Třeba svatá Kateřina sem byla přenesena z Ledkova. Jiné sochy dřív stávaly u cest, hostinců nebo v zahradách."
+      ],
+      "curiosities": [
+        "Svatého Floriána poznáš podle vědra s vodou a hořícího domu u nohou."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Sochy u kostela sv. Jakuba (Památkový katalog, místní kroniky)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/sochy-u-kostela-sv-jakuba"
+      }
+    },
+    {
+      "id": "kucharka-z-radnice",
+      "place": "namesti",
+      "title": "Kuchařka z kopidlenské radnice",
+      "intro": "V radnici se kdysi nejen úřadovalo a hrálo divadlo. Vonělo to tam také dobrým jídlem.",
+      "paragraphs": [
+        "V místním hostinci vařila Marie Maršálková. Byla tak známá, že učila kopidlenské dívky vařit a v roce 1927 pro ně dokonce vydala vlastní kuchařku."
+      ],
+      "curiosities": [
+        "Představ si, že bys objevil recept, podle kterého se v Kopidlně vařilo před sto lety."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Radnice na náměstí (Kopidlenské listy 2010)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/radnice-na-namesti"
+      }
+    },
+    {
+      "id": "velka-skola-u-kostela",
+      "place": "skola",
+      "title": "Škola stará přes sto let",
+      "intro": "Za kostelem stojí budova, do které chodily celé generace kopidlenských dětí.",
+      "paragraphs": [
+        "Novou školu u kostela slavnostně otevřeli v září 1897. Před ní tu stála dřevěná škola. Děti se v této velké budově učily ještě v roce 2024, než se přestěhovaly do školy v ulici Tomáše Svobody."
+      ],
+      "curiosities": [
+        "Základní kámen nové školy položili už roku 1896."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Škola u kostela (Kopidlenské listy, školní historie)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/skola-u-kostela"
+      }
+    },
+    {
+      "id": "knihovna-tri-sesity",
+      "place": "skola",
+      "title": "Knihovna, které stačily tři sešity",
+      "intro": "Dnešní knihovna má počítače. Kdysi se ale všechny výpůjčky zapisovaly ručně.",
+      "paragraphs": [
+        "Knihovník Jan Holan znal své čtenáře skoro nazpaměť. Když si kluci chtěli půjčit dobrodružnou knížku, někdy jim nejdřív doporučil něco z českých dějin. Na knihovnu mu stačily tři sešity."
+      ],
+      "curiosities": [
+        "Veřejně přístupná občanská knihovna vznikla v Kopidlně už roku 1882."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Městská knihovna (statistiky knihoven, místní vzpomínky)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/mestska-knihovna"
+      }
+    },
+    {
+      "id": "zamek-valdstejn",
+      "place": "zamek",
+      "title": "Když Kopidlno patřilo Valdštejnovi",
+      "intro": "Jméno Albrecht z Valdštejna znáš možná z dějepisu. Na čas mu patřilo i Kopidlno.",
+      "paragraphs": [
+        "Roku 1624 získal Kopidlno výměnou od rodu Trčků z Lípy. Připojil je ke svému velikému Frýdlantskému vévodství. Po jeho smrti však panství změnilo majitele."
+      ],
+      "curiosities": [
+        "Představ si, že jedno panství mohlo zahrnovat celé desítky měst a vesnic."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Zámek (historie vlastníků panství)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/zamek"
+      }
+    },
+    {
+      "id": "zamek-ctvrte-kridlo",
+      "place": "zamek",
+      "title": "Jak zámek získal čtvrté křídlo",
+      "intro": "Dnešní zámek vypadá jako uzavřený čtyřúhelník. Vždycky tak ale nevypadal.",
+      "paragraphs": [
+        "V roce 1875 nechal hrabě Ervín Šlik přistavět další křídlo směrem k parku a rybníku. Zámek tím získal uzavřené nádvoří a novorenesanční podobu."
+      ],
+      "curiosities": [
+        "Na zahradním průčelí dodnes najdeš nápis připomínající tuto přestavbu."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Zámek (stavební historie)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/zamek"
+      }
+    },
+    {
+      "id": "zmizela-zamecka-kaple",
+      "place": "zamek",
+      "title": "Zámecká kaple, která zmizela",
+      "intro": "Na zámku kdysi bývala i vlastní kaple. Při velké přestavbě ale zmizela.",
+      "paragraphs": [
+        "Kaple svatého Františka Serafínského zanikla při úpravách zámku v 19. století. Ne všechno se však ztratilo: v budově se dochovaly tři barokní obrazy z jejího původního vybavení."
+      ],
+      "curiosities": [
+        "Někdy po zmizelé místnosti zůstane jen obraz nebo stará zpráva."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Zámek (historie zámecké kaple)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/zamek"
+      }
+    },
+    {
+      "id": "stara-obora-danci",
+      "place": "park",
+      "title": "Kde se procházeli daňci",
+      "intro": "Dnešní zámecký park byl kdysi mnohem divočejší. Část místa sloužila jako bažantnice.",
+      "paragraphs": [
+        "Za parkem bývala také obora, kde se chovali daňci. Když hrabě Ervín Šlik nechal na konci 19. století park upravit, vznikly nové cesty, trávníky a výhledy na rybník."
+      ],
+      "curiosities": [
+        "Daňka poznáš podle světlých skvrn na srsti a lopatovitých parohů samců."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Zámecký park (historie obory a bažantnice)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/zamecky-park"
+      }
+    },
+    {
+      "id": "sloup-ze-starych-hradu",
+      "place": "park",
+      "title": "Sloup, který přicestoval z jiného zámku",
+      "intro": "Ne všechny staré památky v zámeckém parku vznikly přímo v Kopidlně.",
+      "paragraphs": [
+        "U rybníka stojí renesanční sloup z konce 16. století s erby dávných majitelů. Podle historických výkladů býval nejspíš součástí kašny na zámku Staré Hrady a do Kopidlna ho přivezli až později."
+      ],
+      "curiosities": [
+        "Poznáš na sloupu erby, které lidem před staletími prozrazovaly, komu patří?"
+      ],
+      "sources": [
+        "Kopidlenská drbna: Zámecký park (historické sochařské památky)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/zamecky-park"
+      }
+    },
+    {
+      "id": "anna-honzakova-lekarka",
+      "place": "lide",
+      "title": "Dívka, která se nevzdala snu",
+      "intro": "Když byla Anna Honzáková malá, dívky v českých zemích nesměly běžně studovat medicínu. Ona však chtěla léčit lidi.",
+      "paragraphs": [
+        "Narodila se roku 1875 v Kopidlně a přes mnoho překážek vystudovala lékařství. Roku 1902 se stala první ženou s doktorátem medicíny z české lékařské fakulty v Praze."
+      ],
+      "curiosities": [
+        "Později si otevřela vlastní ordinaci a pomáhala i ženám, které neměly peníze."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Anna Honzáková (životopis a univerzitní záznamy)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/anna-honzakova"
+      }
+    },
+    {
+      "id": "hilmar-trinactilety-hudebnik",
+      "place": "lide",
+      "title": "Hudebník, kterému bylo teprve třináct",
+      "intro": "Zatímco dnešní děti ve třinácti chodí do školy, malý František Matěj Hilmar už cestoval s kapelou.",
+      "paragraphs": [
+        "S novopackými hudebníky vyjel do světa a podle životopisných vzpomínek navštívil Rusko, Německo i Polsko. Hrál na housle, klavír, flétnu a harfu."
+      ],
+      "curiosities": [
+        "Z kluka, který vyrážel s muzikanty na cesty, se později stal slavný autor polek."
+      ],
+      "sources": [
+        "Kopidlenská drbna: František Matěj Hilmar (hudební životopis)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/frantisek-matej-hilmar"
+      }
+    },
+    {
+      "id": "beda-kridlo-koncert",
+      "place": "lide",
+      "title": "Klavírista, kterého znala i Vídeň",
+      "intro": "V kopidlenské škole se narodil chlapec, který měl mimořádný talent na hudbu.",
+      "paragraphs": [
+        "Béda Křídlo vystudoval konzervatoř, hrával na koncertech ve Vídni a v roce 1900 odjel učit klavír do Kišiněva, dnešního hlavního města Moldavska."
+      ],
+      "curiosities": [
+        "Žil bohužel jen necelých 26 let, ale zanechal po sobě vlastní skladby."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Béda Křídlo (hudební životopis)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/beda-kridlo"
+      }
+    },
+    {
+      "id": "zdenek-sverak-film",
+      "place": "lide",
+      "title": "Kopidlno ukryté ve filmu",
+      "intro": "Viděl jsi film Po strništi bos? Jeho příběh má kořeny právě v Kopidlně.",
+      "paragraphs": [
+        "Zdeněk Svěrák tu jako kluk za války chodil do školy a zažil spoustu příhod. O mnoho let později o nich napsal knihu, podle které jeho syn Jan natočil film."
+      ],
+      "curiosities": [
+        "Film se natáčel ve Slavonicích, ne v Kopidlně. Vzpomínky jsou však kopidlenské."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Zdeněk Svěrák (vzpomínky, kniha a film)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/zdenek-sverak"
+      }
+    },
+    {
+      "id": "jan-kopidlansky-1506",
+      "place": "lide",
+      "title": "Spor, který otřásl Prahou",
+      "intro": "Před více než pěti sty lety se jeden kopidlenský šlechtic dostal v Praze do velkého neštěstí.",
+      "paragraphs": [
+        "Jan z Kopidlna se roku 1506 na pražském trhu dostal do potyčky, při níž zemřel jiný rytíř. Pražští radní dali Jana popravit. Jeho bratr Jiří to považoval za velikou nespravedlnost."
+      ],
+      "curiosities": [
+        "Ve středověku měl trh zvláštní pravidla, která měla chránit kupce i návštěvníky."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Kopidlanští z Kopidlna (kronikářské zápisy)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/kopidlansti-z-kopidlna"
+      }
+    },
+    {
+      "id": "jiri-kopidlansky-pomsta",
+      "place": "lide",
+      "title": "Když se Praha pomstila Kopidlnu",
+      "intro": "Spor mezi pražskými měšťany a pány z Kopidlna přerostl v opravdové nebezpečí.",
+      "paragraphs": [
+        "Jiří Kopidlanský se rozhodl pomstít popraveného bratra. Se svou družinou přepadal kupce a obchodní cesty. Roku 1508 pak pražské vojsko v odvetě Kopidlno vyplenilo a vypálilo."
+      ],
+      "curiosities": [
+        "Dávná hádka tak zasáhla celé město, nejen lidi, kteří ji začali."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Kopidlanští z Kopidlna (dějiny sporu s Prahou)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/kopidlansti-z-kopidlna"
+      }
+    },
+    {
+      "id": "tomas-svoboda-zakazane-knihy",
+      "place": "lide",
+      "title": "Myslivec s tajnými knihami",
+      "intro": "V Kopidlně kdysi žil člověk, který se nechtěl vzdát své víry, i když mu to tehdejší zákony zakazovaly.",
+      "paragraphs": [
+        "Myslivec Tomáš Svoboda z Češova ukrýval zakázané náboženské knihy. Roku 1728 ho v Kopidlně odsoudili k smrti. Jeho osud pak připomněl spisovatel Alois Jirásek v románu Temno."
+      ],
+      "curiosities": [
+        "Na Svobodu dodnes upozorňuje pamětní deska u železničního přejezdu."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Tomáš Svoboda (místní historické prameny)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/tomas-svoboda"
+      }
+    },
+    {
+      "id": "obrnene-vlak-1945",
+      "place": "zivot",
+      "title": "Obrněný vlak z Kopidlna",
+      "intro": "Na konci druhé světové války si kopidlenští železničáři poradili s neobvyklým úkolem.",
+      "paragraphs": [
+        "V květnu 1945 místní železničáři odstavili německý muniční vlak na kolej u cukrovaru a povstalci odzbrojili jeho posádku. Z protiletadlových vagonů a parní lokomotivy pak sestavili improvizovaný obrněný vlak."
+      ],
+      "curiosities": [
+        "Vlak pomáhal povstalcům u Rožďalovic a později hlídal kopidlenské nádraží."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Železnice v Kopidlně (vzpomínky na květen 1945)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/zeleznice-v-kopidlne"
+      }
+    },
+    {
+      "id": "samo-ridici-edita",
+      "place": "zivot",
+      "title": "Vlak, který umí řídit sám",
+      "intro": "Na malé trati z Kopidlna do Dolního Bousova se zkouší technologie jako z budoucnosti.",
+      "paragraphs": [
+        "Od dubna 2025 tudy jezdí speciálně vybavený motorový vůz EDITA. Některé části jízdy zvládne automaticky, ale ve vlaku je zatím strojvedoucí, který na všechno dohlíží."
+      ],
+      "curiosities": [
+        "I obyčejná venkovská trať může být místem velkých vynálezů."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Železnice v Kopidlně (samořídicí vlak EDITA)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/zeleznice-v-kopidlne"
+      }
+    },
+    {
+      "id": "cukrovar-vune-repy",
+      "place": "zivot",
+      "title": "Když celé město vonělo cukrem",
+      "intro": "Kdysi nebyl podzim v Kopidlně jen o padajícím listí. Začínala totiž cukrovarská kampaň.",
+      "paragraphs": [
+        "Do cukrovaru se svážela řepa a z továrny se ozýval rachot strojů. Lidé vzpomínají na vůni vařeného cukru a řízků, která se šířila ulicemi."
+      ],
+      "curiosities": [
+        "První cukrovarská kampaň tu začala v prosinci roku 1872."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Cukrovar (vzpomínky pamětníků a dějiny továrny)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/cukrovar"
+      }
+    },
+    {
+      "id": "cukrovarska-drazka",
+      "place": "zivot",
+      "title": "Malá železnice plná řepy",
+      "intro": "Po Kopidlensku kdysi jezdily vláčky tak malé, že bys je s velkou železnicí snadno spletl jen z dálky.",
+      "paragraphs": [
+        "Cukrovar si roku 1922 začal stavět vlastní úzkokolejnou drážku do okolních polí. Malé parní lokomotivy po ní vozily vagónky plné cukrové řepy."
+      ],
+      "curiosities": [
+        "Drážka měřila přes 25 kilometrů a poslední vláček s řepou přijel roku 1959."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Cukrovar (historie řepařské drážky)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/cukrovar"
+      }
+    },
+    {
+      "id": "cukrovar-ktery-nevyrobil",
+      "place": "zivot",
+      "title": "Obrovská továrna, která nikdy nezačala",
+      "intro": "Představ si obří cukrovar plný strojů, ve kterém se nakonec nikdy nezačne vyrábět.",
+      "paragraphs": [
+        "V osmdesátých letech se v Kopidlně budoval nový moderní cukrovar. Starý provoz se zastavil roku 1984. Po změnách v roce 1989 však na dokončení nezbyly peníze a nové stroje se nikdy nerozběhly."
+      ],
+      "curiosities": [
+        "Po nedokončeném cukrovaru zůstala u železnice hlavně veliká sila."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Cukrovar (nedokončená přestavba)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/cukrovar"
+      }
+    },
+    {
+      "id": "hasicsky-poplach-praporek",
+      "place": "zivot",
+      "title": "Když požár hlásil praporek",
+      "intro": "Dnes hasiči dostanou zprávu na telefon. Před více než sto lety to v Kopidlně fungovalo jinak.",
+      "paragraphs": [
+        "Když hořelo, rozezněl se zvon. Hlásný z kostelní věže ukázal směrem k požáru červený praporek. V noci místo něj svítil červenou lucernou."
+      ],
+      "curiosities": [
+        "Podle velikosti zvonu lidé poznali, jestli hoří přímo ve městě, nebo ve vsi v okolí."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Dobrovolní hasiči v Kopidlně (historie sboru)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/dobrovolni-hasici-v-kopidlne"
+      }
+    },
+    {
+      "id": "hasicsky-stratilek",
+      "place": "zivot",
+      "title": "Hasičské auto jménem Stratílek",
+      "intro": "Kopidlenští hasiči mají ve své sbírce vozidlo, které pamatuje dávné časy.",
+      "paragraphs": [
+        "V roce 1931 si pořídili motorový hasičský vůz od firmy Stratílek z Vysokého Mýta. Do té doby jezdili k zásahům s koňmi. Staré auto dodnes pečlivě udržují."
+      ],
+      "curiosities": [
+        "Jedna z levnějších nabídek prý neuspěla, protože by se auto nevešlo do hasičárny!"
+      ],
+      "sources": [
+        "Kopidlenská drbna: Dobrovolní hasiči v Kopidlně (historie motorových vozů)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/dobrovolni-hasici-v-kopidlne"
+      }
+    },
+    {
+      "id": "sokol-na-strese",
+      "place": "zivot",
+      "title": "Sokol, který nikdy neodletí",
+      "intro": "Až půjdeš kolem sokolovny, podívej se na střechu. Sedí na ní veliký sokol s roztaženými křídly.",
+      "paragraphs": [
+        "Sokolovnu otevřeli roku 1932. Její stavbu si Kopidlenští vybojovali v těžké době hospodářské krize a mnoho členů pomáhalo vlastníma rukama."
+      ],
+      "curiosities": [
+        "Ve velkém sále se nejen cvičilo. Hrálo se tam divadlo a pořádaly plesy."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Sokolovna (historie a stavba)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/sokolovna"
+      }
+    },
+    {
+      "id": "modely-ktere-leti-samy",
+      "place": "zivot",
+      "title": "Letadla, která letí bez pilota",
+      "intro": "Kopidlenští modeláři staví letadla, která po vypuštění létají sama, bez vysílačky.",
+      "paragraphs": [
+        "Některé modely vynesou do vzduchu na dlouhé šňůře, jiné pohání stočený gumový svazek. Důležitý je správný vítr a stoupavý vzduch."
+      ],
+      "curiosities": [
+        "Zdejší mladí modeláři získali medaile i na mistrovstvích Evropy a světa."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Letečtí modeláři LMK Kopidlno (klubové kroniky)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/letecti-modelari-lmk-kopidlno"
+      }
+    },
+    {
+      "id": "fotbal-z-02-na-62",
+      "place": "zivot",
+      "title": "Ze stavu 0:2 k velkému vítězství",
+      "intro": "V roce 2024 zažili kopidlenští fotbalisté zápas, na který se nezapomíná.",
+      "paragraphs": [
+        "V posledním kole prohrávali s Lázněmi Bělohrad B už 0:2. Před stovkami diváků však otočili zápas na 6:2 a poprvé postoupili do krajské 1. A třídy."
+      ],
+      "curiosities": [
+        "Na zápas přišlo 417 diváků a pak se slavilo celý víkend."
+      ],
+      "sources": [
+        "Kopidlenská drbna: FK Kopidlno (klubová historie)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/fotbalovy-klub-fk-kopidlno"
+      }
+    },
+    {
+      "id": "drahoraz-tvrz-u-kostela",
+      "place": "vsi",
+      "title": "Tvrz schovaná pod kostelem",
+      "intro": "V Drahorazi stojí kostel na místě, kde kdysi bývala středověká tvrz.",
+      "paragraphs": [
+        "Staré sídlo chránily příkopy a dřevěné opevnění. Když tvrz zanikla, vyrostl na jejím místě kostel svatého Petra a Pavla."
+      ],
+      "curiosities": [
+        "Zbytky příkopů jsou kolem hřbitova dodnes vidět."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Drahoraz (archeologické a místopisné prameny)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/drahoraz"
+      }
+    },
+    {
+      "id": "drahoraz-jeruzalem",
+      "place": "vsi",
+      "title": "Kousek Jeruzaléma v Drahorazi",
+      "intro": "Nemusíš cestovat do dalekého Izraele, abys viděl stavbu připomínající slavný Boží hrob.",
+      "paragraphs": [
+        "V letech 1695–1698 nechali Šlikové u drahorazského kostela postavit kapli podle vzoru Božího hrobu v Jeruzalémě. Do její malé komory se vstupuje nízkým otvorem."
+      ],
+      "curiosities": [
+        "Kaple patří k nejvěrnějším českým napodobeninám této slavné stavby."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Kostel a Boží hrob v Drahorazi (Památkový katalog)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/kostel-a-bozi-hrob-v-drahorazi"
+      }
+    },
+    {
+      "id": "drahoraz-tri-generace-ucitelu",
+      "place": "vsi",
+      "title": "Tři generace učitelů v jedné škole",
+      "intro": "V Drahorazi se učitelské povolání drželo v jedné rodině opravdu dlouho.",
+      "paragraphs": [
+        "Ve zdejší škole učili tři generace rodiny Straků. Nejstarší Václav Straka byl navíc muzikant, který podle místních dějin hrál se svou kapelou v Praze při oslavách korunovace krále roku 1836."
+      ],
+      "curiosities": [
+        "Drahorazská škola nakonec přestala učit v roce 1997."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Drahoraz (historie místní školy a učitelů)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/drahoraz"
+      }
+    },
+    {
+      "id": "mlynec-skola-25-let",
+      "place": "vsi",
+      "title": "Na školu čekali čtvrt století",
+      "intro": "Děti z Mlýnce dřív chodily do školy přes pole a les. Ani v zimě neměly jinou možnost.",
+      "paragraphs": [
+        "Obec žádala o vlastní školu dlouhých 25 let. Povolení dostala až roku 1900 a o rok později postavila školní budovu za pouhé čtyři měsíce."
+      ],
+      "curiosities": [
+        "Do školy přinesli darem i vycpaného čápa, volavku a kukačku!"
+      ],
+      "sources": [
+        "Kopidlenská drbna: Mlýnec (školní historie a kronika)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/mlynec"
+      }
+    },
+    {
+      "id": "mlynec-houbovice",
+      "place": "vsi",
+      "title": "Nádraží jménem Houbovice",
+      "intro": "Představ si, že vlakový průvodčí vyhlásí zastávku, která na jízdním řádu vůbec není.",
+      "paragraphs": [
+        "Zastávka Mlýnec leží u lesa. Když se chodilo hodně na houby, bývalo tu tolik houbařů, že jí průvodčí ze žertu říkali Houbovice."
+      ],
+      "curiosities": [
+        "Někdy prý z jediného vlaku vystoupila i stovka lidí s košíky."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Mlýnec (vzpomínky na železniční zastávku)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/mlynec"
+      }
+    },
+    {
+      "id": "mlynec-nejmensi-cekarnicka",
+      "place": "vsi",
+      "title": "Čekárna veliká jako pokojíček",
+      "intro": "Mlýnecká železniční zastávka měla kdysi neobvykle malý domek.",
+      "paragraphs": [
+        "Starý domek měl jen pět krát pět metrů. Přesto se do něj vešla služebna s prodejem jízdenek i čekárna se dvěma lavicemi."
+      ],
+      "curiosities": [
+        "Cestující mu prý říkali nejmenší zastávka ve střední Evropě."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Mlýnec (historie zastávky)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/mlynec"
+      }
+    },
+    {
+      "id": "zrcadlo-hrabeci-povest",
+      "place": "vsi",
+      "title": "Proč se rybník jmenuje Zrcadlo?",
+      "intro": "Rybník u Mlýnce má jméno, ve kterém se můžeš skoro vidět.",
+      "paragraphs": [
+        "Podle staré pověsti se hrabě vracel od souseda, který se chlubil drahým zrcadlem. Hrabě pak ukázal na klidnou hladinu rybníka a prohlásil, že tohle je jeho vlastní zrcadlo."
+      ],
+      "curiosities": [
+        "Je to pověst, ne doložená událost. Jméno mohlo vzniknout prostě podle hladiny odrážející oblohu."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Rybník Zrcadlo (místní pověst a rybniční historie)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/rybnik-zrcadlo"
+      }
+    },
+    {
+      "id": "zrcadlo-ptaci-cestovatele",
+      "place": "vsi",
+      "title": "Ptáci, kteří doputovali do Itálie",
+      "intro": "Rákosí kolem rybníka Zrcadlo ukrývá spoustu ptáků. Někteří cestují opravdu daleko.",
+      "paragraphs": [
+        "Ornitologové tu ptáky chytají do jemných sítí, opatří je malým kroužkem a zase pustí. Když je někdo objeví jinde, vědci se dozvědí, kam doletěli."
+      ],
+      "curiosities": [
+        "Zpráva o jednom zdejším okroužkovaném ptáku dorazila dokonce z italské Padovy."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Rybník Zrcadlo (ornitologická pozorování)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/rybnik-zrcadlo"
+      }
+    },
+    {
+      "id": "ledkov-astronom",
+      "place": "vsi",
+      "title": "Hvězdář z Ledkova",
+      "intro": "V maličké vesnici Ledkov se narodil člověk, který celý život pozoroval oblohu.",
+      "paragraphs": [
+        "František Kadavý se stal astronomem. V letech 1929 až 1936 pořídil se spolupracovníky více než třináct tisíc pozorování, většinou Slunce."
+      ],
+      "curiosities": [
+        "Když se zadíváš na hvězdy, vzpomeň si, že jeden slavný pozorovatel pocházel právě odsud."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Ledkov (životopis astronoma Františka Kadavého)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/ledkov"
+      }
+    },
+    {
+      "id": "ledkov-banjo-jamboree",
+      "place": "vsi",
+      "title": "Kde začínal slavný festival",
+      "intro": "Ledkov je maličký, ale kdysi se v místní hospodě hrála muzika, která přilákala hosty zdaleka.",
+      "paragraphs": [
+        "Právě v ledkovském sále se konaly první ročníky festivalu Banjo Jamboree. Hrála se tu hudba s banjem, kytarami a dalšími nástroji."
+      ],
+      "curiosities": [
+        "Když sál přestal stačit, festival se přesunul do kopidlenské sokolovny."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Ledkov (vzpomínky na Banjo Jamboree)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/ledkov"
+      }
+    },
+    {
+      "id": "ledkov-nejvetsi-party",
+      "place": "vsi",
+      "title": "Když malý Ledkov zaplnily tisíce lidí",
+      "intro": "Ledkov mívá jen několik desítek obyvatel. V létě 2003 se ale změnil k nepoznání.",
+      "paragraphs": [
+        "Na loukách u vesnice se konal hudební festival CzechTek. Podle místních záznamů na něj přijelo kolem čtyřiceti tisíc lidí."
+      ],
+      "curiosities": [
+        "Na jediný týden sem přijelo mnohonásobně víc návštěvníků, než kolik má ves obyvatel."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Ledkov (historie festivalu CzechTek 2003)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/ledkov"
+      }
+    },
+    {
+      "id": "pseves-zraloci",
+      "place": "vsi",
+      "title": "Žraloci z Pševsi",
+      "intro": "V Pševsi se dá potkat žralok, aniž bys šel k moři. Má totiž brusle a hokejku.",
+      "paragraphs": [
+        "Místní hokejová parta si roku 1997 založila tým HC Žralok Pševes. V zimě jezdí hrát zápasy na zimní stadion do Jičína."
+      ],
+      "curiosities": [
+        "I malá vesnice může mít vlastní hokejový tým se strašidelným jménem."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Pševes (místní spolky a sport)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/pseves"
+      }
+    },
+    {
+      "id": "pseves-alej-rodin",
+      "place": "vsi",
+      "title": "Stromy, které nesou jména rodin",
+      "intro": "V Pševsi roste alej, kde nejsou důležitá čísla stromů, ale jména lidí.",
+      "paragraphs": [
+        "V roce 2024 místní vysadili podél cesty třináct lip. Každá dostala jméno jedné pševeské rodiny, aby alej připomínala lidi, kteří tu žijí."
+      ],
+      "curiosities": [
+        "Na konci aleje stojí pískovcová plastika se srdcem. Říká se jí srdce lip."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Pševes (sousedské dějiny a výsadba stromů)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/pseves"
       }
     }
   ]
