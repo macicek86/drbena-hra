@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { BookOpen, Heart, Pause, Play, RotateCcw, Share2, Volume2, VolumeX } from "lucide-react";
 import { AlarmCard } from "@/game/GoatAlarmScene";
 import { ChronicleBook } from "@/game/ChronicleBook";
@@ -11,6 +11,8 @@ import { publicUrl } from "@/lib/public-url";
 export function GameApp() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gameRef = useRef<Runner | null>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const menuContentRef = useRef<HTMLElement>(null);
   const [hud, setHud] = useState<Hud>(emptyHud);
   const [copied, setCopied] = useState(false);
   const [players, setPlayers] = useState<number | null>(previewStats?.players ?? null);
@@ -48,6 +50,55 @@ export function GameApp() {
       game.destroy();
     };
   }, []);
+
+  // Keep the whole opening menu visible, at the largest legible size that fits.
+  // In particular, a short laptop display should not make the menu tiny if there
+  // is still plenty of empty space above it.
+  useLayoutEffect(() => {
+    if (hud.phase !== "menu") return;
+    const menu = menuRef.current;
+    const content = menuContentRef.current;
+    const frame = content?.parentElement;
+    if (!menu || !content || !frame) return;
+
+    function fit() {
+      if (!menu || !content || !frame) return;
+      const availableHeight = () => {
+        const style = getComputedStyle(frame);
+        return menu.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+      };
+      const fits = () => content.getBoundingClientRect().height <= availableHeight() - 1;
+
+      // Measure at full size first. Only shrink when the actual content needs it.
+      menu.style.fontSize = "16px";
+      if (fits()) return;
+
+      let low = 6;
+      let high = 16;
+      for (let i = 0; i < 12; i++) {
+        const mid = (low + high) / 2;
+        menu.style.fontSize = `${mid}px`;
+        if (fits()) low = mid;
+        else high = mid;
+      }
+      menu.style.fontSize = `${low.toFixed(2)}px`;
+    }
+
+    let frameId = 0;
+    const scheduleFit = () => {
+      cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(fit);
+    };
+    const observer = new ResizeObserver(scheduleFit);
+    observer.observe(menu);
+    fit();
+    // Fonts can change the height of labels after the initial measurement.
+    void document.fonts.ready.then(scheduleFit);
+    return () => {
+      observer.disconnect();
+      cancelAnimationFrame(frameId);
+    };
+  }, [hud.phase, hud.best, hud.bestGossips, players, board]);
 
   async function share() {
     const text = `Drběna nasbírala ${hud.gossips} drbů a ${hud.score} bodů v Kopidlně. Zvládneš víc?`;
@@ -181,9 +232,10 @@ export function GameApp() {
       )}
 
       {hud.phase === "menu" && (
-        <div className="menu-fit absolute inset-0 overflow-y-auto bg-gradient-to-t from-ink/80 via-ink/20 to-transparent" onClick={() => gameRef.current?.begin()}>
-          <div className="flex min-h-full items-end justify-center p-[1em] pb-[1.25em] sm:p-[2em]">
-            <section className="w-full max-w-[24em] text-center">
+        <div ref={menuRef}
+          className="menu-fit absolute inset-0 overflow-hidden bg-gradient-to-t from-ink/80 via-ink/20 to-transparent" onClick={() => gameRef.current?.begin()}>
+          <div className="flex h-full min-h-0 items-center justify-center px-[1em] py-[0.5em] sm:px-[1.5em] sm:py-[0.75em]">
+            <section ref={menuContentRef} className="w-full max-w-[24em] shrink-0 text-center">
               <img
                 src={publicUrl("/game/portrait.webp")}
                 alt="Drběna, černobílá koza s růžovou mašlí"
