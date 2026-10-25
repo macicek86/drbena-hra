@@ -25,192 +25,363 @@
     {
       "id": "urad",
       "place": "namesti",
-      "title": "Úřad na náměstí",
-      "intro": "Městský úřad stojí na kopidlnském náměstí, v řadě domů nad cestou.",
-      "paragraphs": [],
-      "curiosities": [],
-      "sources": [],
-      "link": null
+      "title": "Radnice, kde bývalo kino",
+      "intro": "Na náměstí stojí dům, kterému se dodnes říká Radnice. Kdysi v něm bylo mnohem rušněji než na obyčejném úřadě.",
+      "paragraphs": [
+        "Postavili ho roku 1875. Lidé tu chodili na plesy, divadlo a později i do kina. Dnes městský úřad sídlí v jiném domě."
+      ],
+      "curiosities": [
+        "Právě tady se narodila Anna Honzáková, pozdější první žena s doktorátem medicíny z pražské univerzity."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Radnice na náměstí (web města, Kopidlenské listy)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/radnice-na-namesti"
+      }
     },
     {
       "id": "infocentrum",
       "place": "namesti",
-      "title": "Informační centrum",
-      "intro": "Turistické informační centrum je hned na začátku, těsně před městským úřadem. Je zhruba o polovinu nižší.",
-      "paragraphs": [],
-      "curiosities": [],
-      "sources": [],
-      "link": null
+      "title": "Proč se náměstí jmenuje Hilmarovo?",
+      "intro": "Když se zastavíš u infocentra, jsi na Hilmarově náměstí. Víš, po kom dostalo jméno?",
+      "paragraphs": [
+        "František Matěj Hilmar byl učitel a hudební skladatel. V Kopidlně prožil většinu života a složil přes dvě stě tanců."
+      ],
+      "curiosities": [
+        "Jeho slavná polka Esmeralda hraje dokonce i ve hře Drběny. Poslouchej při běhu!"
+      ],
+      "sources": [
+        "Kopidlenská drbna: František Matěj Hilmar (historické a životopisné prameny)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/frantisek-matej-hilmar"
+      }
     },
     {
       "id": "sousosi",
       "place": "namesti",
-      "title": "Mariánské sousoší",
-      "intro": "Sousoší stojí na náměstí kousek dál od úřadu. Drběna ho mine dřív, než doběhne ke kostelu.",
-      "paragraphs": [],
-      "curiosities": [],
-      "sources": [],
-      "link": null
+      "title": "Tajná zpráva v kamenné soše",
+      "intro": "Uprostřed náměstí stojí velké sousoší. Dlouhá léta v něm nikdo netušil, že ukrývá zprávu z minulosti.",
+      "paragraphs": [
+        "Když sousoší roku 1884 stěhovali, schovali dovnitř noviny a pamětní zápis. Restaurátor je objevil při opravě v roce 2017."
+      ],
+      "curiosities": [
+        "Při návratu sousoší na náměstí v roce 2018 do něj lidé vložili další schránku pro budoucí generace."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Sousoší Panny Marie (Kopidlenské listy 2018)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/sousosi-panny-marie"
+      }
     },
     {
       "id": "kostel",
       "place": "namesti",
-      "title": "Kostel na náměstí",
-      "intro": "Kostel s věží a hodinami je pořád ještě na náměstí, až za sousoším.",
-      "paragraphs": [],
-      "curiosities": [],
-      "sources": [],
-      "link": null
+      "title": "Oltáře, které klamou oči",
+      "intro": "V kostele svatého Jakuba se schovává malé kouzlo. Některé oltáře vypadají jako opravdové stavby, ale zdání klame.",
+      "paragraphs": [
+        "Jsou namalované přímo na stěnách tak, aby působily prostorově. Kostel dokončili roku 1705 na místě staršího, který vyhořel."
+      ],
+      "curiosities": [
+        "Když roku 1977 otevřeli báň kostelní věže, našli uvnitř schránku se starými listinami."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Kostel sv. Jakuba Většího (Památkový katalog, web města)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/kostel-sv-jakuba-vetsiho"
+      }
     },
     {
       "id": "hradby",
       "place": "namesti",
-      "title": "Město bez hradeb",
-      "intro": "Městská práva získalo Kopidlno roku 1514. Místo hradeb spoléhalo na bažiny a okolní krajinu.",
-      "paragraphs": [],
-      "curiosities": [],
-      "sources": [],
-      "link": null
+      "title": "Kopidlenské jarmarky",
+      "intro": "Představ si náměstí plné stánků, povozů a obchodníků. Tak mohly vypadat kopidlenské jarmarky před stovkami let.",
+      "paragraphs": [
+        "Král Vladislav II. dal Kopidlnu roku 1514 právo pořádat dva výroční trhy. Poplatky z nich pomáhaly opravovat cesty."
+      ],
+      "curiosities": [
+        "Kozlí znak dostalo Kopidlno královskou listinou až roku 1523. Tenkrát už měl kozel za sebou dlouhou historii."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Znak Kopidlna (historické listiny a web města)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/znak-kopidlna"
+      }
     },
     {
       "id": "jmeno",
       "place": "namesti",
-      "title": "Odkud je jméno",
-      "intro": "Jméno Kopidlno se tradicí váže k léčivé bylině zvané kopidlo. Jiná pověst ho odvozuje od kopí.",
-      "paragraphs": [],
-      "curiosities": [],
-      "sources": [],
-      "link": null
+      "title": "Kopidlno není od kopí?",
+      "intro": "Zvláštní jméno našeho města vzbuzuje otázky. Pověsti mluví o dlouhém kopí nebo léčivé rostlině.",
+      "paragraphs": [
+        "Jazykovědec Antonín Profous ho ale spojoval se slovem kopidlo. Označovalo místo, kde se kupilo seno nebo obilí."
+      ],
+      "curiosities": [
+        "Ve starých listinách najdeš jméno města i v podobě Copidlen. To už zní docela jinak!"
+      ],
+      "sources": [
+        "Kopidlenská drbna: Jak Kopidlno přišlo ke jménu (Antonín Profous, Místní jména v Čechách)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/jak-kopidlno-prislo-ke-jmenu"
+      }
     },
     {
       "id": "jicin",
       "place": "namesti",
-      "title": "Kousek od Jičína",
-      "intro": "Město leží asi 13 kilometrů jihozápadně od Jičína a žije v něm zhruba 2 200 lidí. Kousek je to i do Rumcajsova kraje.",
-      "paragraphs": [],
-      "curiosities": [],
-      "sources": [],
-      "link": null
+      "title": "Když do Kopidlna přijel vlak",
+      "intro": "Kdysi se do Jičína jezdilo bez vlaků. Pak přišel rok 1881 a Kopidlno dostalo železnici.",
+      "paragraphs": [
+        "Nová trať spojila Nymburk s Jičínem. Kopidlenští se přičinili o to, aby koleje vedly právě přes jejich město."
+      ],
+      "curiosities": [
+        "Na trati z Kopidlna do Dolního Bousova jezdí od roku 2025 i samořídicí vlak EDITA. Strojvedoucí na něj zatím dohlíží."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Železnice v Kopidlně (železniční kroniky a další prameny)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/zeleznice-v-kopidlne"
+      }
     },
     {
       "id": "medvedi",
       "place": "namesti",
-      "title": "Medvědí dědeček",
-      "intro": "Kopidlno znají i diváci večerníčku Pojďte pane, budeme si hrát. Prý tu bydlel dědeček medvídků.",
-      "paragraphs": [],
-      "curiosities": [],
-      "sources": [],
-      "link": null
+      "title": "Kluk z Kopidlna na tanku",
+      "intro": "Zdeněk Svěrák, kterého možná znáš z filmů a písniček, byl kdysi školákem v Kopidlně.",
+      "paragraphs": [
+        "Za druhé světové války tu žil s rodinou. Při osvobození města v roce 1945 ho dospělí vysadili na tank, který přijel na náměstí."
+      ],
+      "curiosities": [
+        "Na dětství v Kopidlně pak vzpomínal v knize a filmu Po strništi bos."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Zdeněk Svěrák (rozhovory, vzpomínky a dobové prameny)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/zdenek-sverak"
+      }
     },
     {
       "id": "stara-skola",
       "place": "skola",
-      "title": "Stará škola",
-      "intro": "Za kostelem, už mimo náměstí, stojí stará škola a bývalé muzeum. Dnes je z ní komunitní a vzdělávací centrum.",
-      "paragraphs": [],
-      "curiosities": [],
-      "sources": [],
-      "link": null
+      "title": "Škola, muzeum, nebo knihovna?",
+      "intro": "Jeden dům v Hilmarově ulici už vystřídal tolik rolí, že by si zasloužil vlastní kroniku.",
+      "paragraphs": [
+        "Postavili ho roku 1853 jako školu. Později tu bylo městské muzeum a dnes v něm najdeš knihovnu a komunitní centrum."
+      ],
+      "curiosities": [
+        "V téhle budově se narodil klavírista Béda Křídlo, který později studoval i u Antonína Dvořáka."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Stará škola v Hilmarově ulici (web města, Kopidlenské listy)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/stara-skola-v-hilmarove-ulici"
+      }
     },
     {
       "id": "tvrz",
       "place": "zamek",
-      "title": "Z tvrze zámek",
-      "intro": "Zámek Kopidlno stojí na místě středověké vodní tvrze. První známý pán, Petr z Kopidlna, je v pramenech k roku 1322.",
-      "paragraphs": [],
-      "curiosities": [],
-      "sources": [],
-      "link": null
+      "title": "Zámek, který býval pevností",
+      "intro": "Kopidlenský zámek nebyl vždycky zámkem. Před dávnými časy tu stávala tvrz chráněná vodou.",
+      "paragraphs": [
+        "Tvrz obklopovaly příkopy a mokřiny. V 16. století ji noví majitelé začali přestavovat na pohodlnější renesanční sídlo."
+      ],
+      "curiosities": [
+        "Dnešní čtyřkřídlý zámek s uzavřeným nádvořím vznikal postupně po celá staletí."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Zámek (Památkový katalog, web města)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/zamek"
+      }
     },
     {
       "id": "zahradnici",
       "place": "zamek",
-      "title": "Škola v zámku",
-      "intro": "Od roku 1948 sídlí v zámku zahradnická škola. Vzácné dřeviny v parku mají na starosti její studenti a učitelé.",
-      "paragraphs": [],
-      "curiosities": [],
-      "sources": [],
-      "link": null
+      "title": "Do školy v opravdovém zámku",
+      "intro": "Představ si, že místo do běžné školní budovy chodíš na vyučování do zámku. V Kopidlně je to skutečnost!",
+      "paragraphs": [
+        "Od roku 1948 tu sídlí zahradnická škola. Studenti se učí i v zámeckém parku a mezi tropickými rostlinami ve skleníku."
+      ],
+      "curiosities": [
+        "Při Kopidlenském kvítku se zámek proměňuje ve velkou přehlídku květin a zahradnického umění."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Zámek (historie zahradnické školy)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/zamek"
+      }
     },
     {
       "id": "pamatka",
       "place": "zamek",
-      "title": "Kdo zámek hlídá",
-      "intro": "Zámek je kulturní památkou od roku 1958. Patří Královéhradeckému kraji a park za ním je otevřený na procházku.",
-      "paragraphs": [],
-      "curiosities": [],
-      "sources": [],
-      "link": null
+      "title": "Lvi hlídají zámeckou bránu",
+      "intro": "Až půjdeš kolem zámku, podívej se pozorně na jeho hlavní vchod. Čeká tam několik stop minulosti.",
+      "paragraphs": [
+        "Nad bránou je erb rodu Šliků s letopočtem 1674. Na starých dřevěných vratech najdeš dvě vyřezané lví hlavy."
+      ],
+      "curiosities": [
+        "Na průčelí zámku můžeš objevit i sluneční hodiny. Nepotřebují baterky!"
+      ],
+      "sources": [
+        "Kopidlenská drbna: Zámek (stavební historie a památkové prameny)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/zamek"
+      }
     },
     {
       "id": "viden",
       "place": "sklenik",
-      "title": "Skleník jako z Vídně",
-      "intro": "Palmový skleník v zámeckém parku stavěli v letech 1893–1894 podle návrhu Josefa Podhajského. Je to zmenšenina slavného skleníku v schönbrunnském parku.",
-      "paragraphs": [],
-      "curiosities": [],
-      "sources": [],
-      "link": null
+      "title": "Kousek Vídně v Kopidlně",
+      "intro": "Palmový skleník v parku vypadá jako malý skleněný palác. Nápad na něj přišel až z Vídně.",
+      "paragraphs": [
+        "Vznikl v letech 1893–1894 podle vzoru slavného skleníku v zahradách vídeňského Schönbrunnu. Nad středem se zvedá skleněná kopule."
+      ],
+      "curiosities": [
+        "Na korouhvičce úplně nahoře je letopočet 1894. Zkus ho někdy objevit!"
+      ],
+      "sources": [
+        "Kopidlenská drbna: Palmový skleník (Památkový katalog, web města)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/palmovy-sklenik"
+      }
     },
     {
       "id": "palmy",
       "place": "sklenik",
-      "title": "Palmy do nebe",
-      "intro": "Uprostřed skleníku rostou palmy vysoké kolem deseti metrů. Skleněná kopule i dnes patří k technickým památkám, které se dají navštívit.",
-      "paragraphs": [],
-      "curiosities": [],
-      "sources": [],
-      "link": null
+      "title": "Tři podnebí pod jednou střechou",
+      "intro": "Ve skleníku se během pár kroků dostaneš do různých teplot, aniž bys opustil Kopidlno.",
+      "paragraphs": [
+        "Jsou tu tři oddělení pro rostliny s různými nároky na teplo. Uprostřed rostou palmy vysoké kolem deseti metrů."
+      ],
+      "curiosities": [
+        "Mezi tropickými rostlinami je schované i malé jezírko."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Palmový skleník (stavebně-historický průzkum, škola)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/palmovy-sklenik"
+      }
     },
     {
       "id": "bazina",
       "place": "park",
-      "title": "Rybník z bažiny",
-      "intro": "Zámecký rybník vznikl v polovině 16. století tam, kde dřív byla bažina. Leží v parku až za zámkem a skleníkem.",
-      "paragraphs": [],
-      "curiosities": [],
-      "sources": [],
-      "link": null
+      "title": "Rybník místo bažiny",
+      "intro": "Zámecký rybník tu nebyl odjakživa. Dřív se na jeho místě rozkládaly bažiny a mokřiny.",
+      "paragraphs": [
+        "V 16. století zde lidé vybudovali rybník. Voda mohla pomáhat chránit tehdejší tvrz, ze které později vznikl zámek."
+      ],
+      "curiosities": [
+        "V zimě se kdysi z rybníka vysekával led a ukládal se do ledáren, aby jídlo vydrželo déle čerstvé."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Zámecký rybník (historické a místopisné prameny)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/zamecky-rybnik"
+      }
     },
     {
       "id": "anglicky",
       "place": "park",
-      "title": "Anglický park",
-      "intro": "Kolem zámku je přírodně krajinářský park o ploše asi 7,7 hektaru. Dnešní podoba pochází z úprav na konci 19. století.",
-      "paragraphs": [],
-      "curiosities": [],
-      "sources": [],
-      "link": null
+      "title": "Park, ve kterém býval vodopád",
+      "intro": "Cestičky v zámeckém parku nejsou rovné jako podle pravítka. A přesně o to při jeho úpravách šlo.",
+      "paragraphs": [
+        "Na konci 19. století park navrhoval František Thomayer. Chtěl volné cesty, trávníky a krásné výhledy na rybník."
+      ],
+      "curiosities": [
+        "Kdysi tu byl dokonce malý vodopád, potůček a několik můstků."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Zámecký park (historické plány a Kopidlenské listy)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/zamecky-park"
+      }
     },
     {
       "id": "stromy",
       "place": "park",
-      "title": "Stoleté stromy",
-      "intro": "V parku rostou metasekvoje čínská, tisovec dvouřadý nebo dub velkoplodý. Řada stromů pamatuje stejnou dobu jako skleník.",
-      "paragraphs": [],
-      "curiosities": [],
-      "sources": [],
-      "link": null
+      "title": "Jehličnan, který se na zimu svléká",
+      "intro": "Myslíš, že všechny jehličnany zůstávají v zimě zelené? V kopidlenském parku najdeš výjimky.",
+      "paragraphs": [
+        "Rostou tu metasekvoje čínské i tisovce dvouřadé. Jsou to jehličnany, které na podzim shazují jehličí."
+      ],
+      "curiosities": [
+        "V parku roste asi 170 druhů a odrůd dřevin. Poznáš aspoň některé?"
+      ],
+      "sources": [
+        "Kopidlenská drbna: Zámecký park (dendrologické soupisy, Kopidlenské listy)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/zamecky-park"
+      }
     },
     {
       "id": "fik",
       "place": "park",
-      "title": "Fíkovna a oranžérie",
-      "intro": "V parku kdysi stály i fíkovna a oranžérie. Dnes parku vévodí palmový skleník.",
-      "paragraphs": [],
-      "curiosities": [],
-      "sources": [],
-      "link": null
+      "title": "Fíky a pomeranče na zámku",
+      "intro": "Palmový skleník nebyl jediným místem, kde se u zámku pěstovaly neobvyklé rostliny.",
+      "paragraphs": [
+        "V parku kdysi stály také fíkovna a oranžérie. Sloužily rostlinám, kterým by česká zima venku nesvědčila."
+      ],
+      "curiosities": [
+        "Za teplých dnů se některé rostliny v nádobách přenášely ven a zdobily okolí zámku."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Zámecký park (historické plány parku)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/zamecky-park"
+      }
     },
     {
       "id": "sluzka",
       "place": "park",
-      "title": "Socha služky",
-      "intro": "V zámeckém parku připomíná místní pověst takzvaná socha služky. Drbů je tu víc než záhonů.",
-      "paragraphs": [],
-      "curiosities": [],
-      "sources": [],
-      "link": null
+      "title": "Socha, která dostala cizí jméno",
+      "intro": "V parku stojí dívka s košíkem. Všichni jí říkají socha služky, jenže to není její původní příběh.",
+      "paragraphs": [
+        "Vytvořil ji kopidlenský rodák Jindřich Severa. Jako model mu stála vlastní dcera Jitka. Soše se říká také Úroda."
+      ],
+      "curiosities": [
+        "Se sochou lidé spojují pověst o ztraceném šperku, který prý odnesla straka. Je to ale pověst, ne doložená událost."
+      ],
+      "sources": [
+        "Kopidlenská drbna: Socha služky v zámeckém parku (Kopidlenské listy, vzpomínky rodiny)."
+      ],
+      "link": {
+        "label": "Přečíst celý příběh na Kopidlenské drbně",
+        "href": "https://www.kopidlenskadrbna.org/o-kopidlne/socha-sluzky-v-zameckem-parku"
+      }
     }
   ]
 }
