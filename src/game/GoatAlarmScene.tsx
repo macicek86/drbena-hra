@@ -1,6 +1,17 @@
-import type { AlarmHud, BonusAction } from "@/game/minigames";
+import { Heart } from "lucide-react";
+import { BONUS_CALM, BONUS_PARDON, type AlarmHud, type BonusAction } from "@/game/minigames";
 
-export function AlarmCard({ bonus, onAct }: { bonus: AlarmHud; onAct: (action: BonusAction) => void }) {
+export function AlarmCard({
+  bonus,
+  lives,
+  gained,
+  onAct,
+}: {
+  bonus: AlarmHud;
+  lives: number;
+  gained: boolean;
+  onAct: (action: BonusAction) => void;
+}) {
   if (bonus.stage === "offer") {
     return (
       <section className="max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-3xl border-2 border-ink bg-cream p-4 text-center shadow-lg sm:p-6">
@@ -42,6 +53,16 @@ export function AlarmCard({ bonus, onAct }: { bonus: AlarmHud; onAct: (action: B
       {ended && (
         <>
           {!bonus.failed && <p className="mt-1 font-display text-4xl leading-none text-gold">+{bonus.reward}</p>}
+          {!bonus.failed && (
+            <div className="mt-2">
+              <div className="flex items-center justify-center gap-1" aria-label={gained ? BONUS_PARDON : `Klid: ${lives}`}>
+                {Array.from({ length: Math.max(3, lives) }, (_, i) => (
+                  <Heart key={i} className={`size-7 ${i < lives ? "fill-bow text-bow" : "text-cream/30"} ${gained && i === lives - 1 ? "scale-125" : ""}`} />
+                ))}
+              </div>
+              <p className={`mt-1 font-extrabold ${gained ? "text-gold" : "text-cream/70"}`}>{gained ? BONUS_PARDON : BONUS_CALM}</p>
+            </div>
+          )}
           <button type="button" className="mt-3 flex h-12 w-full items-center justify-center rounded-full border-2 border-ink bg-bow font-extrabold text-cream" onClick={() => onAct({ type: "continue" })}>
             Pokračovat
           </button>

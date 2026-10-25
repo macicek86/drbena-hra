@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { bonusAct, createOfferedMini, createUntangle, fishOffersMini, puzzleCount, puzzleSentence, type AnyBonus, type BonusState } from "./minigames.ts";
+import { bonusAct, createOfferedMini, createUntangle, fishOffersMini, healFromBonus, puzzleCount, puzzleSentence, type AnyBonus, type BonusState } from "./minigames.ts";
 
 function untangle(state: AnyBonus | null | undefined): BonusState {
   if (!state || state.id !== "untangle") throw new Error("expected untangle");
@@ -74,6 +74,13 @@ test("odmítnutí, chyba, oprava, odměna jednou a pokračování", () => {
   const next = bonusAct(solved.state!, { type: "continue" });
   assert.equal(next.resume, true);
   assert.equal(next.grant, 0);
+});
+
+test("splněná mini hra smaže příhodu i při třech srdíčkách, nanejvýš čtyři", () => {
+  assert.deepEqual(healFromBonus(1), { lives: 2, gained: true });
+  assert.deepEqual(healFromBonus(2), { lives: 3, gained: true });
+  assert.deepEqual(healFromBonus(3), { lives: 4, gained: true });
+  assert.deepEqual(healFromBonus(4), { lives: 4, gained: false });
 });
 
 test("přeskočení nedá body a vrátí běh", () => {

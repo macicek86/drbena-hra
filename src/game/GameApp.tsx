@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Heart, Pause, Play, RotateCcw, Share2, Volume2, VolumeX } from "lucide-react";
 import { AlarmCard } from "@/game/GoatAlarmScene";
 import { Runner, emptyHud, type Hud } from "@/game/runner";
-import type { BonusAction } from "@/game/minigames";
+import { BONUS_CALM, BONUS_PARDON, type BonusAction } from "@/game/minigames";
 import { fetchStats, playerLabel, previewStats, saveName, savedName, type BoardRow } from "@/game/plays";
 import { publicUrl } from "@/lib/public-url";
 
@@ -253,7 +253,7 @@ export function GameApp() {
       )}
 
       {playing && (
-        <header className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-3 sm:p-4">
+        <header className={`pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-3 sm:p-4 ${hud.phase === "bonus" ? "z-40" : ""}`}>
           <div className="pointer-events-auto rounded-3xl border-2 border-ink bg-cream/95 px-3 py-2">
             <p className="font-display text-3xl leading-none">{hud.score}</p>
             <p className="text-sm font-extrabold text-ink-soft">
@@ -287,8 +287,8 @@ export function GameApp() {
                 </button>
               )}
             </div>
-            <div className="flex gap-1" aria-label={`Příhody: ${3 - hud.lives} ze 3`}>
-              {[0, 1, 2].map((i) => (
+            <div className="flex gap-1" aria-label={`Klid: ${hud.lives}`}>
+              {Array.from({ length: Math.max(3, hud.lives) }, (_, i) => (
                 <Heart key={i} className={i < hud.lives ? "size-6 fill-bow text-bow" : "size-6 text-ink/25"} />
               ))}
             </div>
@@ -388,9 +388,12 @@ export function GameApp() {
       )}
 
       {hud.phase === "bonus" && hud.bonus && (
-        <div className="absolute inset-0 z-30 flex items-center justify-center bg-ink/40 p-3 sm:p-6">
-          <BonusCard bonus={hud.bonus} onAct={(action) => gameRef.current?.bonusAct(action)} />
-        </div>
+        <>
+          <div className="absolute inset-0 z-30 bg-ink/40" />
+          <div className="absolute inset-x-0 top-24 bottom-0 z-30 flex items-center justify-center overflow-hidden px-3 py-2 sm:top-28">
+            <BonusCard bonus={hud.bonus} lives={hud.lives} gained={hud.bonusLife} onAct={(action) => gameRef.current?.bonusAct(action)} />
+          </div>
+        </>
       )}
 
       {hud.phase === "play" && (
@@ -435,25 +438,37 @@ export function GameApp() {
   );
 }
 
-function BonusCard({ bonus, onAct }: { bonus: NonNullable<Hud["bonus"]>; onAct: (action: BonusAction) => void }) {
-  if (bonus.id === "alarm") return <AlarmCard bonus={bonus} onAct={onAct} />;
+function BonusCard({
+  bonus,
+  lives,
+  gained,
+  onAct,
+}: {
+  bonus: NonNullable<Hud["bonus"]>;
+  lives: number;
+  gained: boolean;
+  onAct: (action: BonusAction) => void;
+}) {
+  if (bonus.id === "alarm") return <AlarmCard bonus={bonus} lives={lives} gained={gained} onAct={onAct} />;
   return (
-    <section className="max-h-[88dvh] w-full max-w-md overflow-y-auto rounded-3xl border-2 border-ink bg-cream p-4 text-center shadow-lg sm:p-6">
+    <section className="flex min-h-0 max-h-full w-full max-w-md flex-col overflow-hidden rounded-3xl border-2 border-ink bg-cream px-3 py-3 text-center shadow-lg short:py-2 sm:px-5">
       <p className="text-xs font-extrabold tracking-wide text-bow">Ryba z rybníka</p>
-      <h2 className="mt-1 font-display text-4xl leading-none">{bonus.title}</h2>
-      {bonus.stage !== "done" && <p className="mt-3 text-sm leading-snug text-ink-soft">{bonus.prompt}</p>}
+      <h2 className="mt-1 font-display text-3xl leading-none short:text-2xl">{bonus.title}</h2>
+      {bonus.stage !== "done" && (
+        <p className="mt-1.5 line-clamp-2 text-sm leading-snug text-ink-soft short:line-clamp-1">{bonus.prompt}</p>
+      )}
       {bonus.stage === "offer" && (
-        <div className="mt-5 grid grid-cols-2 gap-2">
+        <div className="mt-4 grid grid-cols-2 gap-2 short:mt-3">
           <button
             type="button"
-            className="flex h-14 items-center justify-center rounded-full border-2 border-ink bg-bow text-lg font-extrabold text-cream"
+            className="flex h-12 items-center justify-center rounded-full border-2 border-ink bg-bow text-lg font-extrabold text-cream"
             onClick={() => onAct({ type: "play" })}
           >
             Hrát
           </button>
           <button
             type="button"
-            className="flex h-14 items-center justify-center rounded-full border-2 border-ink bg-cream text-lg font-extrabold"
+            className="flex h-12 items-center justify-center rounded-full border-2 border-ink bg-cream text-lg font-extrabold"
             onClick={() => onAct({ type: "decline" })}
           >
             Ne, díky
@@ -462,13 +477,13 @@ function BonusCard({ bonus, onAct }: { bonus: NonNullable<Hud["bonus"]>; onAct: 
       )}
       {bonus.stage === "play" && (
         <>
-          <div className="mt-4 flex flex-col gap-2">
+          <div className="mt-2 flex min-h-0 flex-1 flex-col gap-1.5 short:mt-1.5 short:gap-1">
             {bonus.cards.map((card, index) => (
               <button
                 key={`${card}-${index}`}
                 type="button"
                 aria-pressed={bonus.picked === index}
-                className={`min-h-16 rounded-2xl border-2 px-4 py-3 text-left text-base font-extrabold leading-snug sm:text-lg ${
+                className={`min-h-0 rounded-2xl border-2 px-3 py-2 text-left text-sm font-extrabold leading-snug short:py-1.5 ${
                   bonus.picked === index ? "border-ink bg-gold" : "border-ink bg-[#fff8ea]"
                 }`}
                 onClick={() => onAct({ type: "pick", index })}
@@ -477,31 +492,34 @@ function BonusCard({ bonus, onAct }: { bonus: NonNullable<Hud["bonus"]>; onAct: 
               </button>
             ))}
           </div>
-          <p className="mt-3 text-xs font-extrabold text-ink-soft">Klepni na dvě kartičky a prohoď je.</p>
-          {bonus.wrong && <p className="mt-2 text-sm font-extrabold text-bow">{bonus.wrong}</p>}
-          <button
-            type="button"
-            className="mt-4 flex h-14 w-full items-center justify-center rounded-full border-2 border-ink bg-bow text-lg font-extrabold text-cream"
-            onClick={() => onAct({ type: "check" })}
-          >
-            Zkontrolovat
-          </button>
-          <button
-            type="button"
-            className="mt-2 flex h-12 w-full items-center justify-center rounded-full border-2 border-ink bg-cream font-extrabold"
-            onClick={() => onAct({ type: "skip" })}
-          >
-            Přeskočit
-          </button>
+          <div className="shrink-0">
+            <p className="mt-1.5 text-xs font-extrabold text-ink-soft">Klepni na dvě kartičky a prohoď je.</p>
+            {bonus.wrong && <p className="mt-1 line-clamp-2 text-sm font-extrabold leading-snug text-bow">{bonus.wrong}</p>}
+            <button
+              type="button"
+              className="mt-2 flex h-11 w-full items-center justify-center rounded-full border-2 border-ink bg-bow text-base font-extrabold text-cream short:mt-1.5"
+              onClick={() => onAct({ type: "check" })}
+            >
+              Zkontrolovat
+            </button>
+            <button
+              type="button"
+              className="mt-1.5 flex h-11 w-full items-center justify-center rounded-full border-2 border-ink bg-cream font-extrabold short:mt-1"
+              onClick={() => onAct({ type: "skip" })}
+            >
+              Přeskočit
+            </button>
+          </div>
         </>
       )}
       {bonus.stage === "done" && (
         <>
-          <p className="mt-3 text-sm leading-snug">{bonus.success}</p>
-          <p className="mt-3 font-display text-4xl leading-none text-bow">+{bonus.reward}</p>
+          <p className="mt-2 line-clamp-3 text-sm leading-snug short:line-clamp-2">{bonus.success}</p>
+          <p className="mt-2 font-display text-4xl leading-none text-bow short:text-3xl">+{bonus.reward}</p>
+          <LifeReward lives={lives} gained={gained} />
           <button
             type="button"
-            className="mt-5 flex h-14 w-full items-center justify-center rounded-full border-2 border-ink bg-bow text-lg font-extrabold text-cream"
+            className="mt-3 flex h-11 w-full shrink-0 items-center justify-center rounded-full border-2 border-ink bg-bow text-base font-extrabold text-cream short:mt-2"
             onClick={() => onAct({ type: "continue" })}
           >
             Pokračovat
@@ -509,5 +527,21 @@ function BonusCard({ bonus, onAct }: { bonus: NonNullable<Hud["bonus"]>; onAct: 
         </>
       )}
     </section>
+  );
+}
+
+function LifeReward({ lives, gained }: { lives: number; gained: boolean }) {
+  return (
+    <div className="mt-2 short:mt-1">
+      <div className="flex items-center justify-center gap-1" aria-label={gained ? BONUS_PARDON : `Klid: ${lives}`}>
+        {Array.from({ length: Math.max(3, lives) }, (_, i) => (
+          <Heart
+            key={i}
+            className={`size-7 ${i < lives ? "fill-bow text-bow" : "text-ink/25"} ${gained && i === lives - 1 ? "scale-125" : ""}`}
+          />
+        ))}
+      </div>
+      <p className={`mt-1 font-extrabold ${gained ? "text-bow" : "text-ink-soft"}`}>{gained ? BONUS_PARDON : BONUS_CALM}</p>
+    </div>
   );
 }

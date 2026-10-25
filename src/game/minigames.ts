@@ -217,6 +217,17 @@ export function puzzleSentence(index: number) {
   return PUZZLES[index]!.parts.join(" ");
 }
 
+/** Minihra od ryby smaže i poslední volnou příhodu, čtvrté srdíčko je strop. */
+export const BONUS_MAX_LIVES = 4;
+export const BONUS_PARDON = "Jedna příhoda se nepočítá";
+export const BONUS_CALM = "Dneska máš klid";
+export const BONUS_PARDON_TALE = "Ryba ti jednu příhodu odpustila!";
+
+export function healFromBonus(lives: number): { lives: number; gained: boolean } {
+  if (lives >= BONUS_MAX_LIVES) return { lives, gained: false };
+  return { lives: lives + 1, gained: true };
+}
+
 function shuffleOrder(length: number, rng: () => number) {
   const order = Array.from({ length }, (_, index) => index);
   for (let i = order.length - 1; i > 0; i -= 1) {

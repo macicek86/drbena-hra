@@ -1,5 +1,5 @@
 import { Sfx } from "@/game/audio";
-import { bonusAct as actBonus, bonusHud, createOfferedMini, fishOffersMini, type AnyBonus, type BonusAction, type BonusHud } from "@/game/minigames";
+import { bonusAct as actBonus, bonusHud, BONUS_PARDON_TALE, createOfferedMini, fishOffersMini, healFromBonus, type AnyBonus, type BonusAction, type BonusHud } from "@/game/minigames";
 import { tickAlarm, type AlarmEvent } from "./goatAlarm.ts";
 import { reportPlayer, submitScore } from "@/game/plays";
 import { publicUrl } from "@/lib/public-url";
@@ -24,6 +24,7 @@ export type Hud = {
   gossips: number;
   combo: number;
   lives: number;
+  bonusLife: boolean;
   biome: string;
   fact: { title: string; text: string } | null;
   pips: number;
@@ -181,6 +182,7 @@ export function emptyHud(): Hud {
     gossips: 0,
     combo: 0,
     lives: 3,
+    bonusLife: false,
     biome: "Náměstí",
     fact: null,
     pips: 0,
@@ -237,6 +239,7 @@ export class Runner {
   private shake = 0;
   private flash = 0;
   private lives = 3;
+  private bonusLife = false;
   private gossips = 0;
   private gossipScore = 0;
   private combo = 0;
@@ -375,6 +378,7 @@ export class Runner {
     this.shake = 0;
     this.flash = 0;
     this.lives = 3;
+    this.bonusLife = false;
     this.gossips = 0;
     this.gossipScore = 0;
     this.combo = 0;
@@ -925,9 +929,30 @@ export class Runner {
     const base = Math.floor(x / cycle);
     for (let i = base - 1; i <= base + 1; i += 1) {
       const pondX = (i * 4 + 3) * BIOME_LEN + this.viewW * 0.82;
-      if (Math.abs(x - pondX) < this.u * 2.6) return true;
+      if (Math.abs(x - pondX) < this.pondHalf()) return true;
     }
     return false;
+  }
+
+  private pondHalf(): number {
+    const h = SPEC.pond.h * this.u;
+    const img = this.art.pond;
+    const aspect = img instanceof HTMLImageElement && img.height ? img.width / img.height : 1669 / 477;
+    return (h * aspect) / 2;
+  }
+
+  private drawPondEndTrees(ctx: CanvasRenderingContext2D) {
+    const img = this.art.tree;
+    if (!(img instanceof HTMLImageElement) || !img.height) return;
+    const h = SPEC.tree.h * this.u;
+    const tw = h * (img.width / img.height);
+    const feet = this.groundY;
+    for (const ent of this.ents) {
+      if (!ent.alive || ent.kind !== "pond") continue;
+      const edge = ent.x - this.camera + this.pondHalf();
+      const x = edge + tw * 0.08;
+      ctx.drawImage(img, x - tw / 2, feet - h, tw, h);
+    }
   }
 
   private pondGapEnd(x: number): number | null {
@@ -1164,6 +1189,7 @@ export class Runner {
     for (const ent of this.ents) {
       if (ent.alive && DECOR.has(ent.kind)) this.drawEnt(ctx, ent);
     }
+    this.drawPondEndTrees(ctx);
 
     ctx.fillStyle = col("path");
     const pathH = Math.max(22, this.u * 0.2);
@@ -1355,6 +1381,7 @@ export class Runner {
       gossips: this.gossips,
       combo,
       lives: this.lives,
+      bonusLife: this.bonusLife,
       biome: this.placeAt(this.camera + this.playerX).name,
       fact: this.fact,
       pips: this.gossips % 10,
@@ -1425,13 +1452,14 @@ export class Runner {
 
   private grantBonus(points: number) {
     this.gossipScore += points;
-    this.pops.push({ x: this.playerX, y: this.feet - this.u * 0.8, text: `+${points}`, life: 0.9 });
-    this.burst(this.playerX, this.feet - this.u * 0.7, "#e8a317", 8);
+    const healed = healFromBonus(this.lives);
+    this.lives = healed.lives;
+    this.bonusLife = healed.gained;
+    const text = healed.gained ? "nepočítá se" : `+${points}`;
+    this.pops.push({ x: this.playerX, y: this.feet - this.u * 0.8, text, life: 0.9 });
+    this.burst(this.playerX, this.feet - this.u * 0.7, "#e4577a", 10);
     this.sfx.collect(4);
-    if (this.lives < 3) {
-      this.lives += 1;
-      this.sfx.collect(2);
-    }
+    if (healed.gained) this.sfx.collect(2);
   }
 
   private playAlarm(events: AlarmEvent[]) {
@@ -1447,14 +1475,16 @@ export class Runner {
   }
 
   private resumeRun() {
+    const gained = this.bonusLife;
+    this.bonusLife = false;
     this.bonus = null;
     this.phase = "play";
     this.releaseInputs();
     this.fish = 1.05;
-    this.talk = 1.05;
-    this.tale = "";
-    this.taleLife = 0;
-    this.taleTag = "Příhoda";
+    this.talk = gained ? 2.2 : 1.05;
+    this.tale = gained ? BONUS_PARDON_TALE : "";
+    this.taleLife = gained ? 2.2 : 0;
+    this.taleTag = gained ? "Ryba z rybníka" : "Příhoda";
     this.pushHud(true);
   }
 
