@@ -375,6 +375,14 @@ export function GameApp() {
                 <Share2 className="size-4" /> {copied ? "Hotovo" : "Sdílet"}
               </button>
             </div>
+            <a
+              href="https://www.kopidlenskadrbna.org"
+              target="_blank"
+              rel="noreferrer"
+              className="mt-4 inline-block text-sm font-extrabold text-bow underline"
+            >
+              www.kopidlenskadrbna.org
+            </a>
           </section>
         </div>
       )}
