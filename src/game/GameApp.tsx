@@ -487,9 +487,19 @@ export function GameApp() {
               </p>
             )}
             <label className="mt-4 block">
-              <span className="text-xs font-extrabold tracking-wide text-ink-soft">TVOJE JMÉNO</span>
+              <span className="text-xs font-extrabold tracking-wide text-ink-soft">PŘEZDÍVKA DO ŽEBŘÍČKU</span>
               <input
                 value={name}
+                type="text"
+                name="drbena-prezdivka"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="words"
+                spellCheck={false}
+                enterKeyHint="done"
+                data-1p-ignore="true"
+                data-lpignore="true"
+                data-form-type="other"
                 maxLength={16}
                 placeholder={namePlaceholder}
                 className="mt-1 h-11 w-full rounded-xl border-2 border-ink bg-white/70 px-4 font-extrabold text-ink outline-none focus:border-bow"
@@ -530,7 +540,8 @@ export function GameApp() {
         >
           <form
             role="dialog"
-            aria-label="Jméno do žebříčku"
+            aria-label="Jak ti máme říkat?"
+            autoComplete="off"
             className="menu-pop w-full max-w-sm rounded-[1.75rem] border-2 border-ink bg-cream p-5 text-center shadow-[0_6px_0_#241c16]"
             onClick={(event) => event.stopPropagation()}
             onSubmit={(event) => {
@@ -548,9 +559,19 @@ export function GameApp() {
             <div className="mt-4 flex gap-2">
               <input
                 value={nameDraft}
+                type="text"
+                name="drbena-prezdivka"
+                autoComplete="off"
+                autoCorrect="off"
+                autoCapitalize="words"
+                spellCheck={false}
+                enterKeyHint="go"
+                data-1p-ignore="true"
+                data-lpignore="true"
+                data-form-type="other"
                 maxLength={16}
-                placeholder="Tvoje jméno"
-                aria-label="Tvoje jméno"
+                placeholder="Přezdívka"
+                aria-label="Přezdívka do žebříčku"
                 className="h-12 min-w-0 flex-1 rounded-xl border-2 border-ink bg-white/70 px-4 font-extrabold text-ink outline-none focus:border-bow"
                 onChange={(event) => setNameDraft(event.target.value)}
               />
