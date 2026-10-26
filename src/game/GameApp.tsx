@@ -3,6 +3,7 @@ import { BookOpen, Heart, MessageCircle, Pause, Play, RotateCcw, Dices, Share2, 
 import { AlarmCard } from "@/game/GoatAlarmScene";
 import { ChronicleBook } from "@/game/ChronicleBook";
 import { FitOverlay } from "@/game/FitOverlay";
+import { NicknameField } from "@/game/NicknameField";
 import { Runner, emptyHud, type Hud } from "@/game/runner";
 import { chronicleBook } from "@/game/chronicle";
 import { BONUS_CALM, BONUS_PARDON, type BonusAction } from "@/game/minigames";
@@ -488,24 +489,14 @@ export function GameApp() {
             )}
             <label className="mt-4 block">
               <span className="text-xs font-extrabold tracking-wide text-ink-soft">PŘEZDÍVKA DO ŽEBŘÍČKU</span>
-              <input
+              <NicknameField
                 value={name}
-                type="text"
-                name="drbena-prezdivka"
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="words"
-                spellCheck={false}
-                enterKeyHint="done"
-                data-1p-ignore="true"
-                data-lpignore="true"
-                data-form-type="other"
-                maxLength={16}
+                label="Přezdívka do žebříčku"
                 placeholder={namePlaceholder}
-                className="mt-1 h-11 w-full rounded-xl border-2 border-ink bg-white/70 px-4 font-extrabold text-ink outline-none focus:border-bow"
-                onChange={(event) => {
-                  setName(event.target.value);
-                  saveName(event.target.value);
+                className="mt-1 h-11 w-full py-2.5"
+                onChange={(next) => {
+                  setName(next);
+                  saveName(next);
                 }}
               />
             </label>
@@ -554,29 +545,13 @@ export function GameApp() {
             <h2 className="mt-2 font-display text-2xl leading-tight">Jak ti máme říkat?</h2>
             <p className="mt-1 text-sm font-extrabold text-ink-soft">Pod tímhle jménem tě uvidí ostatní v žebříčku.</p>
             <div className="mt-4 flex gap-2">
-              <input
+              <NicknameField
                 value={nameDraft}
-                type="text"
-                name="drbena-prezdivka"
-                autoComplete="off"
-                autoCorrect="off"
-                autoCapitalize="words"
-                spellCheck={false}
-                enterKeyHint="go"
-                data-1p-ignore="true"
-                data-lpignore="true"
-                data-form-type="other"
-                maxLength={16}
+                label="Přezdívka do žebříčku"
                 placeholder="Přezdívka"
-                aria-label="Přezdívka do žebříčku"
-                className="h-12 min-w-0 flex-1 rounded-xl border-2 border-ink bg-white/70 px-4 font-extrabold text-ink outline-none focus:border-bow"
-                onChange={(event) => setNameDraft(event.target.value)}
-                onKeyDown={(event) => {
-                  if (event.key === "Enter") {
-                    event.preventDefault();
-                    startPlaying(nameDraft);
-                  }
-                }}
+                className="h-12 min-w-0 flex-1 py-3"
+                onChange={setNameDraft}
+                onEnter={() => startPlaying(nameDraft)}
               />
               <button
                 type="button"
