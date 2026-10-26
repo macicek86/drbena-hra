@@ -53,12 +53,27 @@ export function pageIds(): string[] {
   return pages.map((page) => page.id);
 }
 
+const VILLAGE_PREFIXES: Record<string, string> = {
+  mlynec: "mlynec-",
+  ledkov: "ledkov-",
+  drahoraz: "drahoraz-",
+  pseves: "pseves-",
+};
+
 export function nextFact(place: string, known: readonly string[]): ChroniclePage | null {
   const have = new Set(known);
+  const prefix = VILLAGE_PREFIXES[place];
+  if (prefix) {
+    // Místní stránky zůstávají společně v kapitole „Okolní vesnice“,
+    // ale pergamen sebraný v konkrétní vsi nejprve odemyká příběhy odtud.
+    const local = pages.find((item) => item.place === "vsi" && item.id.startsWith(prefix) && !have.has(item.id));
+    if (local) return local;
+  }
   const order = chapters.map((chapter) => chapter.id);
-  const start = Math.max(0, order.indexOf(place));
+  const chapterId = prefix ? "vsi" : place;
+  const start = Math.max(0, order.indexOf(chapterId));
   for (let step = 0; step < Math.max(order.length, 1); step += 1) {
-    const id = order.length ? order[(start + step) % order.length]! : place;
+    const id = order.length ? order[(start + step) % order.length]! : chapterId;
     const page = pages.find((item) => item.place === id && !have.has(item.id));
     if (page) return page;
     if (!order.length) break;
