@@ -333,9 +333,12 @@ export function GameApp() {
               <p className="menu-pop mt-[0.15em] rotate-1 rounded-full border-2 border-ink bg-bow px-[1em] py-[0.2em] font-display text-[1.25em] text-cream shadow-[0_0.2em_0_#241c16] [animation-delay:80ms]">
                 Drběna sbírá drby
               </p>
+              <p className="menu-pop mt-[0.6em] rounded-full bg-ink/40 px-[0.9em] py-[0.2em] text-[0.78em] font-extrabold text-cream backdrop-blur-sm [animation-delay:120ms]">
+                ♪ za doprovodu Esmeraldy od Františka Matěje Hilmara
+              </p>
 
               <div
-                className="menu-pop mt-[1em] w-full rounded-[1.75em] border-2 border-ink bg-cream/90 p-[1em] shadow-[0_0.4em_0_#241c16] backdrop-blur-md [animation-delay:160ms]"
+                className="menu-pop mt-[0.8em] w-full rounded-[1.75em] border-2 border-ink bg-cream/90 p-[1em] shadow-[0_0.4em_0_#241c16] backdrop-blur-md [animation-delay:160ms]"
                 onClick={(event) => event.stopPropagation()}
               >
                 <button
@@ -406,9 +409,7 @@ export function GameApp() {
             </section>
           </div>
           <p className="pointer-events-none absolute inset-x-0 bottom-[0.6em] px-[1em] text-center text-[0.68em] font-extrabold leading-snug text-cream/90 [text-shadow:0_1px_2px_#241c16]">
-            ♪ Esmeralda (F. M. Hilmar){previewStats ? " · náhled" : ""}
-            <br className="sm:hidden" />
-            <span className="hidden sm:inline"> · </span>© Kopidlenská drbna | Camledian
+            {previewStats ? "Náhled · " : ""}© Kopidlenská drbna | Camledian
           </p>
         </div>
       )}
