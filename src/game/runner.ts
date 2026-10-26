@@ -31,6 +31,7 @@ export type Hud = {
   biome: string;
   fact: { title: string; text: string } | null;
   factLabel: string;
+  factComplete: boolean;
   chronicleNew: number;
   scrolls: number;
   scrollsTotal: number;
@@ -130,6 +131,29 @@ const DECOR = new Set<Kind>(["bush", "lamp", "tree", "bench", "pigeon", "bin", "
 
 // Nejdřív se ryba celá vynoří; až pak otevřít dialog či nabídku minihry.
 const FISH_RISE_SECONDS = 0.85;
+
+const SCROLL_COMPLETE_MESSAGES = [
+  {
+    title: "Méé, všechno už víš!",
+    text: "Drběna už všechny dostupné příběhy odhalila. Pergamen ale přinesl dalších 16 bodů!",
+  },
+  {
+    title: "Kronika má všechno zapsané!",
+    text: "Nová stránka tentokrát nepřibyla. I známý pergamen ale stojí za 16 bodů!",
+  },
+  {
+    title: "To už Drběna četla!",
+    text: "Žádný nový příběh se zatím neschovává. Zato 16 bodů putuje do kapsy!",
+  },
+  {
+    title: "Tajemství zatím došla!",
+    text: "Všechny příběhy jsou odemčené. Tenhle pergamen má přesto cenu 16 bodů!",
+  },
+  {
+    title: "Méé, známá historie!",
+    text: "Drběna má v kronice už všechno, co se dá objevit. Za pergamen získáváš 16 bodů!",
+  },
+] as const;
 
 const FISH = [
   "Tady dole se toho děje víc než na kopidlenském náměstí!",
@@ -249,6 +273,7 @@ export function emptyHud(): Hud {
     biome: "Náměstí",
     fact: null,
     factLabel: "",
+    factComplete: false,
     chronicleNew: 0,
     scrolls: 0,
     scrollsTotal: 0,
@@ -316,6 +341,8 @@ export class Runner {
   private lastCollect = -10;
   private fact: { title: string; text: string } | null = null;
   private factLabel = "";
+  private factComplete = false;
+  private lastCompleteMessage = -1;
   private factLife = 0;
   private chronicleNew = 0;
   private scrollsKnown = 0;
@@ -518,6 +545,7 @@ export class Runner {
     this.lastCollect = -10;
     this.fact = null;
     this.factLabel = "";
+    this.factComplete = false;
     this.factLife = 0;
     this.chronicleNew = 0;
     this.scrollsKnown = knownIds().length;
@@ -1028,6 +1056,7 @@ export class Runner {
       if (this.factLife <= 0) {
         this.fact = null;
         this.factLabel = "";
+        this.factComplete = false;
       }
     }
   }
@@ -1167,23 +1196,29 @@ export class Runner {
       life: 0.9,
     });
     this.stars(ent.x - this.camera, this.groundY - ent.lift * this.u, 14);
+    this.taleLife = 0;
     if (fact) {
       this.chronicleNew += 1;
       this.scrollsKnown = knownIds().length;
       this.fact = { title: fact.title, text: "" };
       this.factLabel = "Nové tajemství odhaleno!";
+      this.factComplete = false;
       this.factLife = 3.1;
-      this.taleLife = 0;
-      this.sfx.prize();
     } else {
-      this.fact = null;
-      this.factLabel = "";
-      this.factLife = 0;
-      this.tale = "Dnešek už v kronice je.";
-      this.taleTag = "Kronika";
-      this.taleLife = 2.6;
-      this.sfx.prize();
+      // Když jsou všechny dostupné stránky odemčené, pergamen stále dává body.
+      // Krátké hlášky obměňovat, ale neopakovat stejnou dvakrát za sebou.
+      let index = Math.floor(Math.random() * SCROLL_COMPLETE_MESSAGES.length);
+      if (SCROLL_COMPLETE_MESSAGES.length > 1 && index === this.lastCompleteMessage) {
+        index = (index + 1) % SCROLL_COMPLETE_MESSAGES.length;
+      }
+      this.lastCompleteMessage = index;
+      const message = SCROLL_COMPLETE_MESSAGES[index]!;
+      this.fact = { title: message.title, text: message.text };
+      this.factLabel = "Kronika prozatím kompletní";
+      this.factComplete = true;
+      this.factLife = 4.1;
     }
+    this.sfx.prize();
     this.pushHud(true);
   }
 
@@ -2545,6 +2580,7 @@ export class Runner {
       biome: this.placeAt(this.camera + this.playerX).name,
       fact: this.fact,
       factLabel: this.factLabel,
+      factComplete: this.factComplete,
       chronicleNew: this.chronicleNew,
       scrolls: this.scrollsKnown,
       scrollsTotal: this.scrollsTotal,
