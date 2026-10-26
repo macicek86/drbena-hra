@@ -9,12 +9,64 @@ import { BONUS_CALM, BONUS_PARDON, type BonusAction } from "@/game/minigames";
 import { fetchStats, playerLabel, previewStats, saveName, savedName, type BoardRow } from "@/game/plays";
 import { publicUrl } from "@/lib/public-url";
 
+function hudReactKey(h: Hud): string {
+  const b = h.bonus;
+  let bonus = "";
+  if (b?.id === "alarm") {
+    bonus = [
+      b.stage,
+      b.pointer.toFixed(3),
+      b.zoneStart.toFixed(3),
+      b.zoneEnd.toFixed(3),
+      b.windows,
+      b.goal,
+      b.pose,
+      b.shake.toFixed(3),
+      b.note,
+      b.failed ? 1 : 0,
+      b.prompt,
+      b.success,
+      b.reward,
+      b.wrong,
+    ].join(",");
+  } else if (b) {
+    bonus = [b.stage, b.prompt, b.picked ?? "", b.wrong, b.success, b.reward, b.cards.join("|")].join(",");
+  }
+  return [
+    h.phase,
+    h.lives,
+    h.bonusLife ? 1 : 0,
+    h.fact?.title ?? "",
+    h.fact?.text ?? "",
+    h.factLabel,
+    h.chronicleNew,
+    h.scrolls,
+    h.scrollsTotal,
+    h.newBest ? 1 : 0,
+    h.muted ? 1 : 0,
+    h.coach ? 1 : 0,
+    h.showTale ? 1 : 0,
+    h.line,
+    h.taleTag,
+    h.ready ? 1 : 0,
+    Math.round(h.progress * 100),
+    h.best,
+    h.bestGossips,
+    bonus,
+  ].join("\u001f");
+}
+
 export function GameApp() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const scoreRef = useRef<HTMLParagraphElement>(null);
+  const gossipRef = useRef<HTMLParagraphElement>(null);
+  const biomeRef = useRef<HTMLParagraphElement>(null);
   const gameRef = useRef<Runner | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuContentRef = useRef<HTMLElement>(null);
   const [hud, setHud] = useState<Hud>(emptyHud);
+  const liveHud = useRef(hud);
+  const hudKey = useRef("");
   const [copied, setCopied] = useState(false);
   const [players, setPlayers] = useState<number | null>(previewStats?.players ?? null);
   const [board, setBoard] = useState<BoardRow[]>(previewStats?.board ?? []);
@@ -32,7 +84,19 @@ export function GameApp() {
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const game = new Runner(canvas, setHud);
+    const game = new Runner(canvas, (next) => {
+      liveHud.current = next;
+      const score = scoreRef.current;
+      if (score) score.textContent = String(next.score);
+      const gossip = gossipRef.current;
+      if (gossip) gossip.textContent = next.combo > 1 ? `${next.gossips} drbů · ×${next.combo}` : `${next.gossips} drbů`;
+      const biome = biomeRef.current;
+      if (biome && biome.textContent !== next.biome) biome.textContent = next.biome;
+      const key = hudReactKey(next);
+      if (key === hudKey.current) return;
+      hudKey.current = key;
+      setHud(next);
+    });
     gameRef.current = game;
     game.start();
     const onStats = (event: Event) => {
@@ -51,6 +115,19 @@ export function GameApp() {
       game.destroy();
     };
   }, []);
+
+  // Keep the whole opening menu visible, at the largest legible size that fits.
+  // In particular, a short laptop display should not make the menu tiny if there
+  // is still plenty of empty space above it.
+  useLayoutEffect(() => {
+    const next = liveHud.current;
+    const score = scoreRef.current;
+    if (score) score.textContent = String(next.score);
+    const gossip = gossipRef.current;
+    if (gossip) gossip.textContent = next.combo > 1 ? `${next.gossips} drbů · ×${next.combo}` : `${next.gossips} drbů`;
+    const biome = biomeRef.current;
+    if (biome) biome.textContent = next.biome;
+  });
 
   // Keep the whole opening menu visible, at the largest legible size that fits.
   // In particular, a short laptop display should not make the menu tiny if there
@@ -121,7 +198,7 @@ export function GameApp() {
 
   return (
     <main className="relative h-dvh w-full touch-none overflow-hidden bg-day text-ink select-none">
-      <canvas ref={canvasRef} className="absolute inset-0 h-full w-full touch-none" aria-label="Hra Drběna sbírá drby" />
+      <canvas key="drbena-surface" ref={canvasRef} className="absolute inset-0 h-full w-full touch-none" aria-label="Hra Drběna sbírá drby" />
 
       {(hud.phase === "loading" || hud.phase === "splash") && (
         <div
@@ -267,6 +344,16 @@ export function GameApp() {
               <p className="mt-[0.65em]">
                 <span className="text-[0.875em] font-extrabold text-cream [text-shadow:0_1px_0_#241c16]">Klepni a skoč. Táhni dolů a pokrč se.</span>
               </p>
+              <button
+                type="button"
+                className="mx-auto mt-[0.45em] text-[0.8em] font-extrabold text-cream/80 underline decoration-cream/40 underline-offset-4 [text-shadow:0_1px_0_#241c16]"
+                onClick={(event) => {
+                  event.stopPropagation();
+                  gameRef.current?.beginAtStag();
+                }}
+              >
+                K jelenovi
+              </button>
               {hud.best > 0 && (
                 <p className="mt-[0.25em]">
                   <span className="text-[0.875em] font-extrabold text-gold [text-shadow:0_1px_0_#241c16]">
@@ -351,10 +438,8 @@ export function GameApp() {
       {playing && (
         <header className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-3 p-3 sm:p-4">
           <div className="pointer-events-auto rounded-3xl border-2 border-ink bg-cream/95 px-3 py-2">
-            <p className="font-display text-3xl leading-none">{hud.score}</p>
-            <p className="text-sm font-extrabold text-ink-soft">
-              {hud.gossips} drbů{hud.combo > 1 ? ` · ×${hud.combo}` : ""}
-            </p>
+            <p ref={scoreRef} className="font-display text-3xl leading-none" />
+            <p ref={gossipRef} className="text-sm font-extrabold text-ink-soft" />
             {hud.scrollsTotal > 0 && (
               <div className="mt-1.5 w-36" aria-label={`Kronika ${hud.scrolls} z ${hud.scrollsTotal}, zbývá ${hud.scrollsTotal - hud.scrolls} neodemčených příběhů`}>
                 <div className="flex items-center gap-1">
@@ -374,7 +459,7 @@ export function GameApp() {
           </div>
           <div className="pointer-events-auto flex flex-col items-end gap-2">
             <div className="flex items-center gap-2">
-              <p className="rounded-full border-2 border-ink bg-cream px-3 py-1 text-sm font-extrabold">{hud.biome}</p>
+              <p ref={biomeRef} className="rounded-full border-2 border-ink bg-cream px-3 py-1 text-sm font-extrabold" />
               <button
                 type="button"
                 className="flex size-11 items-center justify-center rounded-full border-2 border-ink bg-cream"

@@ -56,16 +56,21 @@ type Kind =
   | "lamp"
   | "tree"
   | "bench"
+  | "pigeon"
+  | "bin"
   | "houses"
   | "castle"
   | "greenhouse"
   | "pond"
+  | "obora"
+  | "stag"
+  | "firefly"
   | "column"
   | "church"
   | "school"
   | "info";
 
-type Ent = { kind: Kind; x: number; lift: number; anim: number; alive: boolean };
+type Ent = { kind: Kind; x: number; lift: number; anim: number; alive: boolean; fly?: number; sway?: number; face?: number; wait?: number };
 
 type Bit = {
   on: boolean;
@@ -87,9 +92,11 @@ type Art = Record<string, HTMLImageElement | HTMLImageElement[] | null>;
 const SAVE_KEY = "drbena-kopidlno-v1";
 
 const HAZARDS = new Set<Kind>(["fence", "pot", "dog", "gardener", "car", "branch"]);
-const PICKUPS = new Set<Kind>(["gossip", "heart", "scroll"]);
-const LANDMARKS = new Set<Kind>(["houses", "castle", "greenhouse", "pond"]);
-const DECOR = new Set<Kind>(["bush", "lamp", "tree", "bench", "column", "church", "school", "info"]);
+const PICKUPS = new Set<Kind>(["gossip", "heart", "scroll", "firefly"]);
+const LANDMARKS = new Set<Kind>(["houses", "castle", "greenhouse", "pond", "obora", "stag"]);
+const PLACES = new Set<Kind>(["houses", "castle", "greenhouse", "pond", "column", "church", "school", "info"]);
+const PROPS = new Set<Kind>(["bush", "lamp", "tree", "bench", "pigeon", "bin"]);
+const DECOR = new Set<Kind>(["bush", "lamp", "tree", "bench", "pigeon", "bin", "column", "church", "school", "info"]);
 
 const FISH = [
   "Tady dole se toho děje víc než na kopidlenském náměstí!",
@@ -151,10 +158,15 @@ const SPEC: Record<Kind, { h: number; hitW: number; hitH: number; lift: number }
   lamp: { h: 1.42, hitW: 0, hitH: 0, lift: 0 },
   tree: { h: 1.85, hitW: 0, hitH: 0, lift: 0 },
   bench: { h: 0.5, hitW: 0, hitH: 0, lift: 0 },
+  pigeon: { h: 0.36, hitW: 0, hitH: 0, lift: 0 },
+  bin: { h: 0.56, hitW: 0, hitH: 0, lift: 0 },
   houses: { h: 1.55, hitW: 0, hitH: 0, lift: 0 },
   castle: { h: 2.35, hitW: 0, hitH: 0, lift: 0 },
   greenhouse: { h: 2.15, hitW: 0, hitH: 0, lift: 0 },
   pond: { h: 1.85, hitW: 0, hitH: 0, lift: 0.02 },
+  obora: { h: 2.2, hitW: 0, hitH: 0, lift: 0 },
+  stag: { h: 1.5, hitW: 0, hitH: 0, lift: 0 },
+  firefly: { h: 0.22, hitW: 1, hitH: 1, lift: 0.9 },
   column: { h: 1.7, hitW: 0, hitH: 0, lift: 0 },
   church: { h: 2.2, hitW: 0, hitH: 0, lift: 0 },
   school: { h: 1.45, hitW: 0, hitH: 0, lift: 0 },
@@ -166,7 +178,7 @@ function hash(n: number): number {
   return x - Math.floor(x);
 }
 
-const ART_REV = "15";
+const ART_REV = "23";
 
 async function loadImage(src: string): Promise<HTMLImageElement | null> {
   try {
@@ -211,6 +223,7 @@ export class Runner {
   private ctx: CanvasRenderingContext2D | null;
   private sfx = new Sfx();
   private art: Art = {};
+  private bakes = new WeakMap<HTMLImageElement, { h: number; canvas: HTMLCanvasElement }>();
   private raf = 0;
   private alive = true;
   private last = 0;
@@ -220,6 +233,7 @@ export class Runner {
   private viewH = 450;
   private scale = 1;
   private cssW = 800;
+  private sized = false;
   private groundY = 400;
   private u = 120;
   private jumpSpeed = 500;
@@ -279,6 +293,7 @@ export class Runner {
   private scrollsRun = 0;
   private decorCursor = 0;
   private nextChunk = 0;
+  private oboraSpans: { from: number; to: number }[] = [];
   private lastHazard: Kind | null = null;
   private hitKind: Kind | null = null;
   private loaded = 0;
@@ -306,6 +321,16 @@ export class Runner {
   private prevStart = false;
   private padJump = false;
   private padDuck = false;
+  private padHunt = 0;
+  private padLive = false;
+  private pondsDirty = true;
+  private forceMeet = false;
+  private cullMargin = 900;
+  private skyGrad: CanvasGradient | null = null;
+  private skyTop = "";
+  private skyBot = "";
+  private skyGround = -1;
+  private flowerX: [number[], number[], number[]] = [[], [], []];
   private playerX = 160;
 
   constructor(
@@ -405,6 +430,7 @@ export class Runner {
     this.chronicleNew = 0;
     this.scrollsKnown = knownIds().length;
     this.ents = [];
+    this.oboraSpans = [];
     this.pops = [];
     this.hazardCursor = this.viewW * 0.92;
     this.nextScroll = this.viewW * (0.35 + Math.random() * 0.7);
@@ -424,9 +450,27 @@ export class Runner {
     this.fish = 0;
     this.fishAge = 0;
     this.bonus = null;
+    this.forceMeet = false;
     this.fillWorld();
     this.pushHud(true);
     reportPlayer();
+  }
+
+  beginAtStag() {
+    this.begin();
+    this.forceMeet = true;
+    const gate = this.oboraLayout(7).start;
+    this.camera = Math.max(0, gate - this.playerX - this.viewW * 1.15);
+    this.run = this.camera;
+    this.ents = [];
+    this.oboraSpans = [];
+    this.pops = [];
+    this.decorCursor = this.camera - 20;
+    this.hazardCursor = this.camera + this.viewW * 0.45;
+    this.nextScroll = this.camera + this.viewW;
+    this.nextChunk = Math.max(0, Math.floor((this.camera - this.viewW) / BIOME_LEN));
+    this.fillWorld();
+    this.pushHud(true);
   }
 
   private async bootstrap() {
@@ -440,6 +484,8 @@ export class Runner {
       "lamp",
       "tree",
       "bench",
+      "pigeon",
+      "bin",
       "houses",
       "castle",
       "greenhouse",
@@ -455,7 +501,7 @@ export class Runner {
     ] as const;
     const frames = ["jump", "duck", "run", "idle"] as const;
     this.loaded = 0;
-    this.loadTotal = names.length + frames.length * 4;
+    this.loadTotal = names.length + frames.length * 4 + 13;
     this.ready = false;
     const rest = Promise.all([
       this.loadFramesCounted("jump"),
@@ -472,14 +518,35 @@ export class Runner {
         this.art[name] = singles[i] ?? null;
       });
     });
-    const hero = Promise.all([this.loadFramesCounted("run"), this.loadFramesCounted("idle")]).then(([run, idle]) => {
+    const scenery = Promise.all([
+      this.loadCounted(publicUrl("/game/obora-start.webp")),
+      this.loadCounted(publicUrl("/game/obora-mid.webp")),
+      this.loadCounted(publicUrl("/game/obora-end.webp")),
+      this.loadCounted(publicUrl("/game/stag.webp")),
+      this.loadCounted(publicUrl("/game/oak.webp")),
+    ]).then((loaded) => {
+      if (!this.alive) return;
+      this.art.oboraStart = loaded[0];
+      this.art.oboraMid = loaded[1];
+      this.art.oboraEnd = loaded[2];
+      this.art.stag = loaded[3];
+      this.art.oak = loaded[4];
+    });
+    const hero = Promise.all([
+      this.loadFramesCounted("run"),
+      this.loadFramesCounted("idle"),
+      this.loadFramesCounted("stag-run"),
+      this.loadFramesCounted("stag-idle"),
+    ]).then(([run, idle, stagRun, stagIdle]) => {
       if (!this.alive) return;
       this.art.run = run;
       this.art.idle = idle;
+      this.art.stagRun = stagRun;
+      this.art.stagIdle = stagIdle;
     });
     if (!this.alive) return;
     this.openMenu();
-    await Promise.all([hero, rest]);
+    await Promise.all([hero, rest, scenery]);
   }
 
   private loadCounted(src: string) {
@@ -504,6 +571,7 @@ export class Runner {
     this.vy = 0;
     this.onGround = true;
     this.ents = [];
+    this.oboraSpans = [];
     this.decorCursor = -30;
     this.nextChunk = 0;
     this.hazardCursor = 999999;
@@ -552,6 +620,8 @@ export class Runner {
       this.togglePause();
     } else if (code === "Enter") {
       if (this.phase === "menu" || (this.phase === "over" && this.lock <= 0)) this.begin();
+    } else if (code === "KeyJ") {
+      if (this.phase === "menu" || this.phase === "play" || (this.phase === "over" && this.lock <= 0)) this.beginAtStag();
     } else if (code === "KeyM") {
       this.toggleMute();
     }
@@ -612,9 +682,13 @@ export class Runner {
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const cssW = this.canvas.clientWidth || window.innerWidth;
     const cssH = this.canvas.clientHeight || window.innerHeight;
+    const width = Math.max(1, Math.round(cssW * dpr));
+    const height = Math.max(1, Math.round(cssH * dpr));
+    if (this.sized && this.canvas.width === width && this.canvas.height === height) return;
+    this.sized = true;
     this.cssW = cssW;
-    this.canvas.width = Math.max(1, Math.round(cssW * dpr));
-    this.canvas.height = Math.max(1, Math.round(cssH * dpr));
+    this.canvas.width = width;
+    this.canvas.height = height;
     this.viewW = cssW < 560 ? 530 : cssW < 980 ? 760 : 1000;
     this.scale = (cssW * dpr) / this.viewW;
     this.viewH = (cssH * dpr) / this.scale;
@@ -622,6 +696,7 @@ export class Runner {
     const bar = barCss * (this.viewW / Math.max(1, cssW));
     this.groundY = this.viewH - bar - 8;
     this.u = Math.min(156, Math.max(112, this.viewW * 0.25));
+    this.cullMargin = this.visualHalf("pond") + this.u * 3;
     this.playerX = this.viewW * 0.24;
     const jumpH = this.u * 1.35;
     const air = 0.92;
@@ -631,6 +706,9 @@ export class Runner {
     const pace = this.viewW < 600 ? 1.18 : 1;
     this.speed0 = 255 * (this.viewW / 740) * pace;
     this.speedMax = 500 * (this.viewW / 740) * pace;
+    this.skyGrad = null;
+    this.bakes = new WeakMap();
+    this.pondsDirty = true;
   }
 
   private speed0 = 250;
@@ -638,36 +716,85 @@ export class Runner {
 
   private loop(now: number) {
     if (!this.alive) return;
-    const dt = Math.min(0.05, (now - this.last) / 1000 || 0);
-    this.last = now;
-    this.acc += dt;
-    let steps = 0;
-    while (this.acc >= 1 / 60 && steps < 5) {
-      this.step(1 / 60);
-      this.acc -= 1 / 60;
-      steps += 1;
+    try {
+      const dt = Math.min(0.05, (now - this.last) / 1000 || 0);
+      this.last = now;
+      this.acc += dt;
+      let steps = 0;
+      while (this.acc >= 1 / 60 && steps < 5) {
+        this.step(1 / 60);
+        this.acc -= 1 / 60;
+        steps += 1;
+      }
+      this.draw();
+      const mode = this.phase === "menu" ? "intro" : this.phase === "play" ? "loop" : "off";
+      let tempo = 1;
+      if (this.phase === "play") {
+        const pace = this.speed0 > 0 ? this.speed / this.speed0 : 1;
+        const running = this.talk <= 0 && this.fish <= 0;
+        tempo = running ? 1 + Math.min(0.1, Math.max(0, (pace - 1) * 0.06)) : 0.98;
+      }
+      this.sfx.tick(mode, tempo);
+      this.emitAcc += dt;
+      if (this.emitAcc > 0.12) {
+        this.emitAcc = 0;
+        this.pushHud(false);
+      }
+    } catch {
+      const lost = !this.ctx || this.ctx.isContextLost();
+      if (lost) {
+        this.skyGrad = null;
+        this.bakes = new WeakMap();
+        this.ctx = this.canvas.getContext("2d");
+      }
+    } finally {
+      if (this.alive) this.raf = requestAnimationFrame(this.loop);
     }
-    this.draw();
-    const mode = this.phase === "menu" ? "intro" : this.phase === "play" ? "loop" : "off";
-    let tempo = 1;
-    if (this.phase === "play") {
-      const pace = this.speed0 > 0 ? this.speed / this.speed0 : 1;
-      const running = this.talk <= 0 && this.fish <= 0;
-      tempo = running ? 1 + Math.min(0.1, Math.max(0, (pace - 1) * 0.06)) : 0.98;
-    }
-    this.sfx.tick(mode, tempo);
-    this.emitAcc += dt;
-    if (this.emitAcc > 0.12) {
-      this.emitAcc = 0;
-      this.pushHud(false);
-    }
-    this.raf = requestAnimationFrame(this.loop);
   }
 
   private currentSpeed(): number {
     if (this.phase === "menu") return this.speed0 * 0.62;
-    const ramp = Math.min(1, this.run / (BIOME_LEN * 3.1));
-    return this.speed0 + (this.speedMax - this.speed0) * ramp;
+    const loop = BIOME_LEN * 4;
+    const first = Math.min(1, this.run / loop);
+    const base = this.speed0 + (this.speedMax - this.speed0) * first;
+    const later = Math.min(1, Math.max(0, this.run - loop) / (loop * 2));
+    return base * (1 + 0.15 * later) * this.oboraPace() * this.stagWonder();
+  }
+
+  private stagWonder(): number {
+    const x = this.camera + this.playerX;
+    let hold = 0;
+    for (const ent of this.ents) {
+      if (ent.kind !== "stag") continue;
+      const ahead = ent.x - x;
+      let t = 0;
+      const phase = ent.sway ?? 0;
+      const meet = (ent.face ?? 0) === 1;
+      if (phase < 1) {
+        t = 1 - Math.min(1, Math.max(0, ahead) / (this.viewW * 2.15));
+      } else if (meet ? phase < 4 : phase === 1) {
+        t = 1;
+      } else {
+        t = Math.max(0, 1 - Math.max(0, x - ent.x) / (this.viewW * 0.45));
+      }
+      if (t > hold) hold = t;
+    }
+    const smooth = hold * hold * (3 - 2 * hold);
+    return 1 - 0.55 * smooth;
+  }
+
+  private oboraPace(): number {
+    const x = this.camera + this.playerX;
+    const ease = this.viewW * 0.55;
+    let hold = 0;
+    for (const span of this.oboraSpans) {
+      const into = (x - span.from) / ease + 0.15;
+      const out = (span.to - x) / ease + 0.15;
+      const t = Math.max(0, Math.min(1, into, out));
+      if (t > hold) hold = t;
+    }
+    const smooth = hold * hold * (3 - 2 * hold);
+    return 1 - 0.18 * smooth;
   }
 
   private step(dt: number) {
@@ -724,10 +851,12 @@ export class Runner {
       return;
     }
 
-    const speed = this.currentSpeed();
+    const speed = this.phase === "play" && this.stagHolds() ? 0 : this.currentSpeed();
     this.speed = speed;
     this.camera += speed * dt;
     if (this.phase === "play") this.run += speed * dt;
+    this.herdStags(dt);
+    this.spookPigeons(dt);
 
     if (this.phase === "play") this.simPlayer(dt);
     else {
@@ -750,7 +879,29 @@ export class Runner {
     }
   }
 
+  private stagHolds(): boolean {
+    for (const ent of this.ents) {
+      if (ent.alive && ent.kind === "stag" && (ent.face ?? 0) === 1 && (ent.sway ?? 0) === 2) return true;
+    }
+    return false;
+  }
+
   private simPlayer(dt: number) {
+    if (this.stagHolds()) {
+      this.jumpBuffer = 0;
+      this.jumpEdge = false;
+      if (this.feet < this.groundY) {
+        this.vy = Math.min(this.vy + this.gravity * dt, this.jumpSpeed * 1.25);
+        this.feet = Math.min(this.groundY, this.feet + this.vy * dt);
+        this.onGround = this.feet >= this.groundY;
+        if (this.onGround) this.vy = 0;
+        return;
+      }
+      this.feet = this.groundY;
+      this.vy = 0;
+      this.onGround = true;
+      return;
+    }
     this.suppress = Math.max(0, this.suppress - dt);
     const ducking = this.isDucking();
     if (this.keyDuck || this.touchDuck) this.duckLock = Math.max(this.duckLock, 0.28);
@@ -802,14 +953,18 @@ export class Runner {
 
   private collisions() {
     const player = this.playerBox();
+    const near = this.u * 4;
     for (const ent of this.ents) {
       if (!ent.alive) continue;
+      const sx = ent.x - this.camera;
+      if (sx < this.playerX - near || sx > this.playerX + near) continue;
       const box = this.entBox(ent);
       if (!box) continue;
       if (!overlap(player, box)) continue;
       if (PICKUPS.has(ent.kind)) {
         ent.alive = false;
         if (ent.kind === "gossip") this.grabGossip(ent);
+        else if (ent.kind === "firefly") this.grabFirefly(ent);
         else if (ent.kind === "scroll") this.takeScroll(ent);
         else if (ent.kind === "heart" && this.lives < 3) {
           this.lives += 1;
@@ -832,6 +987,20 @@ export class Runner {
     this.sfx.collect(this.combo);
     this.pops.push({ x: ent.x - this.camera, y: this.groundY - ent.lift * this.u, text: `+${pts}`, life: 0.7 });
     this.burst(ent.x - this.camera, this.groundY - ent.lift * this.u, "#e8a317", 7);
+  }
+
+  private grabFirefly(ent: Ent) {
+    const now = this.time;
+    this.combo = now - this.lastCollect < 1.15 ? this.combo + 1 : 1;
+    this.lastCollect = now;
+    const pts = 24 * this.combo;
+    this.gossipScore += pts;
+    this.gossips += 1;
+    this.sfx.collect(this.combo);
+    const at = this.fireflyPos(ent);
+    this.pops.push({ x: at.x, y: at.y, text: `+${pts}`, life: 0.7 });
+    this.burst(at.x, at.y, "#f4ffd2", 6);
+    this.burst(at.x, at.y, "#b6e060", 5);
   }
 
   private takeScroll(ent: Ent) {
@@ -894,34 +1063,151 @@ export class Runner {
     this.pushHud(true);
   }
 
+  private spookPigeons(dt: number) {
+    const pace = Math.max(this.speed, this.speed0);
+    for (const ent of this.ents) {
+      if (!ent.alive || ent.kind !== "pigeon") continue;
+      const ahead = ent.x - this.camera - this.playerX;
+      if (!ent.fly) {
+        if (ahead < this.u * 1.2 && ahead > -this.u * 0.2) {
+          ent.fly = 0.001;
+          ent.anim = Math.random() * Math.PI * 2;
+          ent.sway = Math.random() * 2.2 - 1.1;
+        }
+        continue;
+      }
+      ent.fly += dt;
+      const t = ent.fly;
+      const bend = ent.anim;
+      const sway = ent.sway ?? 0.4;
+      const vx = pace * (sway * (0.5 + t * 0.12) + Math.sin(t * 2.5 + bend) * 0.9);
+      ent.x += vx * dt;
+      ent.face = vx < 0 ? -1 : 1;
+      ent.lift += (0.62 + Math.sin(t * 1.8 + bend) * 0.8) * dt;
+      const sx = ent.x - this.camera;
+      if (ent.lift > 3.2 || t > 3.4 || sx < -this.u * 2.2 || sx > this.viewW + this.u * 1.6) ent.alive = false;
+    }
+  }
+
+  private isOboraChunk(chunk: number): boolean {
+    if (this.forceMeet && chunk === 7) return true;
+    if (chunk < 7 || chunk % 4 !== 3) return false;
+    const n = Math.sin(chunk * 127.1) * 43758.5453;
+    return n - Math.floor(n) < 0.5;
+  }
+
+  private oboraLayout(chunk: number) {
+    const u = this.u;
+    const aspects = [2146 / 632, 2172 / 632, 2140 / 632];
+    const glassRight = (chunk - 1) * BIOME_LEN + this.viewW * 0.82 + this.visualHalf("greenhouse") + u * 1.05;
+    const infoLeft = (chunk + 1) * BIOME_LEN + this.viewW * 0.82 - u * 1.42 - this.visualHalf("info") - u * 0.55;
+    const mids = 3;
+    const spanAspect = aspects[0]! + aspects[1]! * mids + aspects[2]!;
+    const want = u * 1.45 * spanAspect;
+    let gap = this.viewW * 1.25;
+    let room = infoLeft - glassRight - gap;
+    if (room < want) {
+      gap = Math.max(this.viewW * 0.65, infoLeft - glassRight - want);
+      room = Math.max(u * 12, infoLeft - glassRight - gap);
+    }
+    const h = Math.min(u * 1.45, room / spanAspect);
+    return {
+      start: glassRight,
+      h,
+      mids,
+      widths: [h * aspects[0]!, h * aspects[1]!, h * aspects[2]!],
+    };
+  }
+
+  private spawnObora(chunk: number) {
+    const u = this.u;
+    const layout = this.oboraLayout(chunk);
+    const { h, mids, widths } = layout;
+    let left = layout.start;
+    const pieces: { part: number; x: number; w: number }[] = [];
+    const push = (part: number, w: number) => {
+      pieces.push({ part, x: left + w / 2, w });
+      left += w;
+    };
+    push(0, widths[0]!);
+    const midLeft = left;
+    for (let i = 0; i < mids; i += 1) push(1, widths[1]!);
+    push(2, widths[2]!);
+    this.oboraSpans.push({ from: layout.start, to: left });
+    this.ents.push({
+      kind: "stag",
+      x: midLeft + widths[1]! * 0.432,
+      lift: h,
+      anim: chunk,
+      alive: true,
+      fly: 0,
+      sway: 0,
+      face: this.forceMeet && chunk === 7 ? 1 : hash(chunk + 19) < 0.5 ? 1 : 0,
+    });
+    for (const piece of pieces) {
+      this.ents.push({ kind: "obora", x: piece.x, lift: h, anim: piece.part, alive: true });
+    }
+    for (const ent of this.ents) {
+      if (!ent.alive || ent.kind === "obora" || ent.kind === "stag") continue;
+      if (!PROPS.has(ent.kind) && !HAZARDS.has(ent.kind) && ent.kind !== "gossip") continue;
+      if (ent.x > layout.start - u * 0.2 && ent.x < left + u * 0.2) ent.alive = false;
+    }
+    for (let x = layout.start + h * 0.95; x < left - h * 0.7; x += u * 1.15) {
+      this.ents.push({ kind: "gossip", x, lift: 0.4, anim: x, alive: true });
+    }
+    const flyFrom = midLeft + widths[1]! * 0.16;
+    const flyTo = midLeft + widths[1]! * mids - u * 0.35;
+    for (let x = flyFrom; x < flyTo; x += u * (0.82 + hash(x) * 0.55)) {
+      const n = hash(x + 9);
+      this.ents.push({
+        kind: "firefly",
+        x: x + (hash(x + 6) - 0.5) * u * 0.35,
+        lift: n > 0.55 ? 0.88 + hash(x + 1) * 0.32 : 0.38 + hash(x + 1) * 0.42,
+        anim: hash(x + 2) * Math.PI * 2,
+        alive: true,
+        sway: u * (0.16 + hash(x + 4) * 0.34),
+      });
+    }
+  }
+
   private fillWorld() {
     let guard = 0;
-    while (this.decorCursor < this.camera + this.viewW + 50 && guard++ < 12) {
+    while (this.decorCursor < this.camera + this.viewW + this.visualHalf("tree") + 80 && guard++ < 16) {
+      const skip = this.oboraSpans.find((span) => this.decorCursor > span.from - this.u && this.decorCursor < span.to + this.u * 0.4);
+      if (skip) {
+        this.decorCursor = skip.to + this.u * 0.45;
+        continue;
+      }
       const mix = biomeMix(this.decorCursor);
       const town = mix.biome.id === "namesti";
       const bag: Kind[] = town
-        ? ["lamp", "bush", "bench", "tree", "bush"]
+        ? ["lamp", "bush", "bench", "bin", "tree", "bush", "pigeon"]
         : mix.biome.id === "park"
-          ? ["tree", "bush", "bench", "tree", "bush"]
-          : ["tree", "bush", "lamp", "bush", "bench"];
+          ? ["tree", "bush", "bench", "tree", "bush", "pigeon"]
+          : ["tree", "bush", "lamp", "bush", "bench", "bin", "pigeon"];
       let kind = bag[Math.floor(Math.random() * bag.length)]!;
-      if (kind === "tree" && (this.facingBuilding(this.decorCursor) || this.nearPondMiddle(this.decorCursor))) {
+      if (kind !== "bin" && PROPS.has(kind) && this.onPlaceFace(this.decorCursor, kind)) {
         this.decorCursor += this.u * (1.5 + Math.random() * 1.2);
         continue;
       }
       this.ents.push({ kind, x: this.decorCursor, lift: 0, anim: 0, alive: true });
       this.decorCursor += this.u * (1.35 + Math.random() * 1.8);
     }
-    const seen = Math.floor((this.camera + this.viewW * 0.15) / BIOME_LEN);
-    while (this.nextChunk <= seen) {
+    const horizon = this.camera + this.visualHalf("pond") + this.viewW * 0.22 + this.u;
+    while (this.nextChunk * BIOME_LEN <= horizon || (this.isOboraChunk(this.nextChunk) && this.oboraLayout(this.nextChunk).start <= this.camera + this.viewW + this.u * 1.6)) {
       const biome = BIOMES[((this.nextChunk % 4) + 4) % 4]!;
-      this.ents.push({
-        kind: biome.landmark,
-        x: this.nextChunk * BIOME_LEN + this.viewW * 0.82,
-        lift: 0,
-        anim: 0,
-        alive: true,
-      });
+      if (biome.id === "park" && this.isOboraChunk(this.nextChunk)) {
+        this.spawnObora(this.nextChunk);
+      } else {
+        this.ents.push({
+          kind: biome.landmark,
+          x: this.nextChunk * BIOME_LEN + this.viewW * 0.82,
+          lift: 0,
+          anim: 0,
+          alive: true,
+        });
+        if (biome.landmark === "pond") this.pondsDirty = true;
+      }
       if (biome.id === "namesti") {
         this.ents.push({
           kind: "info",
@@ -954,13 +1240,17 @@ export class Runner {
       }
       this.nextChunk += 1;
     }
-    if (this.phase !== "play") return;
+    if (this.phase !== "play") {
+      if (this.pondsDirty) this.quietPond();
+      return;
+    }
     guard = 0;
-    while (this.hazardCursor < this.camera + this.viewW + 20 && guard++ < 8) this.spawnWave();
-    this.quietPond();
+    while (this.hazardCursor < this.camera + this.viewW + this.visualHalf("branch") + 48 && guard++ < 12) this.spawnWave();
+    if (this.pondsDirty) this.quietPond();
   }
 
   private quietPond() {
+    this.pondsDirty = false;
     const u = this.u;
     for (const pond of this.ents) {
       if (pond.kind !== "pond" || !pond.alive) continue;
@@ -973,21 +1263,43 @@ export class Runner {
     }
   }
 
-  private nearPondMiddle(x: number) {
-    const cycle = BIOME_LEN * 4;
-    const base = Math.floor(x / cycle);
-    for (let i = base - 1; i <= base + 1; i += 1) {
-      const pondX = (i * 4 + 3) * BIOME_LEN + this.viewW * 0.82;
-      if (Math.abs(x - pondX) < this.pondHalf()) return true;
-    }
-    return false;
+  private visualHalf(kind: Kind): number {
+    const h = SPEC[kind].h * this.u;
+    const img = this.art[kind];
+    const fallback =
+      kind === "pond"
+        ? 1669 / 477
+        : kind === "greenhouse"
+          ? 1280 / 579
+          : kind === "castle" || kind === "school"
+            ? 1.29
+            : kind === "houses"
+              ? 960 / 841
+              : kind === "church"
+                ? 522 / 900
+                : kind === "column"
+                  ? 587 / 820
+                  : kind === "info"
+                    ? 900 / 707
+                    : kind === "tree"
+                      ? 402 / 440
+                      : kind === "branch"
+                        ? 805 / 416
+                        : kind === "bench"
+                        ? 1344 / 679
+                        : kind === "lamp"
+                          ? 402 / 1407
+                          : kind === "pigeon"
+                            ? 1072 / 1099
+                            : kind === "bin"
+                              ? 594 / 1212
+                              : 1;
+    const aspect = img instanceof HTMLImageElement && img.height ? img.width / img.height : fallback;
+    return (h * aspect) / 2;
   }
 
   private pondHalf(): number {
-    const h = SPEC.pond.h * this.u;
-    const img = this.art.pond;
-    const aspect = img instanceof HTMLImageElement && img.height ? img.width / img.height : 1669 / 477;
-    return (h * aspect) / 2;
+    return this.visualHalf("pond");
   }
 
   private drawPondEndTrees(ctx: CanvasRenderingContext2D) {
@@ -995,12 +1307,29 @@ export class Runner {
     if (!(img instanceof HTMLImageElement) || !img.height) return;
     const h = SPEC.tree.h * this.u;
     const tw = h * (img.width / img.height);
+    const baked = this.baked(img, h * this.scale);
     const feet = this.groundY;
     for (const ent of this.ents) {
       if (!ent.alive || ent.kind !== "pond") continue;
       const edge = ent.x - this.camera + this.pondHalf();
+      if (edge < -this.cullMargin || edge > this.viewW + this.cullMargin) continue;
       const x = edge + tw * 0.08;
-      ctx.drawImage(img, x - tw / 2, feet - h, tw, h);
+      ctx.drawImage(baked, this.snap(x - tw / 2), this.snap(feet - h), tw, h);
+    }
+  }
+
+  private drawOboraEndTrees(ctx: CanvasRenderingContext2D) {
+    const img = this.art.tree;
+    if (!(img instanceof HTMLImageElement) || !img.height) return;
+    const h = SPEC.tree.h * this.u;
+    const tw = h * (img.width / img.height);
+    const baked = this.baked(img, h * this.scale);
+    const feet = this.groundY;
+    for (const span of this.oboraSpans) {
+      const edge = span.to - this.camera;
+      if (edge < -this.cullMargin || edge > this.viewW + this.cullMargin) continue;
+      const x = edge - tw * 0.28;
+      ctx.drawImage(baked, this.snap(x - tw / 2), this.snap(feet - h), tw, h);
     }
   }
 
@@ -1013,25 +1342,34 @@ export class Runner {
       const to = pondX + this.u * 8;
       if (x >= from && x < to) return to;
     }
+    for (const span of this.oboraSpans) {
+      const pad = this.u * 0.4;
+      if (x >= span.from - pad && x < span.to + pad) return span.to + pad;
+    }
     return null;
   }
 
-  private facingBuilding(x: number) {
+  private onPlaceFace(x: number, kind: Kind): boolean {
+    const reach = this.visualHalf(kind);
     const u = this.u;
     const cycle = BIOME_LEN * 4;
     const n0 = Math.floor(x / cycle) - 1;
     for (let n = n0; n <= n0 + 2; n += 1) {
       const square = n * cycle + this.viewW * 0.82;
-      const spots: [number, number][] = [
-        [square - u * 1.42, 1.15],
-        [square, 1.7],
-        [square + u * 3.3, 1.35],
-        [square + u * 7.6, 1.55],
-        [square + u * 12.2, 1.7],
-        [n * cycle + BIOME_LEN + this.viewW * 0.82, 2.3],
-        [n * cycle + BIOME_LEN * 2 + this.viewW * 0.82, 3.15],
+      const spots: [number, Kind][] = [
+        [square - u * 1.42, "info"],
+        [square, "houses"],
+        [square + u * 3.3, "column"],
+        [square + u * 7.6, "church"],
+        [square + u * 12.2, "school"],
+        [n * cycle + BIOME_LEN + this.viewW * 0.82, "castle"],
+        [n * cycle + BIOME_LEN * 2 + this.viewW * 0.82, "greenhouse"],
+        [n * cycle + BIOME_LEN * 3 + this.viewW * 0.82, "pond"],
       ];
-      if (spots.some(([center, reach]) => Math.abs(x - center) < u * reach)) return true;
+      for (const [center, place] of spots) {
+        const inner = this.visualHalf(place) * 0.78;
+        if (x + reach > center - inner && x - reach < center + inner) return true;
+      }
     }
     return false;
   }
@@ -1045,14 +1383,15 @@ export class Runner {
     const u = this.u;
     const speed = Math.max(this.speed, this.speed0);
     const x = this.hazardCursor;
-    if (this.run < 260) {
+    const run = Math.max(0, this.run + (x - this.viewW - 20 - this.camera));
+    if (run < 260) {
       for (let i = 0; i < 4; i += 1) {
         this.ents.push({ kind: "gossip", x: x + i * u * 0.4, lift: 0.16, anim: i, alive: true });
       }
       this.hazardCursor += 4 * u * 0.4 + speed * 0.62;
       return;
     }
-    if (this.run > 280 && x >= this.nextScroll && !this.scrollAhead()) {
+    if (run > 280 && x >= this.nextScroll && !this.scrollAhead()) {
       const low = this.scrolls < 2;
       const early = this.scrollsRun < 2;
       const lift = low ? 0.1 + Math.random() * 0.12 : 0.78 + Math.random() * 0.28;
@@ -1066,22 +1405,25 @@ export class Runner {
       return;
     }
     const roll = Math.random();
-    if (roll < 0.22) {
+    const stage = Math.floor(Math.max(0, x) / BIOME_LEN);
+    const gossipP = stage >= 2 ? 0.28 : stage === 0 ? 0.24 : 0.22;
+    if (roll < gossipP) {
       const n = 3 + (Math.random() < 0.45 ? 2 : 0);
-      const lift = Math.random() < 0.5 ? 0.92 : 0.14;
+      const lift = stage >= 2 ? (Math.random() < 0.5 ? 0.92 : 0.14) : Math.random() < 0.7 ? 0.14 : 0.92;
       for (let i = 0; i < n; i += 1) {
         this.ents.push({ kind: "gossip", x: x + i * u * 0.4, lift, anim: i, alive: true });
       }
-      this.hazardCursor += n * u * 0.4 + speed * 0.5;
+      this.hazardCursor += n * u * 0.4 + speed * (stage === 0 ? 0.7 : 0.55);
       return;
     }
-    if (roll < 0.28 && this.lives < 3 && this.run > 500) {
+    if (roll < gossipP + 0.06 && this.lives < 3 && run > 500) {
       this.ents.push({ kind: "heart", x, lift: 0.72, anim: 0, alive: true });
       this.hazardCursor += speed * 0.8;
       return;
     }
-    const kind = this.rollHazard();
+    const kind = this.rollHazard(x);
     this.ents.push({ kind, x, lift: 0, anim: Math.random() * 6, alive: true });
+    this.pondsDirty = true;
     if (kind === "fence") {
       [0.48, 0.95, 0.48].forEach((lift, i) => {
         this.ents.push({ kind: "gossip", x: x + (i - 1) * u * 0.36, lift, anim: i, alive: true });
@@ -1092,7 +1434,24 @@ export class Runner {
       }
     }
     const bulk = kind === "car" ? u * 1.7 : kind === "branch" ? u * 1.2 : kind === "pot" ? u * 0.85 : kind === "gardener" ? u * 0.85 : u * 0.55;
-    this.hazardCursor += bulk + speed * 1.08;
+    const second = stage >= 4 && Math.random() < 0.18 ? (kind === "fence" ? "branch" : kind === "pot" ? "fence" : null) : null;
+    if (second) {
+      const at = x + bulk + speed * 1.5;
+      if (this.pondGapEnd(at) == null) {
+        this.ents.push({ kind: second, x: at, lift: 0, anim: Math.random() * 6, alive: true });
+        if (second === "branch") {
+          for (let i = 0; i < 3; i += 1) {
+            this.ents.push({ kind: "gossip", x: at + (i - 1) * u * 0.34, lift: 0.08, anim: i, alive: true });
+          }
+        }
+        const bulk2 = second === "branch" ? u * 1.2 : u * 0.55;
+        this.hazardCursor = at + bulk2 + speed * 0.98;
+        this.lastHazard = second;
+        return;
+      }
+    }
+    const gapT = stage <= 0 ? 1.42 : stage === 1 ? 1.26 : stage === 2 ? 1.14 : stage === 3 ? 1.06 : 0.98;
+    this.hazardCursor += bulk + speed * gapT;
     this.lastHazard = kind;
   }
 
@@ -1100,12 +1459,12 @@ export class Runner {
     return this.ents.some((ent) => ent.alive && ent.kind === "scroll" && ent.x > this.camera - this.u);
   }
 
-  private rollHazard(): Kind {
-    const mid = this.run > 700;
-    const hard = this.run > 2100;
+  private rollHazard(x: number): Kind {
+    const stage = Math.floor(Math.max(0, x) / BIOME_LEN);
     const bag: Kind[] = ["fence", "pot", "dog", "fence", "pot"];
-    if (mid) bag.push("dog", "gardener", "branch", "fence");
-    if (hard) bag.push("car", "gardener", "branch", "car");
+    if (stage >= 1) bag.push("gardener");
+    if (stage >= 2) bag.push("branch", "fence");
+    if (stage >= 3) bag.push("car", "gardener");
     let kind = bag[Math.floor(Math.random() * bag.length)]!;
     if (kind === this.lastHazard) kind = "pot";
     if (kind === "branch" && this.lastHazard === "gardener") kind = "fence";
@@ -1180,12 +1539,26 @@ export class Runner {
   }
 
   private pollPad() {
-    const pad = navigator.getGamepads?.()?.[0];
+    if (!this.padLive) {
+      this.padHunt += 1;
+      if (this.padHunt < 10) return;
+      this.padHunt = 0;
+    }
+    let pad: Gamepad | null = null;
+    try {
+      pad = navigator.getGamepads?.()?.[0] ?? null;
+    } catch {
+      pad = null;
+    }
     if (!pad) {
-      this.padJump = false;
-      this.padDuck = false;
+      if (this.padLive) {
+        this.padLive = false;
+        this.padJump = false;
+        this.padDuck = false;
+      }
       return;
     }
+    this.padLive = true;
     const jump = Boolean(pad.buttons[0]?.pressed || pad.buttons[12]?.pressed || (pad.axes[1] ?? 0) < -0.65);
     const duck = Boolean(pad.buttons[1]?.pressed || pad.buttons[13]?.pressed || (pad.axes[1] ?? 0) > 0.65);
     if (jump && !this.prevPadJump) this.jumpEdge = true;
@@ -1219,6 +1592,12 @@ export class Runner {
 
   private entBox(ent: Ent) {
     if (!HAZARDS.has(ent.kind) && !PICKUPS.has(ent.kind)) return null;
+    if (ent.kind === "firefly") {
+      if (this.nightAt(ent.x) < 0.42) return null;
+      const at = this.fireflyPos(ent);
+      const r = this.u * 0.32;
+      return { l: at.x - r, r: at.x + r, t: at.y - r, b: at.y + r };
+    }
     if (ent.kind !== "heart" && !this.spriteFor(ent)) return null;
     const spec = SPEC[ent.kind];
     const h = spec.h * this.u;
@@ -1249,13 +1628,24 @@ export class Runner {
     const mag = this.shake * this.u * 0.1;
     const ox = Math.sin(this.time * 46) * mag;
     const oy = Math.cos(this.time * 33) * mag * 0.45;
+    const top = col("skyTop");
+    const bot = col("skyBot");
+    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = top;
+    ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
     ctx.setTransform(this.scale, 0, 0, this.scale, ox * this.scale, oy * this.scale);
-    ctx.clearRect(-20, -20, this.viewW + 40, this.viewH + 40);
+    ctx.imageSmoothingEnabled = true;
 
-    const sky = ctx.createLinearGradient(0, 0, 0, Math.max(this.groundY, 10));
-    sky.addColorStop(0, col("skyTop"));
-    sky.addColorStop(1, col("skyBot"));
-    ctx.fillStyle = sky;
+    if (!this.skyGrad || top !== this.skyTop || bot !== this.skyBot || this.skyGround !== this.groundY) {
+      const sky = ctx.createLinearGradient(0, 0, 0, Math.max(this.groundY, 10));
+      sky.addColorStop(0, top);
+      sky.addColorStop(1, bot);
+      this.skyGrad = sky;
+      this.skyTop = top;
+      this.skyBot = bot;
+      this.skyGround = this.groundY;
+    }
+    ctx.fillStyle = this.skyGrad;
     ctx.fillRect(-20, -20, this.viewW + 40, this.viewH + 40);
 
     ctx.fillStyle = "rgba(255, 236, 180, 0.95)";
@@ -1270,13 +1660,42 @@ export class Runner {
     ctx.fillStyle = col("grass");
     ctx.fillRect(-20, this.groundY - 4, this.viewW + 40, this.viewH - this.groundY + 30);
 
+    const margin = this.cullMargin;
+    const cam = this.camera;
     for (const ent of this.ents) {
-      if (ent.alive && LANDMARKS.has(ent.kind)) this.drawEnt(ctx, ent);
+      if (!ent.alive || ent.kind !== "obora") continue;
+      const sx = ent.x - cam;
+      const reach = ent.lift * 1.85 + 40;
+      if (sx < -reach || sx > this.viewW + reach) continue;
+      this.drawObora(ctx, ent);
     }
     for (const ent of this.ents) {
-      if (ent.alive && DECOR.has(ent.kind)) this.drawEnt(ctx, ent);
+      if (!ent.alive || ent.kind !== "stag") continue;
+      if ((ent.sway ?? 0) < 1) this.drawStag(ctx, ent);
+      else if ((ent.face ?? 0) !== 1 && (ent.sway ?? 0) === 1) this.drawStagRun(ctx, ent);
+    }
+    for (const ent of this.ents) {
+      if (!ent.alive || ent.kind !== "stag") continue;
+      this.drawOak(ctx, ent);
+    }
+    for (const ent of this.ents) {
+      if (!ent.alive || ent.kind !== "stag" || (ent.face ?? 0) !== 1 || (ent.sway ?? 0) !== 1) continue;
+      this.drawStagMeet(ctx, ent);
+    }
+    for (const ent of this.ents) {
+      if (!ent.alive || !PLACES.has(ent.kind)) continue;
+      const sx = ent.x - cam;
+      if (sx < -margin || sx > this.viewW + margin) continue;
+      this.drawEnt(ctx, ent);
+    }
+    for (const ent of this.ents) {
+      if (!ent.alive || !PROPS.has(ent.kind) || ent.fly) continue;
+      const sx = ent.x - cam;
+      if (sx < -margin || sx > this.viewW + margin) continue;
+      this.drawEnt(ctx, ent);
     }
     this.drawPondEndTrees(ctx);
+    this.drawOboraEndTrees(ctx);
 
     ctx.fillStyle = col("path");
     const pathH = Math.max(22, this.u * 0.2);
@@ -1291,12 +1710,26 @@ export class Runner {
     this.flowers(ctx);
 
     for (const ent of this.ents) {
-      if (!ent.alive || LANDMARKS.has(ent.kind) || DECOR.has(ent.kind)) continue;
+      if (!ent.alive || LANDMARKS.has(ent.kind) || DECOR.has(ent.kind) || ent.kind === "firefly") continue;
+      const sx = ent.x - cam;
+      if (sx < -margin || sx > this.viewW + margin) continue;
       this.drawEnt(ctx, ent);
     }
 
     this.drawFish(ctx);
     this.drawPlayer(ctx);
+    for (const ent of this.ents) {
+      if (!ent.alive || ent.kind !== "stag" || (ent.face ?? 0) !== 1) continue;
+      const phase = ent.sway ?? 0;
+      if (phase < 2 || phase >= 4) continue;
+      this.drawStagMeet(ctx, ent);
+    }
+    for (const ent of this.ents) {
+      if (!ent.alive || ent.kind !== "pigeon" || !ent.fly) continue;
+      this.drawEnt(ctx, ent);
+    }
+    this.drawDusk(ctx);
+    this.drawFireflies(ctx);
     for (const bit of this.bits) {
       if (!bit.on) continue;
       ctx.globalAlpha = Math.max(0, bit.life / bit.max);
@@ -1309,14 +1742,16 @@ export class Runner {
       }
       ctx.globalAlpha = 1;
     }
-    ctx.font = `800 ${Math.round(this.u * 0.16)}px Nunito, sans-serif`;
-    ctx.textAlign = "center";
-    for (const pop of this.pops) {
-      ctx.globalAlpha = Math.max(0, pop.life / 0.7);
-      ctx.fillStyle = "#241c16";
-      ctx.fillText(pop.text, pop.x, pop.y - (0.7 - pop.life) * 28);
+    if (this.pops.length) {
+      ctx.font = `800 ${Math.round(this.u * 0.16)}px Nunito, sans-serif`;
+      ctx.textAlign = "center";
+      for (const pop of this.pops) {
+        ctx.globalAlpha = Math.max(0, pop.life / 0.7);
+        ctx.fillStyle = "#241c16";
+        ctx.fillText(pop.text, pop.x, pop.y - (0.7 - pop.life) * 28);
+      }
+      ctx.globalAlpha = 1;
     }
-    ctx.globalAlpha = 1;
     if (this.flash > 0) {
       ctx.fillStyle = `rgba(255,246,232,${this.flash * 0.28})`;
       ctx.fillRect(-20, -20, this.viewW + 40, this.viewH + 40);
@@ -1354,14 +1789,27 @@ export class Runner {
   private flowers(ctx: CanvasRenderingContext2D) {
     const step = Math.max(18, this.u * 0.22);
     const start = Math.floor(this.camera / step) * step;
+    const buckets = this.flowerX;
+    buckets[0].length = 0;
+    buckets[1].length = 0;
+    buckets[2].length = 0;
     for (let wx = start; wx < this.camera + this.viewW; wx += step) {
       const n = hash(wx);
       if (n < 0.55) continue;
-      const x = wx - this.camera;
-      const y = this.groundY - 4;
-      ctx.fillStyle = n > 0.82 ? "#e4577a" : n > 0.7 ? "#e8a317" : "#fff6e8";
+      const bucket = n > 0.82 ? 2 : n > 0.7 ? 1 : 0;
+      buckets[bucket].push(wx - this.camera);
+    }
+    const colors = ["#fff6e8", "#e8a317", "#e4577a"];
+    const y = this.groundY - 4;
+    for (let c = 0; c < 3; c += 1) {
+      const row = buckets[c]!;
+      if (!row.length) continue;
+      ctx.fillStyle = colors[c]!;
       ctx.beginPath();
-      ctx.arc(x, y, 3.2, 0, Math.PI * 2);
+      for (const x of row) {
+        ctx.moveTo(x + 3.2, y);
+        ctx.arc(x, y, 3.2, 0, Math.PI * 2);
+      }
       ctx.fill();
     }
   }
@@ -1369,12 +1817,22 @@ export class Runner {
   private drawEnt(ctx: CanvasRenderingContext2D, ent: Ent) {
     const spec = SPEC[ent.kind];
     const pulse = ent.kind === "gossip" || ent.kind === "scroll" ? 1 + Math.sin(this.time * 5 + ent.anim) * 0.06 : 1;
-    const h = spec.h * this.u * pulse;
+    const baseH = spec.h * this.u;
+    const h = baseH * pulse;
     let bob = ent.kind === "gossip" || ent.kind === "scroll" ? Math.sin(this.time * 4 + ent.anim) * this.u * 0.04 : 0;
     let rot = 0;
+    let flip = 1;
     if (ent.kind === "dog") {
       bob = Math.abs(Math.sin(this.time * 11 + ent.anim)) * this.u * 0.04;
       rot = Math.sin(this.time * 11 + ent.anim) * 0.07;
+    } else if (ent.kind === "pigeon") {
+      if (ent.fly) {
+        flip = ent.face ?? 1;
+        bob = Math.sin(this.time * 28) * this.u * 0.018;
+        rot = -0.22 + Math.sin(this.time * 2.2 + ent.anim) * 0.38;
+      } else {
+        bob = Math.abs(Math.sin(this.time * 5 + ent.anim)) * this.u * 0.012;
+      }
     } else if (ent.kind === "car") {
       bob = Math.abs(Math.sin(this.time * 8 + ent.anim)) * this.u * 0.035;
       rot = Math.sin(this.time * 8 + ent.anim) * 0.045;
@@ -1389,15 +1847,17 @@ export class Runner {
     const img = this.spriteFor(ent);
     if (!img) return;
     const w = h * (img.width / img.height);
-    if (rot) {
+    const baked = this.baked(img, baseH * this.scale);
+    if (rot || flip < 0) {
       ctx.save();
-      ctx.translate(cx, feet - h * 0.55);
+      ctx.translate(this.snap(cx), this.snap(feet - h * 0.55));
+      ctx.scale(flip, 1);
       ctx.rotate(rot);
-      ctx.drawImage(img, -w / 2, -h * 0.45, w, h);
+      ctx.drawImage(baked, -w / 2, -h * 0.45, w, h);
       ctx.restore();
       return;
     }
-    ctx.drawImage(img, cx - w / 2, feet - h, w, h);
+    ctx.drawImage(baked, this.snap(cx - w / 2), this.snap(feet - h), w, h);
   }
 
   private drawPlayer(ctx: CanvasRenderingContext2D) {
@@ -1425,6 +1885,9 @@ export class Runner {
       if (this.vy < -this.jumpSpeed * 0.25) index = 1;
       else if (this.vy > this.jumpSpeed * 0.12) index = 3;
       else index = 2;
+    } else if (this.stagHolds()) {
+      sheet = this.art.idle;
+      index = Math.floor(this.time * 2) % 4;
     } else if (this.phase === "menu") {
       sheet = this.art.run;
       index = Math.floor(this.time * 8) % 4;
@@ -1437,10 +1900,271 @@ export class Runner {
       return;
     }
     const w = h * (img.width / img.height);
-    ctx.drawImage(img, this.playerX - w / 2, this.feet - h, w, h);
+    ctx.drawImage(this.baked(img, h * this.scale), this.snap(this.playerX - w / 2), this.snap(this.feet - h), w, h);
+  }
+
+  private drawObora(ctx: CanvasRenderingContext2D, ent: Ent) {
+    const key = ent.anim === 0 ? "oboraStart" : ent.anim === 2 ? "oboraEnd" : "oboraMid";
+    const img = this.art[key];
+    if (!(img instanceof HTMLImageElement) || !img.height) return;
+    const h = ent.lift;
+    const w = h * (img.width / img.height);
+    const cx = ent.x - this.camera;
+    const feet = this.groundY + 6;
+    ctx.drawImage(this.baked(img, h * this.scale), this.snap(cx - w / 2), this.snap(feet - h), w, h);
+  }
+
+  private drawOak(ctx: CanvasRenderingContext2D, ent: Ent) {
+    const img = this.art.oak;
+    if (!(img instanceof HTMLImageElement) || !img.height) return;
+    const h = Math.max(ent.lift * 1.22, this.u * 1.85);
+    const w = h * (img.width / img.height);
+    const cx = ent.x - this.camera;
+    if (cx < -w || cx > this.viewW + w) return;
+    const feet = this.groundY + 2;
+    ctx.drawImage(this.baked(img, h * this.scale), this.snap(cx - w / 2), this.snap(feet - h), w, h);
+  }
+
+  private stagFrame(running: boolean, flown = 0): HTMLImageElement | null {
+    const sheet = running ? this.art.stagRun : this.art.stagIdle;
+    const index = running
+      ? Math.floor(flown / Math.max(18, this.u * 0.22))
+      : Math.floor(this.time * 1.6);
+    const frame = frameOf(sheet, index);
+    if (frame) return frame;
+    const still = this.art.stag;
+    return still instanceof HTMLImageElement ? still : null;
+  }
+
+  private drawStag(ctx: CanvasRenderingContext2D, ent: Ent) {
+    const img = this.stagFrame(false);
+    if (!img || !img.height) return;
+    const oakH = Math.max(ent.lift * 1.22, this.u * 1.85);
+    const deerH = this.u * 1.25;
+    const near = Math.abs(ent.x - this.camera - this.playerX);
+    const curiosity = Math.max(0, 1 - near / (this.viewW * 0.6));
+    const w = deerH * (img.width / img.height);
+    const cx = ent.x - this.camera - oakH * (0.1 + curiosity * 0.045);
+    const top = this.groundY - deerH;
+    ctx.save();
+    ctx.translate(this.snap(cx), this.snap(top + deerH));
+    ctx.scale(-1, 1);
+    ctx.drawImage(this.baked(img, deerH * this.scale), -w / 2, -deerH, w, deerH);
+    ctx.restore();
+  }
+
+  private herdStags(dt: number) {
+    const px = this.camera + this.playerX;
+    for (const ent of this.ents) {
+      if (!ent.alive || ent.kind !== "stag") continue;
+      if ((ent.face ?? 0) === 1) {
+        this.herdMeet(ent, dt, px);
+        continue;
+      }
+      if ((ent.sway ?? 0) >= 2) continue;
+      if ((ent.sway ?? 0) < 1) {
+        if (px > ent.x - this.viewW * 0.22) ent.sway = 1;
+        continue;
+      }
+      const bolt = Math.max(this.speed * 2.4, this.speed0 * 1.7);
+      ent.fly = (ent.fly ?? 0) + bolt * dt;
+      const sx = ent.x + (ent.fly ?? 0) - this.camera;
+      if (sx > this.viewW + this.u * 1.6) ent.sway = 2;
+    }
+  }
+
+  private herdMeet(ent: Ent, dt: number, px: number) {
+    const phase = ent.sway ?? 0;
+    if (phase >= 4) return;
+    if (phase < 1) {
+      if (px > ent.x - this.viewW * 1.55) ent.sway = 1;
+      return;
+    }
+    if (phase === 1) {
+      const bolt = Math.max(this.speed * 0.85, this.speed0 * 0.32);
+      ent.fly = (ent.fly ?? 0) - bolt * dt;
+      const sx = ent.x + (ent.fly ?? 0) - this.camera;
+      const stand = this.playerX + this.u * 0.96;
+      if (sx <= stand) {
+        ent.fly = (ent.fly ?? 0) + (stand - sx);
+        ent.sway = 2;
+        ent.wait = 0;
+      }
+      return;
+    }
+    if (phase === 2) {
+      ent.fly = (ent.fly ?? 0) + this.speed * dt;
+      ent.wait = (ent.wait ?? 0) + dt;
+      if ((ent.wait ?? 0) > 1.8) {
+        ent.sway = 3;
+        ent.wait = 0;
+      }
+      return;
+    }
+    const jumpFor = 0.92;
+    const wait = (ent.wait ?? 0) + dt;
+    ent.wait = wait;
+    const start = this.playerX + this.u * 0.96;
+    const end = this.playerX - this.u * 1.15;
+    if (wait <= jumpFor) {
+      ent.fly = (ent.fly ?? 0) + (this.speed + (end - start) / jumpFor) * dt;
+      if (wait > jumpFor * 0.86 && wait - dt <= jumpFor * 0.86) {
+        const sx = ent.x + (ent.fly ?? 0) - this.camera;
+        this.burst(sx, this.groundY, "#e7d3a4", 5);
+      }
+      return;
+    }
+    ent.fly = (ent.fly ?? 0) - Math.max(this.speed * 0.7, this.speed0 * 0.45) * dt;
+    const sx = ent.x + (ent.fly ?? 0) - this.camera;
+    if (sx < -this.u * 1.8) ent.sway = 4;
+  }
+
+  private drawStagRun(ctx: CanvasRenderingContext2D, ent: Ent) {
+    const img = this.stagFrame(true, ent.fly ?? 0);
+    if (!img || !img.height) return;
+    const deerH = this.u * 1.25;
+    const w = deerH * (img.width / img.height);
+    const flown = ent.fly ?? 0;
+    const cx = ent.x + flown - this.camera;
+    if (cx < -w || cx > this.viewW + w) return;
+    ctx.drawImage(this.baked(img, deerH * this.scale), this.snap(cx - w / 2), this.snap(this.groundY - deerH), w, deerH);
+  }
+
+  private drawStagMeet(ctx: CanvasRenderingContext2D, ent: Ent) {
+    const phase = ent.sway ?? 0;
+    const wait = ent.wait ?? 0;
+    const jumping = phase >= 3 && wait <= 0.92;
+    const p = jumping ? wait / 0.92 : 0;
+    const img = jumping
+      ? this.stagJumpFrame(p)
+      : this.stagFrame(phase !== 2, phase === 1 ? this.time * this.u * 1.8 : wait * this.speed0);
+    if (!img || !img.height) return;
+    const deerH = this.u * 1.25;
+    const w = deerH * (img.width / img.height);
+    const cx = ent.x + (ent.fly ?? 0) - this.camera;
+    if (cx < -w || cx > this.viewW + w) return;
+    const hop = jumping ? Math.sin(p * Math.PI) * this.u * 1.2 : 0;
+    const tilt = jumping ? -0.32 * Math.sin(p * Math.PI) : 0;
+    ctx.save();
+    ctx.translate(this.snap(cx), this.snap(this.groundY - hop));
+    ctx.scale(-1, 1);
+    ctx.rotate(tilt);
+    ctx.drawImage(this.baked(img, deerH * this.scale), -w / 2, -deerH, w, deerH);
+    ctx.restore();
+  }
+
+  private stagJumpFrame(p: number): HTMLImageElement | null {
+    const index = p < 0.2 ? 3 : p < 0.68 ? 2 : p < 0.9 ? 0 : 1;
+    return frameOf(this.art.stagRun, index) ?? this.stagFrame(false);
+  }
+
+  private fireflyPos(ent: Ent, ago = 0): { x: number; y: number } {
+    const phase = ent.anim;
+    const radius = Math.abs(ent.sway ?? this.u * 0.22);
+    const t = this.time - ago;
+    const loop = Math.sin(t * 0.85 + phase);
+    return {
+      x: ent.x - this.camera + loop * radius + Math.sin(t * 0.37 + phase * 2) * this.u * 0.06,
+      y:
+        this.groundY -
+        ent.lift * this.u +
+        Math.sin(t * 1.45 + phase * 1.7) * this.u * 0.1 +
+        loop * this.u * 0.045,
+    };
+  }
+
+  private drawFireflies(ctx: CanvasRenderingContext2D) {
+    const u = this.u;
+    for (const ent of this.ents) {
+      if (!ent.alive || ent.kind !== "firefly") continue;
+      const glow = this.nightAt(ent.x);
+      if (glow < 0.05) continue;
+      const at = this.fireflyPos(ent);
+      if (at.x < -30 || at.x > this.viewW + 30) continue;
+      const blink = 0.58 + 0.42 * (0.5 + 0.5 * Math.sin(this.time * 2.2 + ent.anim));
+      const wing = 0.3 + 0.7 * Math.abs(Math.sin(this.time * 16 + ent.anim));
+      const a = glow * blink;
+      for (let i = 2; i >= 1; i -= 1) {
+        const p = this.fireflyPos(ent, i * 0.08);
+        ctx.fillStyle = `rgba(168, 214, 88, ${a * 0.1 * (3 - i)})`;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, u * (0.04 + i * 0.012), 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.fillStyle = `rgba(174, 214, 92, ${0.2 * a})`;
+      ctx.beginPath();
+      ctx.arc(at.x, at.y, u * 0.2, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = `rgba(214, 240, 150, ${0.38 * a})`;
+      ctx.beginPath();
+      ctx.arc(at.x, at.y, u * 0.085, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = `rgba(236, 255, 206, ${0.5 * a * wing})`;
+      ctx.beginPath();
+      ctx.ellipse(at.x - u * 0.05, at.y, u * 0.055, u * 0.018, -0.7, 0, Math.PI * 2);
+      ctx.ellipse(at.x + u * 0.05, at.y, u * 0.055, u * 0.018, 0.7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = `rgba(255, 252, 224, ${a})`;
+      ctx.beginPath();
+      ctx.ellipse(at.x, at.y, u * 0.026, u * 0.014, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  private nightAt(x: number): number {
+    let dusk = 0;
+    const fadeIn = this.viewW * 1.15;
+    const fadeOut = this.viewW * 1.2;
+    for (const span of this.oboraSpans) {
+      const into = (x - (span.from - fadeIn)) / fadeIn;
+      const out = (span.to - x) / fadeOut;
+      const t = Math.max(0, Math.min(1, into, out));
+      if (t > dusk) dusk = t;
+    }
+    return dusk * dusk * (3 - 2 * dusk);
+  }
+
+  private drawDusk(ctx: CanvasRenderingContext2D) {
+    const smooth = this.nightAt(this.camera + this.playerX);
+    if (smooth <= 0.01) return;
+    const skyH = Math.max(this.groundY, 10);
+    const sky = ctx.createLinearGradient(0, 0, 0, skyH);
+    sky.addColorStop(0, `rgba(4, 8, 22, ${0.9 * smooth})`);
+    sky.addColorStop(0.62, `rgba(14, 26, 58, ${0.74 * smooth})`);
+    sky.addColorStop(1, `rgba(32, 42, 68, ${0.22 * smooth})`);
+    ctx.fillStyle = sky;
+    ctx.fillRect(-30, -30, this.viewW + 60, skyH + 8);
+    ctx.fillStyle = `rgba(10, 16, 36, ${0.16 * smooth})`;
+    ctx.fillRect(-30, skyH, this.viewW + 60, this.viewH);
+    ctx.save();
+    ctx.globalAlpha = smooth;
+    ctx.fillStyle = "#f3efd8";
+    ctx.beginPath();
+    ctx.arc(this.viewW * 0.16, this.u * 0.36, this.u * 0.1, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(4, 8, 22, 0.55)";
+    ctx.beginPath();
+    ctx.arc(this.viewW * 0.16 + this.u * 0.035, this.u * 0.34, this.u * 0.08, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+    for (let i = 0; i < 42; i += 1) {
+      const n = hash(i * 19.17);
+      const n2 = hash(i * 7.31 + 4);
+      const sx = ((n * this.viewW * 2.4 - this.camera * 0.03) % this.viewW + this.viewW) % this.viewW;
+      const sy = 8 + n2 * (skyH * 0.7);
+      const tw = 0.4 + 0.6 * (0.5 + 0.5 * Math.sin(this.time * (1.1 + n) + i));
+      ctx.globalAlpha = smooth * tw;
+      ctx.fillStyle = n > 0.9 ? "#fff4c8" : "#f7f3ea";
+      const s = n > 0.88 ? 2.2 : 1.25;
+      ctx.fillRect(sx, sy, s, s);
+    }
+    ctx.globalAlpha = 1;
   }
 
   private placeAt(x: number): { id: PlaceId; name: string } {
+    if (this.oboraSpans.some((span) => x >= span.from && x <= span.to)) {
+      return { id: "park", name: "Kopidlnenská obora" };
+    }
     const u = this.u;
     const cycle = BIOME_LEN * 4;
     const n = Math.floor(x / cycle);
@@ -1605,11 +2329,12 @@ export class Runner {
     const fw = fh * (img.width / img.height);
     const bob = Math.sin(this.time * 5) * this.u * 0.03;
     const top = water - peek * fh * 0.76 + bob;
+    const baked = this.baked(img, fh * this.scale);
     ctx.save();
     ctx.beginPath();
     ctx.rect(-30, -30, this.viewW + 60, water + 8);
     ctx.clip();
-    ctx.drawImage(img, x - fw / 2, top, fw, fh);
+    ctx.drawImage(baked, this.snap(x - fw / 2), this.snap(top), fw, fh);
     ctx.restore();
     ctx.save();
     ctx.strokeStyle = "rgba(255,255,255,0.85)";
@@ -1618,6 +2343,29 @@ export class Runner {
     ctx.ellipse(x, water, fw * (0.28 + peek * 0.08), this.u * 0.045, 0, 0, Math.PI * 2);
     ctx.stroke();
     ctx.restore();
+  }
+
+  private snap(value: number) {
+    const scale = this.scale || 1;
+    return Math.round(value * scale) / scale;
+  }
+
+  private baked(img: HTMLImageElement, deviceH: number): HTMLCanvasElement {
+    const h = Math.max(1, Math.round(deviceH));
+    const prev = this.bakes.get(img);
+    if (prev && prev.h === h) return prev.canvas;
+    const w = Math.max(1, Math.round(h * (img.width / Math.max(1, img.height))));
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const g = canvas.getContext("2d");
+    if (g) {
+      g.imageSmoothingEnabled = true;
+      g.imageSmoothingQuality = "high";
+      g.drawImage(img, 0, 0, w, h);
+    }
+    this.bakes.set(img, { h, canvas });
+    return canvas;
   }
 
   private pickTale(kind: Kind): string {
