@@ -16,7 +16,7 @@ import {
   type RGB,
 } from "@/game/content";
 
-export type Phase = "loading" | "splash" | "menu" | "play" | "pause" | "bonus" | "over";
+export type Phase = "loading" | "splash" | "menu" | "play" | "pause" | "bonus" | "dialogue" | "over";
 
 export type Hud = {
   phase: Phase;
@@ -42,6 +42,7 @@ export type Hud = {
   ready: boolean;
   progress: number;
   bonus: BonusHud | null;
+  stagDialogue: { speaker: "Drběna" | "Bílý jelen"; text: string; step: number; total: number } | null;
 };
 
 type Kind =
@@ -116,6 +117,20 @@ const PSEVES = new Set<Kind>(["linden", "pseves-heart"]);
 const VILLAGES = new Set<Kind>([...MLYNEC, ...LEDKOV, ...DRAHORAZ, ...PSEVES]);
 const PROPS = new Set<Kind>(["bush", "lamp", "tree", "bench", "pigeon", "bin"]);
 const DECOR = new Set<Kind>(["bush", "lamp", "tree", "bench", "pigeon", "bin", "column", "church", "school", "info"]);
+
+// Pohádkové setkání v oboře. Jelen mluví jako postava z pověsti,
+// nikoli jako doklad o skutečné historii Kopidlna.
+const STAG_DIALOGUE: { speaker: "Drběna" | "Bílý jelen"; text: string }[] = [
+  { speaker: "Drběna", text: "Méé! Bílý jelen! Drběna si myslela, že takoví žijí jen v pověstech!" },
+  { speaker: "Bílý jelen", text: "Pověsti se někdy ukážou těm, kdo se umějí dobře dívat." },
+  { speaker: "Drběna", text: "O bílém jelenovi se říká, že přináší štěstí. Je to pravda?" },
+  { speaker: "Bílý jelen", text: "Tak se vypráví. Ale štěstí se nedá chytit ani schovat za plot." },
+  { speaker: "Drběna", text: "A nedalo by se aspoň zapsat do kroniky? Drběna by měla opravdu vzácný příběh!" },
+  { speaker: "Bílý jelen", text: "Zapiš, co jsi viděla. A nezapomeň odlišit pravdu od toho, co se jen povídá." },
+  { speaker: "Drběna", text: "To Drběna umí! V Kopidlně a okolních vesnicích je příběh na každém rohu." },
+  { speaker: "Bílý jelen", text: "Tak běž dál. Některá tajemství čekají hned za dalším stromem." },
+  { speaker: "Drběna", text: "Mééj se, bílý jelene! A díky za drb, který vlastně není drb!" },
+];
 
 const FISH = [
   "Tady dole se toho děje víc než na kopidlenském náměstí!",
@@ -247,6 +262,7 @@ export function emptyHud(): Hud {
     ready: false,
     progress: 0,
     bonus: null,
+    stagDialogue: null,
   };
 }
 
@@ -358,6 +374,8 @@ export class Runner {
   private padLive = false;
   private pondsDirty = true;
   private forceMeet = false;
+  private stagDialogueIndex = 0;
+  private stagDialogueDeer: Ent | null = null;
   private cullMargin = 900;
   private skyGrad: CanvasGradient | null = null;
   private skyTop = "";
@@ -415,9 +433,28 @@ export class Runner {
   }
 
   togglePause() {
-    if (this.phase === "bonus") return;
+    if (this.phase === "bonus" || this.phase === "dialogue") return;
     if (this.phase === "play") this.phase = "pause";
     else if (this.phase === "pause") this.phase = "play";
+    this.pushHud(true);
+  }
+
+  advanceStagDialogue(skip = false) {
+    if (this.phase !== "dialogue") return;
+    if (!skip && this.stagDialogueIndex + 1 < STAG_DIALOGUE.length) {
+      this.stagDialogueIndex += 1;
+      this.pushHud(true);
+      return;
+    }
+    const deer = this.stagDialogueDeer;
+    if (deer?.alive) {
+      deer.sway = 3; // Jelen se rozloučí skokem a odběhne.
+      deer.wait = 0;
+    }
+    this.stagDialogueDeer = null;
+    this.stagDialogueIndex = 0;
+    this.phase = "play";
+    this.suppress = Math.max(this.suppress, 0.5);
     this.pushHud(true);
   }
 
@@ -486,6 +523,8 @@ export class Runner {
     this.fishAge = 0;
     this.bonus = null;
     this.forceMeet = false;
+    this.stagDialogueDeer = null;
+    this.stagDialogueIndex = 0;
     this.fillWorld();
     this.pushHud(true);
     reportPlayer();
@@ -623,6 +662,8 @@ export class Runner {
     this.oboraSpans = [];
     this.approaches = [];
     this.villageZones = [];
+    this.stagDialogueDeer = null;
+    this.stagDialogueIndex = 0;
     this.decorCursor = -30;
     this.nextChunk = 0;
     this.hazardCursor = 999999;
@@ -653,6 +694,11 @@ export class Runner {
     const code = event.code;
     if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(code)) event.preventDefault();
     this.unlock();
+    if (this.phase === "dialogue") {
+      if (!event.repeat && (code === "Enter" || code === "Space" || code === "ArrowRight")) this.advanceStagDialogue();
+      else if (!event.repeat && code === "Escape") this.advanceStagDialogue(true);
+      return;
+    }
     if (this.phase === "bonus") return;
     if (this.phase === "splash") {
       if (!event.repeat && (code === "Space" || code === "Enter" || code === "ArrowUp" || code === "KeyW")) this.continueSplash();
@@ -778,7 +824,7 @@ export class Runner {
         steps += 1;
       }
       this.draw();
-      const mode = this.phase === "menu" ? "intro" : this.phase === "play" ? "loop" : "off";
+      const mode = this.phase === "menu" ? "intro" : this.phase === "play" || this.phase === "dialogue" ? "loop" : "off";
       let tempo = 1;
       if (this.phase === "play") {
         const pace = this.speed0 > 0 ? this.speed / this.speed0 : 1;
@@ -852,7 +898,8 @@ export class Runner {
     this.time += dt;
     this.pollPad();
     if (this.phase === "loading" || this.phase === "splash") return;
-    if (this.phase === "pause" || this.phase === "bonus") {
+    if (this.phase === "pause" || this.phase === "bonus" || this.phase === "dialogue") {
+      if (this.phase === "dialogue") this.anim += dt * 2;
       if (this.phase === "bonus") {
         this.anim += dt * 3;
         this.fishAge += dt;
@@ -2101,18 +2148,18 @@ export class Runner {
         ent.fly = (ent.fly ?? 0) + (stand - sx);
         ent.sway = 2;
         ent.wait = 0;
+        this.stagDialogueDeer = ent;
+        this.stagDialogueIndex = 0;
+        this.phase = "dialogue";
+        this.releaseInputs();
+        this.feet = this.groundY;
+        this.vy = 0;
+        this.onGround = true;
+        this.pushHud(true);
       }
       return;
     }
-    if (phase === 2) {
-      ent.fly = (ent.fly ?? 0) + this.speed * dt;
-      ent.wait = (ent.wait ?? 0) + dt;
-      if ((ent.wait ?? 0) > 1.8) {
-        ent.sway = 3;
-        ent.wait = 0;
-      }
-      return;
-    }
+    if (phase === 2) return; // Čeká na ukončení rozhovoru hráčem.
     const jumpFor = 0.92;
     const wait = (ent.wait ?? 0) + dt;
     ent.wait = wait;
@@ -2447,6 +2494,9 @@ export class Runner {
       ready: this.ready,
       progress: Math.min(1, this.loaded / this.loadTotal),
       bonus: this.bonus ? bonusHud(this.bonus) : null,
+      stagDialogue: this.phase === "dialogue"
+        ? { ...STAG_DIALOGUE[this.stagDialogueIndex]!, step: this.stagDialogueIndex + 1, total: STAG_DIALOGUE.length }
+        : null,
     });
   }
 
