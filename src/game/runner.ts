@@ -4,6 +4,7 @@ import { STAG_STORIES, stagStoryFor, type StagStory } from "@/game/stag-stories"
 import { bonusAct as actBonus, bonusHud, BONUS_PARDON_TALE, createOfferedMini, fishOffersMini, healFromBonus, type AnyBonus, type BonusAction, type BonusHud } from "@/game/minigames";
 import { tickAlarm, type AlarmEvent } from "./goatAlarm.ts";
 import { reportPlayer, submitScore } from "@/game/plays";
+import { currentProfile, ensureProfile, recordGame } from "@/game/profiles";
 import { publicUrl } from "@/lib/public-url";
 import {
   CYCLE_LEN,
@@ -434,6 +435,8 @@ export class Runner {
   ) {
     this.ctx = canvas.getContext("2d");
     this.loadSave();
+    // Migrates the old one-record-per-device save into the first player on first run.
+    this.useRecordOf(currentProfile());
   }
 
   start() {
@@ -1271,9 +1274,10 @@ export class Runner {
       this.talk = 0;
       this.lock = 0.45;
       const score = this.score();
-      this.newBest = score > this.best;
-      if (score > this.best) this.best = score;
-      if (this.gossips > this.bestGossips) this.bestGossips = this.gossips;
+      // The record belongs to whoever plays on this device (src/game/profiles.ts).
+      ensureProfile();
+      this.newBest = recordGame(score, this.gossips);
+      this.useRecordOf(currentProfile());
       this.save();
       submitScore(score, this.gossips, this.playSeconds);
     }
@@ -2804,14 +2808,23 @@ export class Runner {
     return pool[index] ?? pool[0]!;
   }
 
+  /** The selected player changed (menu): show their record. */
+  refreshRecord() {
+    this.useRecordOf(currentProfile());
+    this.pushHud(true);
+  }
+
+  private useRecordOf(player: { best: number; gossips: number } | null) {
+    this.best = player?.best ?? 0;
+    this.bestGossips = player?.gossips ?? 0;
+  }
+
   private loadSave() {
     try {
       const raw = localStorage.getItem(SAVE_KEY);
       if (!raw) return;
       const data = JSON.parse(raw) as { v?: number; best?: number; gossips?: number; mute?: boolean; scrolls?: number; stagMeetings?: number };
       if (data.v !== 1) return;
-      this.best = data.best ?? 0;
-      this.bestGossips = data.gossips ?? 0;
       this.muted = Boolean(data.mute);
       this.scrolls = data.scrolls ?? 0;
       // Stejná lokální pozice jako skóre; staré uložené hry mají výchozí nulu.

@@ -1,26 +1,10 @@
+import { currentProfile, ensureProfile } from "@/game/profiles";
+
 const endpoint = String((import.meta.env as Record<string, string | undefined>).VITE_PLAYS_URL ?? "").replace(/\/$/, "");
-const NAME_KEY = "drbena-jmeno";
 const PLAYER_KEY = "drbena-hrac";
-const PLAYER_ID_KEY = "drbena-kod-hrace";
-const NAME_CONFIRMED_KEY = "drbena-jmeno-potvrzeno";
 
-const ADJECTIVES = ["Zvědav", "Bystr", "Tajn", "Rychl", "Ušat", "Mlsn", "Všetečn", "Hbit", "Vesel", "Chytr", "Odvážn", "Nenápadn", "Upovídan", "Ospal"];
-const FEMININE = ["Koza", "Kachna", "Sova", "Liška", "Veverka", "Kočka", "Slepice", "Husa", "Straka", "Myška"];
-const MASCULINE = ["Holub", "Jelen", "Kapr", "Ježek", "Čáp", "Kohout", "Zajíc", "Bobr", "Kos", "Jezevec"];
-
-function pick<T>(list: T[]): T {
-  return list[Math.floor(Math.random() * list.length)];
-}
-
-/** A playful Kopidlno-flavoured nickname such as "Zvědavá Koza", always at most 16 characters. */
-export function randomName(): string {
-  for (let i = 0; i < 20; i++) {
-    const feminine = Math.random() < 0.5;
-    const name = `${pick(ADJECTIVES)}${feminine ? "á" : "ý"} ${pick(feminine ? FEMININE : MASCULINE)}`;
-    if (name.length <= 16) return name;
-  }
-  return "Zvědavá Koza";
-}
+// Nicknames moved to names.ts and players on the device to profiles.ts; kept here for older imports.
+export { randomName } from "@/game/names";
 
 export type BoardRow = { name: string; score: number; gossips: number };
 export type Stats = { plays: number; players: number; board: BoardRow[] };
@@ -52,64 +36,9 @@ function rows(value: unknown): BoardRow[] {
     }));
 }
 
-export function savedName(): string {
-  try {
-    return localStorage.getItem(NAME_KEY)?.slice(0, 16) ?? "";
-  } catch {
-    return "";
-  }
-}
-
-export function saveName(name: string) {
-  try {
-    localStorage.setItem(NAME_KEY, name.slice(0, 16));
-  } catch {
-    /* private mode */
-  }
-}
-
-/** True until the player has picked (or accepted) a leaderboard name. Players who typed one earlier count as done. */
+/** True until this device has a player, so the first game asks for a nickname. */
 export function needsName(): boolean {
-  try {
-    return localStorage.getItem(NAME_CONFIRMED_KEY) !== "1" && !savedName().trim();
-  } catch {
-    return false;
-  }
-}
-
-/** Store the chosen name; an empty choice gets a random nickname instead. Returns the stored name. */
-export function confirmName(name: string): string {
-  const chosen = name.trim().slice(0, 16) || randomName();
-  saveName(chosen);
-  try {
-    localStorage.setItem(NAME_CONFIRMED_KEY, "1");
-  } catch {
-    /* private mode */
-  }
-  return chosen;
-}
-
-/** Anonymous random id kept in this browser, so the newsroom can tell two players with the same name apart. */
-function playerId(): string {
-  try {
-    let id = localStorage.getItem(PLAYER_ID_KEY) ?? "";
-    if (!/^[a-z0-9-]{8,64}$/.test(id)) {
-      id = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
-      localStorage.setItem(PLAYER_ID_KEY, id);
-    }
-    return id;
-  } catch {
-    return "";
-  }
-}
-
-/** The name sent with a score: never empty, so the board is not full of identical defaults. */
-function scoreName(): string {
-  const name = savedName().trim();
-  if (name) return name;
-  const generated = randomName();
-  saveName(generated);
-  return generated;
+  return !currentProfile();
 }
 
 async function readStats(res: Response): Promise<Stats | null> {
@@ -157,12 +86,30 @@ export function reportPlayer() {
     .catch(() => {});
 }
 
+/** A player renamed themselves on this device: the leaderboard shows the new nickname right away. */
+export function announceName(player: { id: string; name: string }) {
+  if (!endpoint) return;
+  void fetch(`${endpoint}/name`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ player: player.id, name: player.name }),
+    keepalive: true,
+  })
+    .then((res) => readStats(res))
+    .then((stats) => {
+      if (stats) publish(stats);
+    })
+    .catch(() => {});
+}
+
 export function submitScore(score: number, gossips: number, seconds: number) {
   if (!endpoint || score < 1) return;
+  // Every score belongs to a player on this device (a random nickname if the name dialog was skipped).
+  const player = ensureProfile();
   void fetch(`${endpoint}/score`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ score, gossips, seconds: Math.round(seconds), name: scoreName(), player: playerId() }),
+    body: JSON.stringify({ score, gossips, seconds: Math.round(seconds), name: player.name, player: player.id }),
     keepalive: true,
   })
     .then((res) => readStats(res))
