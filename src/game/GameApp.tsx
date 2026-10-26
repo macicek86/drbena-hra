@@ -538,16 +538,13 @@ export function GameApp() {
           className="absolute inset-0 z-30 flex items-end justify-center bg-ink/55 p-3 backdrop-blur-sm sm:items-center"
           onClick={() => setAskName(false)}
         >
-          <form
+          {/* Deliberately not a <form>: Chrome's password manager treats a form with one text field and a button
+              as the username step of a sign-in and shows its key/card/address bar above the keyboard. */}
+          <div
             role="dialog"
             aria-label="Jak ti máme říkat?"
-            autoComplete="off"
             className="menu-pop w-full max-w-sm rounded-[1.75rem] border-2 border-ink bg-cream p-5 text-center shadow-[0_6px_0_#241c16]"
             onClick={(event) => event.stopPropagation()}
-            onSubmit={(event) => {
-              event.preventDefault();
-              startPlaying(nameDraft);
-            }}
           >
             <img
               src={`${publicUrl("/game/portrait.webp")}?v=2`}
@@ -574,6 +571,12 @@ export function GameApp() {
                 aria-label="Přezdívka do žebříčku"
                 className="h-12 min-w-0 flex-1 rounded-xl border-2 border-ink bg-white/70 px-4 font-extrabold text-ink outline-none focus:border-bow"
                 onChange={(event) => setNameDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    startPlaying(nameDraft);
+                  }
+                }}
               />
               <button
                 type="button"
@@ -586,13 +589,14 @@ export function GameApp() {
               </button>
             </div>
             <button
-              type="submit"
+              type="button"
+              onClick={() => startPlaying(nameDraft)}
               className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-ink bg-bow font-extrabold text-cream shadow-[0_4px_0_#241c16] active:translate-y-[4px] active:shadow-none"
             >
               <Play className="size-4 fill-current" /> {nameDraft.trim() ? `Hrát jako ${nameDraft.trim()}` : "Hrát s náhodným jménem"}
             </button>
             <p className="mt-2 text-xs font-extrabold text-ink-soft">Jméno změníš kdykoli v žebříčku.</p>
-          </form>
+          </div>
         </div>
       )}
 
