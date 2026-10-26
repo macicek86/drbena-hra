@@ -290,7 +290,6 @@ export class Runner {
   private speed = 220;
   private ro: ResizeObserver | null = null;
   private phase: Phase = "loading";
-  private menuOverlayOpen = false;
   private feet = 400;
   private vy = 0;
   private onGround = true;
@@ -428,10 +427,6 @@ export class Runner {
     if (down) this.coachDuck = true;
   }
 
-  setMenuOverlayOpen(open: boolean) {
-    this.menuOverlayOpen = open;
-  }
-
   toggleMute() {
     this.unlock();
     this.muted = !this.muted;
@@ -498,16 +493,9 @@ export class Runner {
   }
 
   begin() {
-    // Při startu z menu ponechat stejné stavby i dekorace.
-    // Bez toho by se při kliknutí na Vyrazit náhodně přeskládalo náměstí.
-    const fromMenu = this.phase === "menu";
-    const openingEntities = fromMenu ? this.ents : [];
-    const openingDecorCursor = this.decorCursor;
-    const openingNextChunk = this.nextChunk;
     this.unlock();
     this.sfx.restartMusic();
     this.phase = "play";
-    this.menuOverlayOpen = false;
     this.camera = 0;
     this.run = 0;
     this.feet = this.groundY;
@@ -533,7 +521,7 @@ export class Runner {
     this.factLife = 0;
     this.chronicleNew = 0;
     this.scrollsKnown = knownIds().length;
-    this.ents = openingEntities;
+    this.ents = [];
     this.oboraSpans = [];
     this.approaches = [];
     this.villageZones = [];
@@ -541,8 +529,8 @@ export class Runner {
     this.hazardCursor = this.viewW * 0.92;
     this.nextScroll = this.viewW * (0.35 + Math.random() * 0.7);
     this.scrollsRun = 0;
-    this.decorCursor = fromMenu ? openingDecorCursor : -20;
-    this.nextChunk = fromMenu ? openingNextChunk : 0;
+    this.decorCursor = -20;
+    this.nextChunk = 0;
     this.lastHazard = null;
     this.hitKind = null;
     this.tale = "";
@@ -747,7 +735,6 @@ export class Runner {
       return;
     }
     if (this.phase === "bonus" || this.phase === "fish-intro") return;
-    if (this.phase === "menu" && this.menuOverlayOpen) return;
     if (this.phase === "splash") {
       if (!event.repeat && (code === "Space" || code === "Enter" || code === "ArrowUp" || code === "KeyW")) this.continueSplash();
       return;
@@ -806,7 +793,6 @@ export class Runner {
     const dy = event.clientY - this.swipe.y;
     this.swipe = null;
     if (this.phase === "menu" || (this.phase === "over" && this.lock <= 0)) {
-      if (this.phase === "menu" && this.menuOverlayOpen) return;
       this.begin();
       return;
     }
@@ -1018,11 +1004,7 @@ export class Runner {
       this.fishAge += dt;
     }
 
-    // Na úvodní obrazovce je skutečné náměstí v klidu: Drběna čeká
-    // a po stisku Vyrazit vyběhne ze stejného místa, bez přesunu kamery.
-    const speed = this.phase === "menu" || (this.phase === "play" && this.stagHolds())
-      ? 0
-      : this.currentSpeed();
+    const speed = this.phase === "play" && this.stagHolds() ? 0 : this.currentSpeed();
     this.speed = speed;
     this.camera += speed * dt;
     if (this.phase === "play") this.run += speed * dt;
@@ -2001,8 +1983,7 @@ export class Runner {
     ctx.fillStyle = "rgba(255,255,255,0.72)";
     for (let i = 0; i < 5; i += 1) {
       const base = i * 220 + 30;
-      const drift = this.phase === "menu" ? this.time * 14 : this.camera;
-      const x = ((base - drift * 0.12) % (this.viewW + 180) + this.viewW + 180) % (this.viewW + 180) - 60;
+      const x = ((base - this.camera * 0.12) % (this.viewW + 180) + this.viewW + 180) % (this.viewW + 180) - 60;
       const y = this.u * (0.25 + (i % 3) * 0.18);
       const r = this.u * (0.12 + (i % 2) * 0.04);
       ctx.beginPath();
@@ -2129,8 +2110,8 @@ export class Runner {
       sheet = this.art.idle;
       index = Math.floor(this.time * 2) % 4;
     } else if (this.phase === "menu") {
-      sheet = this.art.idle;
-      index = Math.floor(this.time * 2) % 4;
+      sheet = this.art.run;
+      index = Math.floor(this.time * 8) % 4;
     }
     const img = frameOf(sheet, index) ?? frameOf(this.art.idle, 0);
     const h = this.u;
