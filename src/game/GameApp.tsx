@@ -199,7 +199,7 @@ export function GameApp() {
     }
   }
 
-  const playing = hud.phase === "play" || hud.phase === "pause" || hud.phase === "over" || hud.phase === "bonus" || hud.phase === "dialogue";
+  const playing = hud.phase === "play" || hud.phase === "pause" || hud.phase === "over" || hud.phase === "fish-intro" || hud.phase === "bonus" || hud.phase === "dialogue";
 
   return (
     <main className="relative h-dvh w-full touch-none overflow-hidden bg-day text-ink select-none">
@@ -473,7 +473,7 @@ export function GameApp() {
               >
                 {hud.muted ? <VolumeX className="size-5" /> : <Volume2 className="size-5" />}
               </button>
-              {hud.phase !== "over" && hud.phase !== "bonus" && hud.phase !== "dialogue" && (
+              {hud.phase !== "over" && hud.phase !== "bonus" && hud.phase !== "dialogue" && hud.phase !== "fish-intro" && (
                 <button
                   type="button"
                   className="flex size-11 items-center justify-center rounded-full border-2 border-ink bg-cream"
