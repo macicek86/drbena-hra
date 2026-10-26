@@ -382,6 +382,7 @@ export function GameApp() {
                   <button
                     type="button"
                     className="flex flex-col items-start rounded-[1.1em] border-2 border-ink bg-cream p-[0.7em] text-left shadow-[0_0.2em_0_#241c16] transition-transform hover:-translate-y-[0.1em] active:translate-y-[0.15em] active:shadow-none"
+                    aria-label={`Kronika Kopidlna, objeveno ${bookProgress.known}/${bookProgress.total} příběhů`}
                     onClick={() => openChronicle()}
                   >
                     <span className="flex w-full items-center justify-between">
@@ -403,6 +404,7 @@ export function GameApp() {
                   <button
                     type="button"
                     className="flex flex-col items-start rounded-[1.1em] border-2 border-ink bg-cream p-[0.7em] text-left shadow-[0_0.2em_0_#241c16] transition-transform hover:-translate-y-[0.1em] active:translate-y-[0.15em] active:shadow-none"
+                    aria-label={hud.best > 0 ? `Žebříček, tvůj rekord ${hud.best}` : "Žebříček"}
                     onClick={() => setBoardOpen(true)}
                   >
                     <span className="flex w-full items-center justify-between">
