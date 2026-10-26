@@ -325,8 +325,8 @@ export class Runner {
   private decorCursor = 0;
   private nextChunk = 0;
   private oboraSpans: { from: number; to: number }[] = [];
-  private approaches: { from: number; to: number; village: number; label: string }[] = [];
-  private villageZones: { from: number; to: number; name: string }[] = [];
+  private approaches: { from: number; to: number; village: number; label: string; place: PlaceId }[] = [];
+  private villageZones: { from: number; to: number; name: string; id: PlaceId }[] = [];
   private lastHazard: Kind | null = null;
   private hitKind: Kind | null = null;
   private loaded = 0;
@@ -1235,6 +1235,16 @@ export class Runner {
         this.decorCursor = lane.to + this.u * 0.3;
         continue;
       }
+      // Dekorace se vykreslují nad památkami. Ani okraj koruny stromu proto
+      // nesmí zasáhnout domy, a hlavně štíhlý krucifix v Mlýnci.
+      const clearance = this.visualHalf("tree") + this.u * 0.35;
+      const village = this.villageZones.find(
+        (zone) => this.decorCursor >= zone.from - clearance && this.decorCursor < zone.to + clearance,
+      );
+      if (village) {
+        this.decorCursor = village.to + clearance;
+        continue;
+      }
       const mix = biomeMix(this.decorCursor);
       const town = mix.biome.id === "namesti";
       const bag: Kind[] = town
@@ -1251,7 +1261,7 @@ export class Runner {
         this.decorCursor += this.u * (1.5 + Math.random() * 1.2);
         continue;
       }
-      if (this.ents.some((ent) => ent.alive && VILLAGES.has(ent.kind) && Math.abs(ent.x - this.decorCursor) < this.visualHalf(ent.kind) * 0.92)) {
+      if (this.ents.some((ent) => ent.alive && VILLAGES.has(ent.kind) && Math.abs(ent.x - this.decorCursor) < this.visualHalf(ent.kind) + this.visualHalf(kind) + this.u * 0.35)) {
         this.decorCursor += this.u * (1.5 + Math.random() * 1.2);
         continue;
       }
@@ -2268,9 +2278,10 @@ export class Runner {
       return { id: "park", name: "Kopidlnenská obora" };
     }
     const village = this.villageZones.find((zone) => x >= zone.from - this.u * 0.08 && x < zone.to + this.u * 0.08);
-    if (village) return { id: "park", name: village.name };
+    if (village) return { id: village.id, name: village.name };
+    // Pergameny leží často na cestě před vsí: patří k místu, kam Drběna běží.
     const between = this.approaches.find((gap) => x >= gap.from && x < gap.to);
-    if (between) return { id: "park", name: between.label };
+    if (between) return { id: between.place, name: between.label };
     const u = this.u;
     const cycle = CYCLE_LEN;
     const n = Math.floor(x / cycle);
@@ -2316,18 +2327,22 @@ export class Runner {
   }
 
   private plantPause(from: number, to: number, bushes: boolean) {
-    const room = to - from;
-    // Krátká mezera má být vidět jako předěl mezi vesnicemi, ne schovaná za třemi stromy.
+    // Kraje mezer necháváme volné, aby ani široká koruna stromu nezakryla
+    // sousední vesnici. Krucifix a srdce musí být vidět celé.
+    const setback = this.visualHalf("tree") + this.u * 0.55;
+    const left = from + setback;
+    const right = to - setback;
+    const room = right - left;
     if (room < this.u * 0.95) return;
-    if (room < this.u * 4.2) {
-      this.ents.push({ kind: "bush", x: (from + to) / 2, lift: 0, anim: 0, alive: true });
+    if (room < this.u * 3) {
+      this.ents.push({ kind: "bush", x: (left + right) / 2, lift: 0, anim: 0, alive: true });
       return;
     }
     const count = Math.min(6, Math.max(2, Math.floor(room / (this.u * 3))));
     const step = room / (count + 1);
     for (let i = 1; i <= count; i += 1) {
       const kind: Kind = bushes && i % 2 === 0 ? "bush" : "tree";
-      this.ents.push({ kind, x: from + step * i, lift: 0, anim: 0, alive: true });
+      this.ents.push({ kind, x: left + step * i, lift: 0, anim: 0, alive: true });
     }
   }
 
@@ -2340,24 +2355,24 @@ export class Runner {
 
     // Po rybníku / oboře následují čtyři samostatné vsi, poté návrat do Kopidlna.
     // Stavby uvnitř každé vsi drží pohromadě, volný prostor patří POUZE mezi obce.
-    const groups: { name: string; parts: { kind: Kind; gap: number }[] }[] = [
-      { name: "Mlýnec", parts: [
+    const groups: { id: PlaceId; name: string; parts: { kind: Kind; gap: number }[] }[] = [
+      { id: "mlynec", name: "Mlýnec", parts: [
         { kind: "mlynec-house", gap: u * 0.16 },
         { kind: "mlynec-school", gap: u * 0.2 },
         { kind: "mlynec-cross", gap: 0 },
       ] },
-      { name: "Ledkov", parts: [
+      { id: "ledkov", name: "Ledkov", parts: [
         { kind: "ledkov-a", gap: u * 0.22 },
         { kind: "ledkov-b", gap: 0 },
       ] },
-      { name: "Drahoraz", parts: [
+      { id: "drahoraz", name: "Drahoraz", parts: [
         { kind: "drahoraz-church", gap: u * 0.04 },
         { kind: "drahoraz-tower", gap: u * 0.27 },
         { kind: "apple-0", gap: u * 0.18 },
         { kind: "apple-1", gap: u * 0.16 },
         { kind: "apple-2", gap: 0 },
       ] },
-      { name: "Pševes", parts: [
+      { id: "pseves", name: "Pševes", parts: [
         { kind: "linden", gap: u * 0.15 },
         { kind: "pseves-heart", gap: 0 },
       ] },
@@ -2384,10 +2399,10 @@ export class Runner {
     const labels = ["Cesta do Mlýnce", "Cesta do Ledkova", "Cesta do Drahorazi", "Cesta do Pševsi"];
     for (let i = 0; i < groups.length; i += 1) {
       const from = i === 0 ? end : ends[i - 1]!;
-      this.approaches.push({ from, to: starts[i]!, village: ends[i]! + u * 0.15, label: labels[i]! });
-      this.villageZones.push({ from: starts[i]!, to: ends[i]!, name: groups[i]!.name });
+      this.approaches.push({ from, to: starts[i]!, village: ends[i]! + u * 0.15, label: labels[i]!, place: groups[i]!.id });
+      this.villageZones.push({ from: starts[i]!, to: ends[i]!, name: groups[i]!.name, id: groups[i]!.id });
     }
-    this.approaches.push({ from: ends[ends.length - 1]!, to: limit, village: houses, label: "Cesta do Kopidlna" });
+    this.approaches.push({ from: ends[ends.length - 1]!, to: limit, village: houses, label: "Cesta do Kopidlna", place: "namesti" });
 
     // Odstranit předem náhodně vygenerované dekorace; vrátit jen venkovskou zeleň
     // v mezerách. V obcích se nesmí objevit ani překážka překrývající budovu.
