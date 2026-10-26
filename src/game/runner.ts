@@ -731,14 +731,6 @@ export class Runner {
   }
 
   private onKeyDown = (event: KeyboardEvent) => {
-    // Psaní přezdívky ani klávesové ovládání tlačítek v menu
-    // nesmí aktivovat skok, spuštění hry či debugovací zkratky.
-    const target = event.target;
-    if (
-      target instanceof HTMLElement &&
-      (target.isContentEditable || target.closest("input, textarea, select") ||
-        (this.phase === "menu" && target.closest("button")))
-    ) return;
     const code = event.code;
     if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(code)) event.preventDefault();
     this.unlock();
