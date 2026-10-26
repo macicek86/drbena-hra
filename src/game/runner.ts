@@ -348,6 +348,8 @@ export class Runner {
   private bonusLife = false;
   private gossips = 0;
   private gossipScore = 0;
+  /** Seconds of actual running in this game (pauses, dialogues and bonus games excluded), sent with the score. */
+  private playSeconds = 0;
   private combo = 0;
   private lastCollect = -10;
   private fact: { title: string; text: string } | null = null;
@@ -531,7 +533,11 @@ export class Runner {
     }
   }
 
+  /** Lets the UI hold the first start from the menu (e.g. to ask for a name). Return false to stay in the menu. */
+  startGate: (() => boolean) | null = null;
+
   begin() {
+    if (this.phase === "menu" && this.startGate && !this.startGate()) return;
     this.unlock();
     this.sfx.restartMusic();
     this.phase = "play";
@@ -553,6 +559,7 @@ export class Runner {
     this.bonusLife = false;
     this.gossips = 0;
     this.gossipScore = 0;
+    this.playSeconds = 0;
     this.combo = 0;
     this.lastCollect = -10;
     this.fact = null;
@@ -760,6 +767,9 @@ export class Runner {
   }
 
   private onKeyDown = (event: KeyboardEvent) => {
+    const target = event.target as HTMLElement | null;
+    // Typing a name must not jump, start the game or toggle pause/mute.
+    if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
     const code = event.code;
     if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(code)) event.preventDefault();
     this.unlock();
@@ -1050,7 +1060,10 @@ export class Runner {
     const speed = this.phase === "play" && this.stagHolds() ? 0 : this.currentSpeed();
     this.speed = speed;
     this.camera += speed * dt;
-    if (this.phase === "play") this.run += speed * dt;
+    if (this.phase === "play") {
+      this.run += speed * dt;
+      this.playSeconds += dt;
+    }
     this.herdStags(dt);
     this.spookPigeons(dt);
 
@@ -1262,7 +1275,7 @@ export class Runner {
       if (score > this.best) this.best = score;
       if (this.gossips > this.bestGossips) this.bestGossips = this.gossips;
       this.save();
-      submitScore(score, this.gossips);
+      submitScore(score, this.gossips, this.playSeconds);
     }
     this.pushHud(true);
   }

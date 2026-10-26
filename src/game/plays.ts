@@ -1,6 +1,26 @@
 const endpoint = String((import.meta.env as Record<string, string | undefined>).VITE_PLAYS_URL ?? "").replace(/\/$/, "");
 const NAME_KEY = "drbena-jmeno";
 const PLAYER_KEY = "drbena-hrac";
+const PLAYER_ID_KEY = "drbena-kod-hrace";
+const NAME_CONFIRMED_KEY = "drbena-jmeno-potvrzeno";
+
+const ADJECTIVES = ["Zvědav", "Bystr", "Tajn", "Rychl", "Ušat", "Mlsn", "Všetečn", "Hbit", "Vesel", "Chytr", "Odvážn", "Nenápadn", "Upovídan", "Ospal"];
+const FEMININE = ["Koza", "Kachna", "Sova", "Liška", "Veverka", "Kočka", "Slepice", "Husa", "Straka", "Myška"];
+const MASCULINE = ["Holub", "Jelen", "Kapr", "Ježek", "Čáp", "Kohout", "Zajíc", "Bobr", "Kos", "Jezevec"];
+
+function pick<T>(list: T[]): T {
+  return list[Math.floor(Math.random() * list.length)];
+}
+
+/** A playful Kopidlno-flavoured nickname such as "Zvědavá Koza", always at most 16 characters. */
+export function randomName(): string {
+  for (let i = 0; i < 20; i++) {
+    const feminine = Math.random() < 0.5;
+    const name = `${pick(ADJECTIVES)}${feminine ? "á" : "ý"} ${pick(feminine ? FEMININE : MASCULINE)}`;
+    if (name.length <= 16) return name;
+  }
+  return "Zvědavá Koza";
+}
 
 export type BoardRow = { name: string; score: number; gossips: number };
 export type Stats = { plays: number; players: number; board: BoardRow[] };
@@ -48,6 +68,50 @@ export function saveName(name: string) {
   }
 }
 
+/** True until the player has picked (or accepted) a leaderboard name. Players who typed one earlier count as done. */
+export function needsName(): boolean {
+  try {
+    return localStorage.getItem(NAME_CONFIRMED_KEY) !== "1" && !savedName().trim();
+  } catch {
+    return false;
+  }
+}
+
+/** Store the chosen name; an empty choice gets a random nickname instead. Returns the stored name. */
+export function confirmName(name: string): string {
+  const chosen = name.trim().slice(0, 16) || randomName();
+  saveName(chosen);
+  try {
+    localStorage.setItem(NAME_CONFIRMED_KEY, "1");
+  } catch {
+    /* private mode */
+  }
+  return chosen;
+}
+
+/** Anonymous random id kept in this browser, so the newsroom can tell two players with the same name apart. */
+function playerId(): string {
+  try {
+    let id = localStorage.getItem(PLAYER_ID_KEY) ?? "";
+    if (!/^[a-z0-9-]{8,64}$/.test(id)) {
+      id = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+      localStorage.setItem(PLAYER_ID_KEY, id);
+    }
+    return id;
+  } catch {
+    return "";
+  }
+}
+
+/** The name sent with a score: never empty, so the board is not full of identical defaults. */
+function scoreName(): string {
+  const name = savedName().trim();
+  if (name) return name;
+  const generated = randomName();
+  saveName(generated);
+  return generated;
+}
+
 async function readStats(res: Response): Promise<Stats | null> {
   if (!res.ok) return null;
   const data = (await res.json()) as { plays?: unknown; players?: unknown; board?: unknown };
@@ -93,12 +157,12 @@ export function reportPlayer() {
     .catch(() => {});
 }
 
-export function submitScore(score: number, gossips: number) {
+export function submitScore(score: number, gossips: number, seconds: number) {
   if (!endpoint || score < 1) return;
   void fetch(`${endpoint}/score`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ score, gossips, name: savedName() }),
+    body: JSON.stringify({ score, gossips, seconds: Math.round(seconds), name: scoreName(), player: playerId() }),
     keepalive: true,
   })
     .then((res) => readStats(res))

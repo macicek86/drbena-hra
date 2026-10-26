@@ -19,16 +19,11 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm install
-      - id: counter
-        continue-on-error: true
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: sh scripts/deploy-counter.sh
       - run: npm run build:pages
         env:
           CF_PAGES: "1"
-          VITE_PLAYS_URL: ${{ steps.counter.outputs.url }}
+          # Žebříček a výsledky ukládá redakce Kopidlenské drbny do D1 (repozitář kopidlenska-drbna, src/hra/).
+          VITE_PLAYS_URL: https://www.kopidlenskadrbna.org/hra/api
       - name: Deploy hra
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
