@@ -1,12 +1,12 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, Heart, MessageCircle, Pause, Play, RotateCcw, Share2, Trophy, Volume2, VolumeX, X } from "lucide-react";
+import { BookOpen, Heart, MessageCircle, Pause, Play, RotateCcw, Dices, Share2, Trophy, Volume2, VolumeX, X } from "lucide-react";
 import { AlarmCard } from "@/game/GoatAlarmScene";
 import { ChronicleBook } from "@/game/ChronicleBook";
 import { FitOverlay } from "@/game/FitOverlay";
 import { Runner, emptyHud, type Hud } from "@/game/runner";
 import { chronicleBook } from "@/game/chronicle";
 import { BONUS_CALM, BONUS_PARDON, type BonusAction } from "@/game/minigames";
-import { fetchStats, playerLabel, previewStats, saveName, savedName, type BoardRow } from "@/game/plays";
+import { confirmName, fetchStats, needsName, playerLabel, previewStats, randomName, saveName, savedName, type BoardRow } from "@/game/plays";
 import { publicUrl } from "@/lib/public-url";
 
 function hudReactKey(h: Hud): string {
@@ -80,6 +80,20 @@ export function GameApp() {
   const [name, setName] = useState(savedName);
   const [chronicle, setChronicle] = useState(false);
   const [boardOpen, setBoardOpen] = useState(false);
+  const [askName, setAskName] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  const [namePlaceholder, setNamePlaceholder] = useState("Zvědavá Koza");
+  const leaderboardOn = useRef(false);
+  leaderboardOn.current = players != null;
+
+  useEffect(() => setNamePlaceholder(randomName()), []);
+
+  function startPlaying(chosen: string) {
+    const stored = confirmName(chosen);
+    setName(stored);
+    setAskName(false);
+    gameRef.current?.begin();
+  }
   const [chronicleNewFirst, setChronicleNewFirst] = useState(false);
   // Recompute saved progress when the game phase or the number of new entries changes.
   const bookProgress = useMemo(() => chronicleBook(), [hud.phase, hud.chronicleNew]);
@@ -106,6 +120,13 @@ export function GameApp() {
       setHud(next);
     });
     gameRef.current = game;
+    // First start from the menu: invite the player to pick a leaderboard name.
+    game.startGate = () => {
+      if (!leaderboardOn.current || !needsName()) return true;
+      setNameDraft((draft) => draft || randomName());
+      setAskName(true);
+      return false;
+    };
     game.start();
     const onStats = (event: Event) => {
       const stats = (event as CustomEvent<{ players?: number; board?: BoardRow[] }>).detail;
@@ -449,7 +470,7 @@ export function GameApp() {
               <input
                 value={name}
                 maxLength={16}
-                placeholder="Drběna"
+                placeholder={namePlaceholder}
                 className="mt-1 h-11 w-full rounded-xl border-2 border-ink bg-white/70 px-4 font-extrabold text-ink outline-none focus:border-bow"
                 onChange={(event) => {
                   setName(event.target.value);
@@ -478,6 +499,59 @@ export function GameApp() {
             )}
             {players != null && <p className="mt-3 text-center text-xs font-extrabold text-ink-soft">{playerLabel(players)}</p>}
           </div>
+        </div>
+      )}
+
+      {hud.phase === "menu" && askName && (
+        <div
+          className="absolute inset-0 z-30 flex items-end justify-center bg-ink/55 p-3 backdrop-blur-sm sm:items-center"
+          onClick={() => setAskName(false)}
+        >
+          <form
+            role="dialog"
+            aria-label="Jméno do žebříčku"
+            className="menu-pop w-full max-w-sm rounded-[1.75rem] border-2 border-ink bg-cream p-5 text-center shadow-[0_6px_0_#241c16]"
+            onClick={(event) => event.stopPropagation()}
+            onSubmit={(event) => {
+              event.preventDefault();
+              startPlaying(nameDraft);
+            }}
+          >
+            <img
+              src={publicUrl("/game/portrait.webp")}
+              alt=""
+              className="mx-auto -mt-12 size-20 rounded-full border-4 border-cream bg-ink object-cover shadow-lg"
+            />
+            <h2 className="mt-2 font-display text-2xl leading-tight">Jak ti máme říkat?</h2>
+            <p className="mt-1 text-sm font-extrabold text-ink-soft">Pod tímhle jménem tě uvidí ostatní v žebříčku.</p>
+            <div className="mt-4 flex gap-2">
+              <input
+                autoFocus
+                value={nameDraft}
+                maxLength={16}
+                placeholder="Tvoje jméno"
+                aria-label="Tvoje jméno"
+                className="h-12 min-w-0 flex-1 rounded-xl border-2 border-ink bg-white/70 px-4 font-extrabold text-ink outline-none focus:border-bow"
+                onChange={(event) => setNameDraft(event.target.value)}
+              />
+              <button
+                type="button"
+                aria-label="Vymyslet jiné jméno"
+                title="Vymyslet jiné jméno"
+                className="flex size-12 shrink-0 items-center justify-center rounded-xl border-2 border-ink bg-gold shadow-[0_3px_0_#241c16] active:translate-y-[3px] active:shadow-none"
+                onClick={() => setNameDraft(randomName())}
+              >
+                <Dices className="size-6" />
+              </button>
+            </div>
+            <button
+              type="submit"
+              className="mt-4 flex h-12 w-full items-center justify-center gap-2 rounded-xl border-2 border-ink bg-bow font-extrabold text-cream shadow-[0_4px_0_#241c16] active:translate-y-[4px] active:shadow-none"
+            >
+              <Play className="size-4 fill-current" /> {nameDraft.trim() ? `Hrát jako ${nameDraft.trim()}` : "Hrát s náhodným jménem"}
+            </button>
+            <p className="mt-2 text-xs font-extrabold text-ink-soft">Jméno změníš kdykoli v žebříčku.</p>
+          </form>
         </div>
       )}
 

@@ -531,7 +531,11 @@ export class Runner {
     }
   }
 
+  /** Lets the UI hold the first start from the menu (e.g. to ask for a name). Return false to stay in the menu. */
+  startGate: (() => boolean) | null = null;
+
   begin() {
+    if (this.phase === "menu" && this.startGate && !this.startGate()) return;
     this.unlock();
     this.sfx.restartMusic();
     this.phase = "play";
@@ -760,6 +764,9 @@ export class Runner {
   }
 
   private onKeyDown = (event: KeyboardEvent) => {
+    const target = event.target as HTMLElement | null;
+    // Typing a name must not jump, start the game or toggle pause/mute.
+    if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) return;
     const code = event.code;
     if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(code)) event.preventDefault();
     this.unlock();
