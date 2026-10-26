@@ -88,6 +88,25 @@ export function GameApp() {
 
   useEffect(() => setNamePlaceholder(randomName()), []);
 
+  // Mobile browsers scroll the page to keep a focused field above the keyboard and sometimes leave it scrolled
+  // after the keyboard closes, uncovering the page background under the game. The game never scrolls, so undo it.
+  useEffect(() => {
+    const unscroll = () => {
+      if (window.scrollX || window.scrollY) window.scrollTo(0, 0);
+      const root = document.scrollingElement;
+      if (root && (root.scrollTop || root.scrollLeft)) root.scrollTo(0, 0);
+    };
+    const later = () => window.setTimeout(unscroll, 120);
+    window.addEventListener("focusout", later);
+    window.addEventListener("orientationchange", later);
+    window.visualViewport?.addEventListener("resize", later);
+    return () => {
+      window.removeEventListener("focusout", later);
+      window.removeEventListener("orientationchange", later);
+      window.visualViewport?.removeEventListener("resize", later);
+    };
+  }, []);
+
   function startPlaying(chosen: string) {
     const stored = confirmName(chosen);
     setName(stored);
@@ -226,7 +245,7 @@ export function GameApp() {
   const playing = hud.phase === "play" || hud.phase === "pause" || hud.phase === "over" || hud.phase === "fish-intro" || hud.phase === "bonus" || hud.phase === "dialogue";
 
   return (
-    <main className="relative h-dvh w-full touch-none overflow-hidden bg-day text-ink select-none">
+    <main className="fixed inset-0 touch-none overflow-hidden bg-day text-ink select-none">
       <canvas key="drbena-surface" ref={canvasRef} className="absolute inset-0 h-full w-full touch-none" aria-label="Hra Drběna sbírá drby" />
 
       {(hud.phase === "loading" || hud.phase === "splash") && (
@@ -528,7 +547,6 @@ export function GameApp() {
             <p className="mt-1 text-sm font-extrabold text-ink-soft">Pod tímhle jménem tě uvidí ostatní v žebříčku.</p>
             <div className="mt-4 flex gap-2">
               <input
-                autoFocus
                 value={nameDraft}
                 maxLength={16}
                 placeholder="Tvoje jméno"

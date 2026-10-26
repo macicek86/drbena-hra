@@ -18,7 +18,9 @@ html,
 body {
   height: 100%;
   overflow: hidden;
-  background: var(--color-day);
+  /* Under the game (main is fixed to the whole window). If a phone ever shows a sliver of the page during
+     a keyboard or toolbar change, it is the dark ground colour of the scene rather than a bright sky stripe. */
+  background: #598d3f;
   color: var(--color-ink);
   font-family: var(--font-sans);
 }
