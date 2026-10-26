@@ -518,9 +518,9 @@ export function GameApp() {
             }}
           >
             <img
-              src={publicUrl("/game/portrait.webp")}
+              src={`${publicUrl("/game/portrait.webp")}?v=2`}
               alt=""
-              className="mx-auto -mt-12 size-20 rounded-full border-4 border-cream bg-ink object-cover shadow-lg"
+              className="mx-auto -mt-12 size-20 rounded-full border-4 border-cream bg-[radial-gradient(circle_at_50%_40%,#ffeef3_0%,#f6c9d6_100%)] object-cover shadow-lg ring-2 ring-ink"
             />
             <h2 className="mt-2 font-display text-2xl leading-tight">Jak ti máme říkat?</h2>
             <p className="mt-1 text-sm font-extrabold text-ink-soft">Pod tímhle jménem tě uvidí ostatní v žebříčku.</p>
