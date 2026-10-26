@@ -498,6 +498,12 @@ export class Runner {
   }
 
   begin() {
+    // Při startu z menu ponechat stejné stavby i dekorace.
+    // Bez toho by se při kliknutí na Vyrazit náhodně přeskládalo náměstí.
+    const fromMenu = this.phase === "menu";
+    const openingEntities = fromMenu ? this.ents : [];
+    const openingDecorCursor = this.decorCursor;
+    const openingNextChunk = this.nextChunk;
     this.unlock();
     this.sfx.restartMusic();
     this.phase = "play";
@@ -527,7 +533,7 @@ export class Runner {
     this.factLife = 0;
     this.chronicleNew = 0;
     this.scrollsKnown = knownIds().length;
-    this.ents = [];
+    this.ents = openingEntities;
     this.oboraSpans = [];
     this.approaches = [];
     this.villageZones = [];
@@ -535,8 +541,8 @@ export class Runner {
     this.hazardCursor = this.viewW * 0.92;
     this.nextScroll = this.viewW * (0.35 + Math.random() * 0.7);
     this.scrollsRun = 0;
-    this.decorCursor = -20;
-    this.nextChunk = 0;
+    this.decorCursor = fromMenu ? openingDecorCursor : -20;
+    this.nextChunk = fromMenu ? openingNextChunk : 0;
     this.lastHazard = null;
     this.hitKind = null;
     this.tale = "";
