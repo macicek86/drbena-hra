@@ -5,7 +5,9 @@ import { tickAlarm, type AlarmEvent } from "./goatAlarm.ts";
 import { reportPlayer, submitScore } from "@/game/plays";
 import { publicUrl } from "@/lib/public-url";
 import {
-  BIOME_LEN,
+  CYCLE_LEN,
+  stageIndex,
+  stageStart,
   BIOMES,
   biomeMix,
   lerpRgb,
@@ -503,7 +505,7 @@ export class Runner {
     this.decorCursor = this.camera - 20;
     this.hazardCursor = this.camera + this.viewW * 0.45;
     this.nextScroll = this.camera + this.viewW;
-    this.nextChunk = Math.max(0, Math.floor((this.camera - this.viewW) / BIOME_LEN));
+    this.nextChunk = Math.max(0, stageIndex(this.camera - this.viewW));
     this.fillWorld();
     this.pushHud(true);
   }
@@ -803,7 +805,7 @@ export class Runner {
 
   private currentSpeed(): number {
     if (this.phase === "menu") return this.speed0 * 0.62;
-    const loop = BIOME_LEN * 4;
+    const loop = CYCLE_LEN;
     const first = Math.min(1, this.run / loop);
     const base = this.speed0 + (this.speedMax - this.speed0) * first;
     const later = Math.min(1, Math.max(0, this.run - loop) / (loop * 2));
@@ -1148,8 +1150,8 @@ export class Runner {
   private oboraLayout(chunk: number) {
     const u = this.u;
     const aspects = [2146 / 632, 2172 / 632, 2140 / 632];
-    const glassRight = (chunk - 1) * BIOME_LEN + this.viewW * 0.82 + this.visualHalf("greenhouse") + u * 1.05;
-    const infoLeft = (chunk + 1) * BIOME_LEN + this.viewW * 0.82 - u * 1.42 - this.visualHalf("info") - u * 0.55;
+    const glassRight = stageStart(chunk - 1) + this.viewW * 0.82 + this.visualHalf("greenhouse") + u * 1.05;
+    const infoLeft = stageStart(chunk + 1) + this.viewW * 0.82 - u * 1.42 - this.visualHalf("info") - u * 0.55;
     const mids = 3;
     const spanAspect = aspects[0]! + aspects[1]! * mids + aspects[2]!;
     const lane = u * 14.5;
@@ -1257,49 +1259,49 @@ export class Runner {
       this.decorCursor += this.u * (1.35 + Math.random() * 1.8);
     }
     const horizon = this.camera + this.visualHalf("pond") + this.viewW * 0.22 + this.u;
-    while (this.nextChunk * BIOME_LEN <= horizon || (this.isOboraChunk(this.nextChunk) && this.oboraLayout(this.nextChunk).start <= this.camera + this.viewW + this.u * 1.6)) {
+    while (stageStart(this.nextChunk) <= horizon || (this.isOboraChunk(this.nextChunk) && this.oboraLayout(this.nextChunk).start <= this.camera + this.viewW + this.u * 1.6)) {
       const biome = BIOMES[((this.nextChunk % 4) + 4) % 4]!;
       if (biome.id === "park" && this.isOboraChunk(this.nextChunk)) {
         this.spawnObora(this.nextChunk);
       } else {
-        const origin = this.nextChunk * BIOME_LEN + this.viewW * 0.82;
+        const origin = stageStart(this.nextChunk) + this.viewW * 0.82;
         this.ents.push({
           kind: biome.landmark,
-          x: biome.landmark === "pond" ? this.pondX(this.nextChunk * BIOME_LEN) : origin,
+          x: biome.landmark === "pond" ? this.pondX(stageStart(this.nextChunk)) : origin,
           lift: 0,
           anim: 0,
           alive: true,
         });
         if (biome.landmark === "pond") {
           this.pondsDirty = true;
-          this.approachAfter(this.pondX(this.nextChunk * BIOME_LEN) + this.pondHalf());
+          this.approachAfter(this.pondX(stageStart(this.nextChunk)) + this.pondHalf());
         }
       }
       if (biome.id === "namesti") {
         this.ents.push({
           kind: "info",
-          x: this.nextChunk * BIOME_LEN + this.viewW * 0.82 - this.u * 1.42,
+          x: stageStart(this.nextChunk) + this.viewW * 0.82 - this.u * 1.42,
           lift: 0,
           anim: 0,
           alive: true,
         });
         this.ents.push({
           kind: "column",
-          x: this.nextChunk * BIOME_LEN + this.viewW * 0.82 + this.u * 3.3,
+          x: stageStart(this.nextChunk) + this.viewW * 0.82 + this.u * 3.3,
           lift: 0,
           anim: 0,
           alive: true,
         });
         this.ents.push({
           kind: "church",
-          x: this.nextChunk * BIOME_LEN + this.viewW * 0.82 + this.u * 7.6,
+          x: stageStart(this.nextChunk) + this.viewW * 0.82 + this.u * 7.6,
           lift: 0,
           anim: 0,
           alive: true,
         });
         this.ents.push({
           kind: "school",
-          x: this.nextChunk * BIOME_LEN + this.viewW * 0.82 + this.u * 12.2,
+          x: stageStart(this.nextChunk) + this.viewW * 0.82 + this.u * 12.2,
           lift: 0,
           anim: 0,
           alive: true,
@@ -1425,10 +1427,10 @@ export class Runner {
   }
 
   private pondGapEnd(x: number): number | null {
-    const cycle = BIOME_LEN * 4;
+    const cycle = CYCLE_LEN;
     const base = Math.floor(x / cycle);
     for (let i = base - 1; i <= base + 1; i += 1) {
-      const pondX = this.pondX((i * 4 + 3) * BIOME_LEN);
+      const pondX = this.pondX(stageStart(i * 4 + 3));
       const from = pondX - this.u * 8;
       const to = pondX + this.u * 8;
       if (x >= from && x < to) return to;
@@ -1449,7 +1451,7 @@ export class Runner {
   private onPlaceFace(x: number, kind: Kind): boolean {
     const reach = this.visualHalf(kind);
     const u = this.u;
-    const cycle = BIOME_LEN * 4;
+    const cycle = CYCLE_LEN;
     const n0 = Math.floor(x / cycle) - 1;
     for (let n = n0; n <= n0 + 2; n += 1) {
       const square = n * cycle + this.viewW * 0.82;
@@ -1459,9 +1461,9 @@ export class Runner {
         [square + u * 3.3, "column"],
         [square + u * 7.6, "church"],
         [square + u * 12.2, "school"],
-        [n * cycle + BIOME_LEN + this.viewW * 0.82, "castle"],
-        [n * cycle + BIOME_LEN * 2 + this.viewW * 0.82, "greenhouse"],
-        [this.pondX(n * cycle + BIOME_LEN * 3), "pond"],
+        [stageStart(n * 4 + 1) + this.viewW * 0.82, "castle"],
+        [stageStart(n * 4 + 2) + this.viewW * 0.82, "greenhouse"],
+        [this.pondX(stageStart(n * 4 + 3)), "pond"],
       ];
       for (const [center, place] of spots) {
         const inner = this.visualHalf(place) * 0.78;
@@ -1502,7 +1504,7 @@ export class Runner {
       return;
     }
     const roll = Math.random();
-    const stage = Math.floor(Math.max(0, x) / BIOME_LEN);
+    const stage = stageIndex(Math.max(0, x));
     const gossipP = stage >= 2 ? 0.28 : stage === 0 ? 0.24 : 0.22;
     if (roll < gossipP) {
       const n = 3 + (Math.random() < 0.45 ? 2 : 0);
@@ -1557,7 +1559,7 @@ export class Runner {
   }
 
   private rollHazard(x: number): Kind {
-    const stage = Math.floor(Math.max(0, x) / BIOME_LEN);
+    const stage = stageIndex(Math.max(0, x));
     const bag: Kind[] = ["fence", "pot", "dog", "fence", "pot"];
     if (stage >= 1) bag.push("gardener");
     if (stage >= 2) bag.push("branch", "fence");
@@ -2270,15 +2272,15 @@ export class Runner {
     const between = this.approaches.find((gap) => x >= gap.from && x < gap.to);
     if (between) return { id: "park", name: between.label };
     const u = this.u;
-    const cycle = BIOME_LEN * 4;
+    const cycle = CYCLE_LEN;
     const n = Math.floor(x / cycle);
     const origin = n * cycle;
     const square = origin + this.viewW * 0.82;
     const church = square + u * 7.6;
     const school = square + u * 12.2;
-    const castle = origin + BIOME_LEN + this.viewW * 0.82;
-    const glass = origin + BIOME_LEN * 2 + this.viewW * 0.82;
-    const pond = this.pondX(origin + BIOME_LEN * 3);
+    const castle = stageStart(n * 4 + 1) + this.viewW * 0.82;
+    const glass = stageStart(n * 4 + 2) + this.viewW * 0.82;
+    const pond = this.pondX(stageStart(n * 4 + 3));
     const nextSquare = origin + cycle + this.viewW * 0.82;
     if (x < (church + school) / 2) return { id: "namesti", name: "Náměstí" };
     if (x < (school + castle) / 2) return { id: "skola", name: "Stará škola" };
@@ -2293,7 +2295,7 @@ export class Runner {
   }
 
   private nextTown(x: number): number {
-    const cycle = BIOME_LEN * 4;
+    const cycle = CYCLE_LEN;
     const n = Math.floor(x / cycle);
     const here = n * cycle + this.viewW * 0.82;
     const houses = here > x ? here : (n + 1) * cycle + this.viewW * 0.82;
@@ -2438,7 +2440,7 @@ export class Runner {
     const here = this.camera + this.playerX;
     for (const ent of this.ents) {
       if (ent.kind !== "pond" || !ent.alive) continue;
-      const id = Math.floor(ent.x / BIOME_LEN);
+      const id = stageIndex(ent.x);
       if (id === this.lastFish) continue;
       const fishAt = ent.x + this.u * 1.15;
       if (here > fishAt - this.u * 1.7 && here < fishAt - this.u * 0.55) {
