@@ -91,7 +91,7 @@ export function stageIndex(x: number): number {
   return cycle * 4 + part;
 }
 
-export type PlaceId = "namesti" | "skola" | "zamek" | "sklenik" | "park";
+export type PlaceId = "namesti" | "skola" | "zamek" | "sklenik" | "park" | "mlynec" | "ledkov" | "drahoraz" | "pseves";
 
 export function lerpRgb(a: RGB, b: RGB, t: number): RGB {
   return [
