@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, Heart, MessageCircle, Pause, Play, RotateCcw, Share2, Volume2, VolumeX } from "lucide-react";
+import { BookOpen, Heart, MessageCircle, Pause, Play, RotateCcw, Share2, Trophy, Volume2, VolumeX, X } from "lucide-react";
 import { AlarmCard } from "@/game/GoatAlarmScene";
 import { ChronicleBook } from "@/game/ChronicleBook";
 import { FitOverlay } from "@/game/FitOverlay";
@@ -79,6 +79,7 @@ export function GameApp() {
   const [board, setBoard] = useState<BoardRow[]>(previewStats?.board ?? []);
   const [name, setName] = useState(savedName);
   const [chronicle, setChronicle] = useState(false);
+  const [boardOpen, setBoardOpen] = useState(false);
   const [chronicleNewFirst, setChronicleNewFirst] = useState(false);
   // Recompute saved progress when the game phase or the number of new entries changes.
   const bookProgress = useMemo(() => chronicleBook(), [hud.phase, hud.chronicleNew]);
@@ -317,117 +318,164 @@ export function GameApp() {
       )}
 
       {hud.phase === "menu" && (
-        <div ref={menuRef}
-          className="menu-fit absolute inset-0 overflow-hidden bg-gradient-to-t from-ink/80 via-ink/20 to-transparent" onClick={() => gameRef.current?.begin()}>
-          <div className="flex h-full min-h-0 items-center justify-center px-[1em] py-[0.5em] sm:px-[1.5em] sm:py-[0.75em]">
-            <section ref={menuContentRef} className="w-full max-w-[24em] shrink-0 text-center">
+        <div
+          ref={menuRef}
+          className="menu-fit absolute inset-0 overflow-hidden bg-[radial-gradient(ellipse_at_50%_42%,rgba(36,28,22,0)_0%,rgba(36,28,22,0.28)_100%)]"
+          onClick={() => gameRef.current?.begin()}
+        >
+          <div className="flex h-full min-h-0 items-center justify-center px-[1em] py-[0.75em]">
+            <section ref={menuContentRef} className="flex w-full max-w-[25em] shrink-0 flex-col items-center text-center">
               <img
-                src={publicUrl("/game/portrait.webp")}
-                alt="Drběna, černobílá koza s růžovou mašlí"
-                className="mx-auto size-[6em] rounded-full border-4 border-cream bg-ink object-cover shadow-lg"
+                src={`${publicUrl("/game/splash-logo.webp")}?v=4`}
+                alt="Kopidlenská drbna"
+                className="menu-pop w-[19em] max-w-full -rotate-2 drop-shadow-[0_0.5em_0.6em_rgba(36,28,22,0.35)]"
               />
-              <p className="mt-[0.75em]">
-                <span className="text-[0.75em] font-extrabold tracking-[0.22em] text-cream [text-shadow:0_2px_0_#241c16]">KOPIDLNO</span>
+              <p className="menu-pop mt-[0.15em] rotate-1 rounded-full border-2 border-ink bg-bow px-[1em] py-[0.2em] font-display text-[1.25em] text-cream shadow-[0_0.2em_0_#241c16] [animation-delay:80ms]">
+                Drběna sbírá drby
               </p>
-              <h1 className="mt-[0.15em] text-cream [text-shadow:0_3px_0_#241c16]">
-                <span className="block font-display text-[3.75em] leading-[0.85]">Drběna</span>
-                <span className="block font-display text-[1.875em] leading-none text-bow [text-shadow:0_2px_0_#241c16]">sbírá drby</span>
-              </h1>
-              <p className="mt-[0.5em]">
-                <span className="text-[0.75em] font-extrabold text-cream/90 [text-shadow:0_1px_0_#241c16]">
-                  ♪ za doprovodu Esmeraldy od Františka Matěje Hilmara
-                </span>
-              </p>
-              <button
-                type="button"
-                className="mx-auto mt-[1em] flex h-[3.5em] w-full max-w-[20em] items-center justify-center rounded-full border-2 border-ink bg-bow font-extrabold text-cream"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  gameRef.current?.begin();
-                }}
+
+              <div
+                className="menu-pop mt-[1em] w-full rounded-[1.75em] border-2 border-ink bg-cream/90 p-[1em] shadow-[0_0.4em_0_#241c16] backdrop-blur-md [animation-delay:160ms]"
+                onClick={(event) => event.stopPropagation()}
               >
-                <span className="text-[1.25em]">Vyrazit</span>
-              </button>
-              <p className="mt-[0.65em]">
-                <span className="text-[0.875em] font-extrabold text-cream [text-shadow:0_1px_0_#241c16]">Klepni a skoč. Táhni dolů a pokrč se.</span>
-              </p>
-              {hud.best > 0 && (
-                <p className="mt-[0.25em]">
-                  <span className="text-[0.875em] font-extrabold text-gold [text-shadow:0_1px_0_#241c16]">
-                    Rekord {hud.best}
-                    {hud.bestGossips > 0 ? ` · ${hud.bestGossips} drbů` : ""}
+                <button
+                  type="button"
+                  className="group relative flex h-[4em] w-full items-center justify-center gap-[0.5em] rounded-[1.25em] border-2 border-ink bg-bow font-extrabold text-cream shadow-[0_0.3em_0_#241c16] transition-[transform,box-shadow] hover:bg-bow-deep active:translate-y-[0.3em] active:shadow-none"
+                  onClick={() => gameRef.current?.begin()}
+                >
+                  <span className="flex size-[1.9em] items-center justify-center rounded-full bg-cream text-bow">
+                    <Play className="size-[1em] translate-x-[0.06em] fill-current" aria-hidden="true" />
                   </span>
-                </p>
-              )}
-              <button
-                type="button"
-                className="mx-auto mt-[0.75em] flex w-full max-w-[20em] items-center gap-[0.7em] rounded-[1.25em] border-[3px] border-gold bg-cream/95 px-[0.8em] py-[0.7em] text-left text-ink shadow-lg transition-transform hover:scale-[1.02] focus-visible:outline focus-visible:outline-4 focus-visible:outline-bow"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  openChronicle();
-                }}
-              >
-                <BookOpen className="size-[2.2em] shrink-0 text-bow" aria-hidden="true" />
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-center justify-between gap-2 font-display text-[1.15em] leading-tight">
-                    <span>Kronika Kopidlna</span>
-                    <span className="shrink-0 text-[0.85em]">{bookProgress.known}/{bookProgress.total}</span>
-                  </span>
-                  <span className="mt-[0.1em] block text-[0.75em] font-extrabold text-ink-soft">
-                    Objev {bookProgress.total} příběhů a tajemství Kopidlna!
-                  </span>
-                  <span className="mt-[0.4em] block h-[0.45em] overflow-hidden rounded-full border border-ink/30 bg-cream-deep">
-                    <span
-                      className="block h-full rounded-full bg-gold"
-                      style={{ width: `${bookProgress.total ? (bookProgress.known / bookProgress.total) * 100 : 0}%` }}
-                    />
-                  </span>
-                </span>
-              </button>
-              {players != null && (
-                <p className="mt-[0.25em]">
-                  <span className="text-[0.875em] font-extrabold text-cream [text-shadow:0_1px_0_#241c16]">{playerLabel(players)}</span>
-                </p>
-              )}
-              {players != null && (
-                <label className="mx-auto mt-[0.65em] block max-w-[20em] text-left" onClick={(event) => event.stopPropagation()}>
-                  <span className="text-[0.75em] font-extrabold tracking-wide text-cream [text-shadow:0_1px_0_#241c16]">Jméno do žebříčku</span>
-                  <input
-                    value={name}
-                    maxLength={16}
-                    placeholder="Drběna"
-                    className="mt-[0.25em] h-[2.5em] w-full rounded-full border-2 border-ink bg-cream px-[1em] font-extrabold text-ink outline-none"
-                    onChange={(event) => {
-                      setName(event.target.value);
-                      saveName(event.target.value);
-                    }}
-                  />
-                </label>
-              )}
-              {board.length > 0 && (
-                <ol className="mx-auto mt-[0.65em] w-full max-w-[20em] rounded-[1.5em] border-2 border-ink bg-cream/95 px-[1em] py-[0.4em] text-left font-extrabold">
-                  {board.slice(0, 5).map((row, index) => (
-                    <li key={`${row.name}-${row.score}-${index}`} className="flex justify-between gap-[0.75em] py-[0.1em] text-[0.875em]">
-                      <span>
-                        {index + 1}. {row.name}
+                  <span className="text-[1.5em] tracking-wide">Vyrazit</span>
+                </button>
+
+                <div className="mt-[0.75em] flex justify-center gap-[0.4em] text-[0.8em] font-extrabold text-ink-soft">
+                  <span className="rounded-full bg-cream-deep px-[0.75em] py-[0.25em]">👆 klepni = skok</span>
+                  <span className="rounded-full bg-cream-deep px-[0.75em] py-[0.25em]">👇 táhni dolů = pokrč se</span>
+                </div>
+
+                <div className="mt-[0.85em] grid grid-cols-2 gap-[0.6em]">
+                  <button
+                    type="button"
+                    className="flex flex-col items-start rounded-[1.1em] border-2 border-ink bg-cream p-[0.7em] text-left shadow-[0_0.2em_0_#241c16] transition-transform hover:-translate-y-[0.1em] active:translate-y-[0.15em] active:shadow-none"
+                    onClick={() => openChronicle()}
+                  >
+                    <span className="flex w-full items-center justify-between">
+                      <BookOpen className="size-[1.6em] text-bow" aria-hidden="true" />
+                      <span className="font-display text-[1.1em]">
+                        {bookProgress.known}
+                        <span className="text-ink-soft">/{bookProgress.total}</span>
                       </span>
-                      <span>
-                        {row.score}
-                        {row.gossips > 0 ? ` · ${row.gossips}` : ""}
-                      </span>
-                    </li>
-                  ))}
-                </ol>
-              )}
-              {previewStats && (
-                <p className="mt-[0.25em]">
-                  <span className="text-[0.75em] font-extrabold text-cream/80 [text-shadow:0_1px_0_#241c16]">Náhled, ještě to není venku</span>
-                </p>
-              )}
-              <p className="mt-[0.65em]">
-                <span className="text-[0.7em] font-extrabold tracking-wide text-cream/75 [text-shadow:0_1px_0_#241c16]">© Kopidlenská drbna | Camledian</span>
-              </p>
+                    </span>
+                    <span className="mt-[0.35em] font-display text-[1.05em] leading-tight">Kronika</span>
+                    <span className="text-[0.72em] font-extrabold text-ink-soft">příběhy Kopidlna</span>
+                    <span className="mt-[0.45em] block h-[0.4em] w-full overflow-hidden rounded-full bg-cream-deep">
+                      <span
+                        className="block h-full rounded-full bg-gold"
+                        style={{ width: `${bookProgress.total ? Math.max(4, (bookProgress.known / bookProgress.total) * 100) : 0}%` }}
+                      />
+                    </span>
+                  </button>
+                  <button
+                    type="button"
+                    className="flex flex-col items-start rounded-[1.1em] border-2 border-ink bg-cream p-[0.7em] text-left shadow-[0_0.2em_0_#241c16] transition-transform hover:-translate-y-[0.1em] active:translate-y-[0.15em] active:shadow-none"
+                    onClick={() => setBoardOpen(true)}
+                  >
+                    <span className="flex w-full items-center justify-between">
+                      <Trophy className="size-[1.6em] text-gold" aria-hidden="true" />
+                      <span className="font-display text-[1.1em]">{hud.best > 0 ? hud.best : "–"}</span>
+                    </span>
+                    <span className="mt-[0.35em] font-display text-[1.05em] leading-tight">Žebříček</span>
+                    <span className="text-[0.72em] font-extrabold text-ink-soft">
+                      {players != null ? playerLabel(players) : hud.best > 0 ? "tvůj rekord" : "zatím bez rekordu"}
+                    </span>
+                    <span className="mt-[0.45em] flex w-full items-center gap-[0.3em] text-[0.72em] font-extrabold text-ink-soft">
+                      {board[0] ? (
+                        <>
+                          <span className="truncate">👑 {board[0].name}</span>
+                          <span className="ml-auto">{board[0].score}</span>
+                        </>
+                      ) : (
+                        <span>buď první!</span>
+                      )}
+                    </span>
+                  </button>
+                </div>
+              </div>
+
             </section>
+          </div>
+          <p className="pointer-events-none absolute inset-x-0 bottom-[0.6em] px-[1em] text-center text-[0.68em] font-extrabold leading-snug text-cream/90 [text-shadow:0_1px_2px_#241c16]">
+            ♪ Esmeralda (F. M. Hilmar){previewStats ? " · náhled" : ""}
+            <br className="sm:hidden" />
+            <span className="hidden sm:inline"> · </span>© Kopidlenská drbna | Camledian
+          </p>
+        </div>
+      )}
+
+      {hud.phase === "menu" && boardOpen && (
+        <div
+          className="absolute inset-0 z-30 flex items-end justify-center bg-ink/55 p-3 backdrop-blur-sm sm:items-center"
+          onClick={() => setBoardOpen(false)}
+        >
+          <div
+            role="dialog"
+            aria-label="Žebříček"
+            className="menu-pop w-full max-w-sm rounded-[1.75rem] border-2 border-ink bg-cream p-5 shadow-[0_6px_0_#241c16]"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="flex items-center justify-between">
+              <h2 className="flex items-center gap-2 font-display text-2xl">
+                <Trophy className="size-6 text-gold" aria-hidden="true" /> Žebříček
+              </h2>
+              <button
+                type="button"
+                aria-label="Zavřít"
+                className="flex size-9 items-center justify-center rounded-full border-2 border-ink bg-cream-deep"
+                onClick={() => setBoardOpen(false)}
+              >
+                <X className="size-5" />
+              </button>
+            </div>
+            {hud.best > 0 && (
+              <p className="mt-1 text-sm font-extrabold text-ink-soft">
+                Tvůj rekord: {hud.best}
+                {hud.bestGossips > 0 ? ` · ${hud.bestGossips} drbů` : ""}
+              </p>
+            )}
+            <label className="mt-4 block">
+              <span className="text-xs font-extrabold tracking-wide text-ink-soft">TVOJE JMÉNO</span>
+              <input
+                value={name}
+                maxLength={16}
+                placeholder="Drběna"
+                className="mt-1 h-11 w-full rounded-xl border-2 border-ink bg-white/70 px-4 font-extrabold text-ink outline-none focus:border-bow"
+                onChange={(event) => {
+                  setName(event.target.value);
+                  saveName(event.target.value);
+                }}
+              />
+            </label>
+            {board.length > 0 ? (
+              <ol className="mt-4 space-y-1.5">
+                {board.slice(0, 5).map((row, index) => (
+                  <li
+                    key={`${row.name}-${row.score}-${index}`}
+                    className={`flex items-center gap-3 rounded-xl px-3 py-2 font-extrabold ${index === 0 ? "bg-gold/25" : "bg-cream-deep/70"}`}
+                  >
+                    <span className="w-6 text-center font-display text-lg">{["🥇", "🥈", "🥉"][index] ?? index + 1}</span>
+                    <span className="min-w-0 flex-1 truncate">{row.name}</span>
+                    <span className="text-right">
+                      {row.score}
+                      {row.gossips > 0 && <span className="ml-1 text-xs text-ink-soft">· {row.gossips} drbů</span>}
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            ) : (
+              <p className="mt-4 text-sm font-extrabold text-ink-soft">Zatím tu nikdo není. Buď první!</p>
+            )}
+            {players != null && <p className="mt-3 text-center text-xs font-extrabold text-ink-soft">{playerLabel(players)}</p>}
           </div>
         </div>
       )}
