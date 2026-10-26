@@ -1,5 +1,6 @@
 import { knownIds, pageIds, rememberFact } from "@/game/chronicle";
 import { Sfx } from "@/game/audio";
+import { STAG_STORIES, stagStoryFor, type StagStory } from "@/game/stag-stories";
 import { bonusAct as actBonus, bonusHud, BONUS_PARDON_TALE, createOfferedMini, fishOffersMini, healFromBonus, type AnyBonus, type BonusAction, type BonusHud } from "@/game/minigames";
 import { tickAlarm, type AlarmEvent } from "./goatAlarm.ts";
 import { reportPlayer, submitScore } from "@/game/plays";
@@ -42,7 +43,15 @@ export type Hud = {
   ready: boolean;
   progress: number;
   bonus: BonusHud | null;
-  stagDialogue: { speaker: "Drběna" | "Bílý jelen"; text: string; step: number; total: number } | null;
+  stagDialogue: {
+    speaker: "Drběna" | "Bílý jelen";
+    text: string;
+    title: string;
+    step: number;
+    total: number;
+    chapter: number | null;
+    chapters: number;
+  } | null;
 };
 
 type Kind =
@@ -117,20 +126,6 @@ const PSEVES = new Set<Kind>(["linden", "pseves-heart"]);
 const VILLAGES = new Set<Kind>([...MLYNEC, ...LEDKOV, ...DRAHORAZ, ...PSEVES]);
 const PROPS = new Set<Kind>(["bush", "lamp", "tree", "bench", "pigeon", "bin"]);
 const DECOR = new Set<Kind>(["bush", "lamp", "tree", "bench", "pigeon", "bin", "column", "church", "school", "info"]);
-
-// Pohádkové setkání v oboře. Jelen mluví jako postava z pověsti,
-// nikoli jako doklad o skutečné historii Kopidlna.
-const STAG_DIALOGUE: { speaker: "Drběna" | "Bílý jelen"; text: string }[] = [
-  { speaker: "Drběna", text: "Méé! Bílý jelen! Drběna si myslela, že takoví žijí jen v pověstech!" },
-  { speaker: "Bílý jelen", text: "Pověsti se někdy ukážou těm, kdo se umějí dobře dívat." },
-  { speaker: "Drběna", text: "O bílém jelenovi se říká, že přináší štěstí. Je to pravda?" },
-  { speaker: "Bílý jelen", text: "Tak se vypráví. Ale štěstí se nedá chytit ani schovat za plot." },
-  { speaker: "Drběna", text: "A nedalo by se aspoň zapsat do kroniky? Drběna by měla opravdu vzácný příběh!" },
-  { speaker: "Bílý jelen", text: "Zapiš, co jsi viděla. A nezapomeň odlišit pravdu od toho, co se jen povídá." },
-  { speaker: "Drběna", text: "To Drběna umí! V Kopidlně a okolních vesnicích je příběh na každém rohu." },
-  { speaker: "Bílý jelen", text: "Tak běž dál. Některá tajemství čekají hned za dalším stromem." },
-  { speaker: "Drběna", text: "Mééj se, bílý jelene! A díky za drb, který vlastně není drb!" },
-];
 
 const FISH = [
   "Tady dole se toho děje víc než na kopidlenském náměstí!",
@@ -376,6 +371,8 @@ export class Runner {
   private forceMeet = false;
   private stagDialogueIndex = 0;
   private stagDialogueDeer: Ent | null = null;
+  private stagDialogueStory: StagStory | null = null;
+  private stagMeetings = 0;
   private cullMargin = 900;
   private skyGrad: CanvasGradient | null = null;
   private skyTop = "";
@@ -441,10 +438,16 @@ export class Runner {
 
   advanceStagDialogue(skip = false) {
     if (this.phase !== "dialogue") return;
-    if (!skip && this.stagDialogueIndex + 1 < STAG_DIALOGUE.length) {
+    const lines = this.stagDialogueStory?.lines;
+    if (!skip && lines && this.stagDialogueIndex + 1 < lines.length) {
       this.stagDialogueIndex += 1;
       this.pushHud(true);
       return;
+    }
+    // Postup zachovat i po přeskočení: další setkání má přinést nové povídání.
+    if (this.stagDialogueStory) {
+      this.stagMeetings += 1;
+      this.save();
     }
     const deer = this.stagDialogueDeer;
     if (deer?.alive) {
@@ -452,6 +455,7 @@ export class Runner {
       deer.wait = 0;
     }
     this.stagDialogueDeer = null;
+    this.stagDialogueStory = null;
     this.stagDialogueIndex = 0;
     this.phase = "play";
     this.suppress = Math.max(this.suppress, 0.5);
@@ -524,6 +528,7 @@ export class Runner {
     this.bonus = null;
     this.forceMeet = false;
     this.stagDialogueDeer = null;
+    this.stagDialogueStory = null;
     this.stagDialogueIndex = 0;
     this.fillWorld();
     this.pushHud(true);
@@ -663,6 +668,7 @@ export class Runner {
     this.approaches = [];
     this.villageZones = [];
     this.stagDialogueDeer = null;
+    this.stagDialogueStory = null;
     this.stagDialogueIndex = 0;
     this.decorCursor = -30;
     this.nextChunk = 0;
@@ -1190,7 +1196,9 @@ export class Runner {
   }
 
   private isOboraChunk(chunk: number): boolean {
-    if (this.forceMeet && chunk === 7) return true;
+    // První obora na druhém okruhu je vždy přístupná.
+    // Ostatní se dále střídají s rybníkem, aby hra neztratila pestrost.
+    if (chunk === 7) return true;
     if (chunk < 7 || chunk % 4 !== 3) return false;
     const n = Math.sin(chunk * 127.1) * 43758.5453;
     return n - Math.floor(n) < 0.5;
@@ -1242,7 +1250,7 @@ export class Runner {
       alive: true,
       fly: 0,
       sway: 0,
-      face: this.forceMeet && chunk === 7 ? 1 : hash(chunk + 19) < 0.5 ? 1 : 0,
+      face: this.forceMeet || this.stagMeetings < STAG_STORIES.length ? 1 : hash(chunk + 19) < 0.5 ? 1 : 0,
     });
     for (const piece of pieces) {
       this.ents.push({ kind: "obora", x: piece.x, lift: h, anim: piece.part, alive: true });
@@ -1722,7 +1730,10 @@ export class Runner {
     this.padLive = true;
     const jump = Boolean(pad.buttons[0]?.pressed || pad.buttons[12]?.pressed || (pad.axes[1] ?? 0) < -0.65);
     const duck = Boolean(pad.buttons[1]?.pressed || pad.buttons[13]?.pressed || (pad.axes[1] ?? 0) > 0.65);
-    if (jump && !this.prevPadJump) this.jumpEdge = true;
+    if (jump && !this.prevPadJump) {
+      if (this.phase === "dialogue") this.advanceStagDialogue();
+      else this.jumpEdge = true;
+    }
     this.prevPadJump = jump;
     this.padJump = jump;
     this.padDuck = duck;
@@ -2151,6 +2162,7 @@ export class Runner {
         ent.sway = 2;
         ent.wait = 0;
         this.stagDialogueDeer = ent;
+        this.stagDialogueStory = stagStoryFor(this.stagMeetings);
         this.stagDialogueIndex = 0;
         this.phase = "dialogue";
         this.releaseInputs();
@@ -2496,8 +2508,15 @@ export class Runner {
       ready: this.ready,
       progress: Math.min(1, this.loaded / this.loadTotal),
       bonus: this.bonus ? bonusHud(this.bonus) : null,
-      stagDialogue: this.phase === "dialogue"
-        ? { ...STAG_DIALOGUE[this.stagDialogueIndex]!, step: this.stagDialogueIndex + 1, total: STAG_DIALOGUE.length }
+      stagDialogue: this.phase === "dialogue" && this.stagDialogueStory
+        ? {
+            ...this.stagDialogueStory.lines[this.stagDialogueIndex]!,
+            title: this.stagDialogueStory.title,
+            step: this.stagDialogueIndex + 1,
+            total: this.stagDialogueStory.lines.length,
+            chapter: this.stagMeetings < STAG_STORIES.length ? this.stagMeetings + 1 : null,
+            chapters: STAG_STORIES.length,
+          }
         : null,
     });
   }
@@ -2668,12 +2687,16 @@ export class Runner {
     try {
       const raw = localStorage.getItem(SAVE_KEY);
       if (!raw) return;
-      const data = JSON.parse(raw) as { v?: number; best?: number; gossips?: number; mute?: boolean; scrolls?: number };
+      const data = JSON.parse(raw) as { v?: number; best?: number; gossips?: number; mute?: boolean; scrolls?: number; stagMeetings?: number };
       if (data.v !== 1) return;
       this.best = data.best ?? 0;
       this.bestGossips = data.gossips ?? 0;
       this.muted = Boolean(data.mute);
       this.scrolls = data.scrolls ?? 0;
+      // Stejná lokální pozice jako skóre; staré uložené hry mají výchozí nulu.
+      this.stagMeetings = typeof data.stagMeetings === "number" && Number.isFinite(data.stagMeetings)
+        ? Math.max(0, Math.floor(data.stagMeetings))
+        : 0;
     } catch {
       /* ignore broken saves */
     }
@@ -2683,7 +2706,7 @@ export class Runner {
     try {
       localStorage.setItem(
         SAVE_KEY,
-        JSON.stringify({ v: 1, best: this.best, gossips: this.bestGossips, mute: this.muted, scrolls: this.scrolls }),
+        JSON.stringify({ v: 1, best: this.best, gossips: this.bestGossips, mute: this.muted, scrolls: this.scrolls, stagMeetings: this.stagMeetings }),
       );
     } catch {
       /* private mode */
