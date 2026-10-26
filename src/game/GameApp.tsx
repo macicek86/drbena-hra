@@ -39,6 +39,7 @@ function hudReactKey(h: Hud): string {
     h.fact?.title ?? "",
     h.fact?.text ?? "",
     h.factLabel,
+    h.factComplete ? 1 : 0,
     h.chronicleNew,
     h.scrolls,
     h.scrollsTotal,
@@ -496,12 +497,19 @@ export function GameApp() {
           role="status"
           aria-live="polite"
         >
-          <div className="flex items-center gap-2">
-            <BookOpen className="size-6 shrink-0 text-bow" aria-hidden="true" />
+          <div className="flex items-start gap-3">
+            <BookOpen className="mt-0.5 size-7 shrink-0 text-bow" aria-hidden="true" />
             <div className="min-w-0">
               <p className="text-xs font-extrabold tracking-wide text-bow">{hud.factLabel || "Nové tajemství odhaleno!"}</p>
-              <h2 className="font-display text-xl leading-tight">{hud.fact.title}</h2>
-              <p className="mt-1 text-sm font-bold text-ink-soft">Nový příběh čeká v kronice.</p>
+              <h2 className="mt-0.5 font-display text-xl leading-tight">{hud.fact.title}</h2>
+              <p className="mt-1 text-sm font-bold leading-snug text-ink-soft">
+                {hud.factComplete ? hud.fact.text : "Nový příběh čeká v kronice."}
+              </p>
+              {hud.factComplete && (
+                <p className="mt-2 inline-flex items-center rounded-full border border-gold/70 bg-gold/15 px-3 py-1 text-sm font-extrabold text-ink">
+                  +16 bodů za pergamen
+                </p>
+              )}
             </div>
           </div>
         </article>
