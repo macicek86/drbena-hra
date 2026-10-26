@@ -695,6 +695,8 @@ export class Runner {
     if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(code)) event.preventDefault();
     this.unlock();
     if (this.phase === "dialogue") {
+      // Nenechat Enter/mezeru zároveň aktivovat tlačítko a posunout dialog podruhé.
+      if (["Enter", "Space", "ArrowRight", "Escape"].includes(code)) event.preventDefault();
       if (!event.repeat && (code === "Enter" || code === "Space" || code === "ArrowRight")) this.advanceStagDialogue();
       else if (!event.repeat && code === "Escape") this.advanceStagDialogue(true);
       return;
