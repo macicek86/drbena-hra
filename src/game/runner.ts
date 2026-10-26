@@ -323,7 +323,8 @@ export class Runner {
   private decorCursor = 0;
   private nextChunk = 0;
   private oboraSpans: { from: number; to: number }[] = [];
-  private approaches: { from: number; to: number; village: number }[] = [];
+  private approaches: { from: number; to: number; village: number; label: string }[] = [];
+  private villageZones: { from: number; to: number; name: string }[] = [];
   private lastHazard: Kind | null = null;
   private hitKind: Kind | null = null;
   private loaded = 0;
@@ -462,6 +463,7 @@ export class Runner {
     this.ents = [];
     this.oboraSpans = [];
     this.approaches = [];
+    this.villageZones = [];
     this.pops = [];
     this.hazardCursor = this.viewW * 0.92;
     this.nextScroll = this.viewW * (0.35 + Math.random() * 0.7);
@@ -496,6 +498,7 @@ export class Runner {
     this.ents = [];
     this.oboraSpans = [];
     this.approaches = [];
+    this.villageZones = [];
     this.pops = [];
     this.decorCursor = this.camera - 20;
     this.hazardCursor = this.camera + this.viewW * 0.45;
@@ -617,6 +620,7 @@ export class Runner {
     this.ents = [];
     this.oboraSpans = [];
     this.approaches = [];
+    this.villageZones = [];
     this.decorCursor = -30;
     this.nextChunk = 0;
     this.hazardCursor = 999999;
@@ -1433,15 +1437,12 @@ export class Runner {
       const pad = this.u * 0.4;
       if (x >= span.from - pad && x < span.to + pad) return span.to + pad;
     }
-    let left = Infinity;
-    let right = -Infinity;
-    for (const ent of this.ents) {
-      if (!ent.alive || !VILLAGES.has(ent.kind)) continue;
-      const half = this.visualHalf(ent.kind);
-      left = Math.min(left, ent.x - half);
-      right = Math.max(right, ent.x + half);
+    // Jen zastavěná část konkrétní vsi; mezi vesnicemi musí zůstat hratelná krajina.
+    // Rezerva odpovídá šířce překážky, aby větev či kráva nevjela do domů.
+    const pad = this.visualHalf("branch") + this.u * 0.15;
+    for (const zone of this.villageZones) {
+      if (x >= zone.from - pad && x < zone.to + pad) return zone.to + pad;
     }
-    if (x >= left && x < right) return right + this.u * 0.3;
     return null;
   }
 
@@ -1577,6 +1578,9 @@ export class Runner {
         this.ents.pop();
       }
     }
+    this.approaches = this.approaches.filter((gap) => gap.to >= min);
+    this.villageZones = this.villageZones.filter((zone) => zone.to >= min);
+    this.oboraSpans = this.oboraSpans.filter((span) => span.to >= min);
   }
 
   private decayJuice(dt: number) {
@@ -2261,31 +2265,10 @@ export class Runner {
     if (this.oboraSpans.some((span) => x >= span.from && x <= span.to)) {
       return { id: "park", name: "Kopidlnenská obora" };
     }
-    const pseves = this.villageBounds(PSEVES);
-    const drahoraz = this.villageBounds(DRAHORAZ);
-    const ledkov = this.villageBounds(LEDKOV);
-    const mlynec = this.villageBounds(MLYNEC);
-    if (pseves) {
-      const lane = this.approaches.find((row) => Math.abs(row.village - (pseves.to + this.u * 0.15)) < this.u);
-      const from = lane ? lane.from : pseves.from - this.u * 0.3;
-      if (x >= from && x < this.nextTown(pseves.from) + this.u * 1.1) return { id: "park", name: "Pševes" };
-    }
-    if (drahoraz) {
-      const lane = this.approaches.find((row) => Math.abs(row.village - (drahoraz.to + this.u * 0.15)) < this.u);
-      const from = lane ? lane.from : drahoraz.from - this.u * 0.4;
-      const until = pseves ? (this.approaches.find((row) => Math.abs(row.village - (pseves.to + this.u * 0.15)) < this.u)?.from ?? pseves.from) : this.nextTown(drahoraz.from) + this.u * 1.1;
-      if (x >= from && x < until) return { id: "park", name: "Drahoraz" };
-    }
-    if (ledkov) {
-      const lane = this.approaches.find((row) => Math.abs(row.village - (ledkov.to + this.u * 0.15)) < this.u);
-      const from = lane ? lane.from : ledkov.from - this.u * 0.4;
-      const until = drahoraz ? (this.approaches.find((row) => Math.abs(row.village - (drahoraz.to + this.u * 0.15)) < this.u)?.from ?? drahoraz.from) : this.nextTown(ledkov.from) + this.u * 1.1;
-      if (x >= from && x < until) return { id: "park", name: "Ledkov" };
-    }
-    if (mlynec && x >= mlynec.from - this.u * 0.3 && x < mlynec.to + this.u * 0.25) {
-      return { id: "park", name: "Mlýnec" };
-    }
-    if (this.approaches.some((row) => x > row.from && x < row.to)) return { id: "park", name: "Zámecký park" };
+    const village = this.villageZones.find((zone) => x >= zone.from - this.u * 0.08 && x < zone.to + this.u * 0.08);
+    if (village) return { id: "park", name: village.name };
+    const between = this.approaches.find((gap) => x >= gap.from && x < gap.to);
+    if (between) return { id: "park", name: between.label };
     const u = this.u;
     const cycle = BIOME_LEN * 4;
     const n = Math.floor(x / cycle);
@@ -2317,25 +2300,14 @@ export class Runner {
     return houses - this.u * 2.2;
   }
 
-  private villageBounds(kinds: Set<Kind>): { from: number; to: number } | null {
-    let from = Infinity;
-    let to = -Infinity;
-    for (const ent of this.ents) {
-      if (!ent.alive || !kinds.has(ent.kind)) continue;
-      const half = this.visualHalf(ent.kind);
-      from = Math.min(from, ent.x - half);
-      to = Math.max(to, ent.x + half);
-    }
-    return to < from ? null : { from, to };
+  private rowWidth(parts: { kind: Kind; gap: number }[]): number {
+    // Skutečné rozměry načtených spriteů; nepoužívat druhé, ručně opisované poměry stran.
+    return parts.reduce((sum, part) => sum + this.visualHalf(part.kind) * 2 + part.gap, 0);
   }
 
-  private rowWidth(parts: { kind: Kind; aspect: number; gap: number }[]): number {
-    return parts.reduce((sum, part) => sum + SPEC[part.kind].h * this.u * part.aspect + part.gap, 0);
-  }
-
-  private plantRow(x: number, parts: { kind: Kind; aspect: number; gap: number }[]) {
+  private plantRow(x: number, parts: { kind: Kind; gap: number }[]) {
     for (const part of parts) {
-      const w = SPEC[part.kind].h * this.u * part.aspect;
+      const w = this.visualHalf(part.kind) * 2;
       this.ents.push({ kind: part.kind, x: x + w / 2, lift: 0, anim: 0, alive: true });
       x += w + part.gap;
     }
@@ -2343,8 +2315,13 @@ export class Runner {
 
   private plantPause(from: number, to: number, bushes: boolean) {
     const room = to - from;
-    if (room < this.u * 1.15) return;
-    const count = room > this.u * 4.4 ? 4 : 3;
+    // Krátká mezera má být vidět jako předěl mezi vesnicemi, ne schovaná za třemi stromy.
+    if (room < this.u * 0.95) return;
+    if (room < this.u * 4.2) {
+      this.ents.push({ kind: "bush", x: (from + to) / 2, lift: 0, anim: 0, alive: true });
+      return;
+    }
+    const count = Math.min(6, Math.max(2, Math.floor(room / (this.u * 3))));
     const step = room / (count + 1);
     for (let i = 1; i <= count; i += 1) {
       const kind: Kind = bushes && i % 2 === 0 ? "bush" : "tree";
@@ -2358,66 +2335,72 @@ export class Runner {
     const houses = this.nextTown(end + 1) + u * 2.2;
     const limit = houses - u * 1.42 - this.visualHalf("info") - u * 0.35;
     const room = limit - end;
-    const mlynec = [
-      { kind: "mlynec-school" as Kind, aspect: 820 / 574, gap: u * 0.22 },
-      { kind: "mlynec-cross" as Kind, aspect: 599 / 1647, gap: 0 },
+
+    // Po rybníku / oboře následují čtyři samostatné vsi, poté návrat do Kopidlna.
+    // Stavby uvnitř každé vsi drží pohromadě, volný prostor patří POUZE mezi obce.
+    const groups: { name: string; parts: { kind: Kind; gap: number }[] }[] = [
+      { name: "Mlýnec", parts: [
+        { kind: "mlynec-house", gap: u * 0.16 },
+        { kind: "mlynec-school", gap: u * 0.2 },
+        { kind: "mlynec-cross", gap: 0 },
+      ] },
+      { name: "Ledkov", parts: [
+        { kind: "ledkov-a", gap: u * 0.22 },
+        { kind: "ledkov-b", gap: 0 },
+      ] },
+      { name: "Drahoraz", parts: [
+        { kind: "drahoraz-church", gap: u * 0.04 },
+        { kind: "drahoraz-tower", gap: u * 0.27 },
+        { kind: "apple-0", gap: u * 0.18 },
+        { kind: "apple-1", gap: u * 0.16 },
+        { kind: "apple-2", gap: 0 },
+      ] },
+      { name: "Pševes", parts: [
+        { kind: "linden", gap: u * 0.15 },
+        { kind: "pseves-heart", gap: 0 },
+      ] },
     ];
-    const ledkov = [
-      { kind: "ledkov-a" as Kind, aspect: 845 / 487, gap: u * 0.42 },
-      { kind: "ledkov-b" as Kind, aspect: 722 / 489, gap: 0 },
-    ];
-    const drahoraz = [
-      { kind: "drahoraz-church" as Kind, aspect: 1142 / 931, gap: u * 0.05 },
-      { kind: "drahoraz-tower" as Kind, aspect: 415 / 625, gap: u * 0.4 },
-      { kind: "apple-0" as Kind, aspect: 967 / 1188, gap: u * 0.28 },
-      { kind: "apple-1" as Kind, aspect: 967 / 1114, gap: u * 0.26 },
-      { kind: "apple-2" as Kind, aspect: 863 / 1000, gap: 0 },
-    ];
-    const pseves = [
-      { kind: "linden" as Kind, aspect: 2350 / 440, gap: u * 0.28 },
-      { kind: "pseves-heart" as Kind, aspect: 1028 / 1309, gap: 0 },
-    ];
-    const groups = [mlynec, ledkov, drahoraz, pseves];
-    const widths = groups.map((parts) => this.rowWidth(parts));
+    const widths = groups.map((group) => this.rowWidth(group.parts));
     const buildings = widths.reduce((sum, w) => sum + w, 0);
-    if (room < buildings + u * 4.2) return;
     const slack = room - buildings;
-    const caps = [u * 5.2, u * 4.6, u * 4.2, u * 1.05];
-    const mins = [u * 2.2, u * 2.0, u * 2.0, u * 0.55];
-    let left = slack;
-    const pauses = caps.map((cap, i) => {
-      const reserved = mins.slice(i + 1).reduce((sum, min) => sum + min, 0);
-      const share = Math.min(cap, Math.max(mins[i]!, left - reserved));
-      left -= share;
-      return Math.max(0, share);
-    });
+    if (slack < u * 1.7) return;
+
+    // Pět intervalů: po rybníku, mezi čtyřmi vesnicemi a před Kopidlnem.
+    // Rozdělit CELÝ zbývající prostor, jinak vznikne nechtěná pustina za Pševsí.
+    const weights = [1.4, 1.8, 1.8, 1.8, 1.4];
+    const weightSum = weights.reduce((sum, weight) => sum + weight, 0);
+    const pauses = weights.map((weight) => (slack * weight) / weightSum);
+    const starts: number[] = [];
     let cursor = end;
-    const starts = widths.map((w, i) => {
+    for (let i = 0; i < groups.length; i += 1) {
       cursor += pauses[i]!;
-      const at = cursor;
-      cursor += w;
-      return at;
-    });
-    if (cursor > limit) {
-      const shift = cursor - limit;
-      for (let i = 0; i < starts.length; i += 1) starts[i] = Math.max(end + u, starts[i]! - shift);
+      starts.push(cursor);
+      cursor += widths[i]!;
     }
     const ends = starts.map((at, i) => at + widths[i]!);
-    groups.forEach((_, i) => {
+
+    const labels = ["Cesta do Mlýnce", "Cesta do Ledkova", "Cesta do Drahorazi", "Cesta do Pševsi"];
+    for (let i = 0; i < groups.length; i += 1) {
       const from = i === 0 ? end : ends[i - 1]!;
-      this.approaches.push({ from, to: starts[i]!, village: ends[i]! + u * 0.15 });
-    });
-    const villageEnd = ends[ends.length - 1]!;
-    for (const ent of this.ents) {
-      if (!ent.alive || ent.x <= end + 4 || ent.x >= villageEnd) continue;
-      const onBuildings = starts.some((at, i) => ent.x >= at && ent.x < ends[i]!);
-      if (PROPS.has(ent.kind) || (onBuildings && HAZARDS.has(ent.kind))) ent.alive = false;
+      this.approaches.push({ from, to: starts[i]!, village: ends[i]! + u * 0.15, label: labels[i]! });
+      this.villageZones.push({ from: starts[i]!, to: ends[i]!, name: groups[i]!.name });
     }
-    groups.forEach((parts, i) => {
+    this.approaches.push({ from: ends[ends.length - 1]!, to: limit, village: houses, label: "Cesta do Kopidlna" });
+
+    // Odstranit předem náhodně vygenerované dekorace; vrátit jen venkovskou zeleň
+    // v mezerách. V obcích se nesmí objevit ani překážka překrývající budovu.
+    const hazardPad = this.visualHalf("branch") + u * 0.15;
+    for (const ent of this.ents) {
+      if (!ent.alive || ent.x <= end || ent.x >= limit) continue;
+      if (PROPS.has(ent.kind)) ent.alive = false;
+      else if (HAZARDS.has(ent.kind) && starts.some((at, i) => ent.x >= at - hazardPad && ent.x <= ends[i]! + hazardPad)) ent.alive = false;
+    }
+    for (let i = 0; i < groups.length; i += 1) {
       const from = i === 0 ? end : ends[i - 1]!;
       this.plantPause(from, starts[i]!, i === 1);
-      this.plantRow(starts[i]!, parts);
-    });
+      this.plantRow(starts[i]!, groups[i]!.parts);
+    }
+    this.plantPause(ends[ends.length - 1]!, limit, false);
   }
 
   private pushHud(force: boolean) {
