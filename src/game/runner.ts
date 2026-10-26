@@ -17,7 +17,7 @@ import {
   type RGB,
 } from "@/game/content";
 
-export type Phase = "loading" | "splash" | "menu" | "play" | "pause" | "bonus" | "dialogue" | "over";
+export type Phase = "loading" | "splash" | "menu" | "play" | "pause" | "fish-intro" | "bonus" | "dialogue" | "over";
 
 export type Hud = {
   phase: Phase;
@@ -127,6 +127,9 @@ const PSEVES = new Set<Kind>(["linden", "pseves-heart"]);
 const VILLAGES = new Set<Kind>([...MLYNEC, ...LEDKOV, ...DRAHORAZ, ...PSEVES]);
 const PROPS = new Set<Kind>(["bush", "lamp", "tree", "bench", "pigeon", "bin"]);
 const DECOR = new Set<Kind>(["bush", "lamp", "tree", "bench", "pigeon", "bin", "column", "church", "school", "info"]);
+
+// Nejdřív se ryba celá vynoří; až pak otevřít dialog či nabídku minihry.
+const FISH_RISE_SECONDS = 0.85;
 
 const FISH = [
   "Tady dole se toho děje víc než na kopidlenském náměstí!",
@@ -433,7 +436,7 @@ export class Runner {
   }
 
   togglePause() {
-    if (this.phase === "bonus" || this.phase === "dialogue") return;
+    if (this.phase === "bonus" || this.phase === "dialogue" || this.phase === "fish-intro") return;
     if (this.phase === "play") this.phase = "pause";
     else if (this.phase === "pause") this.phase = "play";
     this.pushHud(true);
@@ -731,7 +734,7 @@ export class Runner {
       }
       return;
     }
-    if (this.phase === "bonus") return;
+    if (this.phase === "bonus" || this.phase === "fish-intro") return;
     if (this.phase === "splash") {
       if (!event.repeat && (code === "Space" || code === "Enter" || code === "ArrowUp" || code === "KeyW")) this.continueSplash();
       return;
@@ -856,7 +859,7 @@ export class Runner {
         steps += 1;
       }
       this.draw();
-      const mode = this.phase === "menu" ? "intro" : this.phase === "play" || this.phase === "dialogue" ? "loop" : "off";
+      const mode = this.phase === "menu" ? "intro" : this.phase === "play" || this.phase === "dialogue" || this.phase === "fish-intro" ? "loop" : "off";
       let tempo = 1;
       if (this.phase === "play") {
         const pace = this.speed0 > 0 ? this.speed / this.speed0 : 1;
@@ -930,6 +933,17 @@ export class Runner {
     this.time += dt;
     this.pollPad();
     if (this.phase === "loading" || this.phase === "splash") return;
+    if (this.phase === "fish-intro") {
+      // Animace běží bez panelu: Drběna stojí a ryba se pomalu vynoří.
+      this.anim += dt * 2;
+      this.fishAge += dt;
+      if (this.fishAge >= FISH_RISE_SECONDS) {
+        this.phase = this.bonus ? "bonus" : "dialogue";
+        this.pushHud(true);
+      }
+      this.decayJuice(dt);
+      return;
+    }
     if (this.phase === "pause" || this.phase === "bonus" || this.phase === "dialogue") {
       if (this.phase === "dialogue") {
         this.anim += dt * 2;
@@ -1767,7 +1781,7 @@ export class Runner {
       if (this.phase === "dialogue") {
         if (this.fishDialogue !== null) this.continueFishDialogue();
         else this.advanceStagDialogue();
-      } else this.jumpEdge = true;
+      } else if (this.phase !== "fish-intro") this.jumpEdge = true;
     }
     this.prevPadJump = jump;
     this.padJump = jump;
@@ -2587,7 +2601,8 @@ export class Runner {
     }
     if (fishOffersMini()) {
       this.bonus = createOfferedMini();
-      this.phase = "bonus";
+      this.fishDialogue = null;
+      this.phase = "fish-intro";
       this.fish = 2.6;
       this.talk = 0;
       this.tale = "";
@@ -2607,7 +2622,7 @@ export class Runner {
     this.tale = "";
     this.taleTag = "Příhoda";
     this.taleLife = 0;
-    this.phase = "dialogue";
+    this.phase = "fish-intro";
     this.sfx.fact();
     this.pushHud(true);
   }
@@ -2666,8 +2681,8 @@ export class Runner {
     if (!(img instanceof HTMLImageElement)) return;
     const duration = 5.2;
     const t = 1 - this.fish / duration;
-    const rise = Math.min(1, this.fishAge / 0.85);
-    const heldAboveWater = this.phase === "bonus" || (this.phase === "dialogue" && this.fishDialogue !== null);
+    const rise = Math.min(1, this.fishAge / FISH_RISE_SECONDS);
+    const heldAboveWater = this.phase === "fish-intro" || this.phase === "bonus" || (this.phase === "dialogue" && this.fishDialogue !== null);
     const peek = heldAboveWater ? rise : t < 0.16 ? t / 0.16 : t > 0.84 ? (1 - t) / 0.16 : 1;
     const water = this.groundY - this.u * 0.58;
     const x = this.fishX - this.camera;
