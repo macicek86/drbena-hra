@@ -534,7 +534,7 @@ export function GameApp() {
             aria-label="Setkání s bílým jelenem"
             className="w-full max-w-md rounded-3xl border-[3px] border-gold bg-cream p-5 text-ink shadow-xl sm:p-6"
           >
-            <p className="text-xs font-extrabold tracking-widest text-bow">POVĚST Z KOPIDLENSKÉ OBORY</p>
+            <p className="text-xs font-extrabold tracking-widest text-bow">POHÁDKOVÉ SETKÁNÍ V OBOŘE</p>
             <div className="mt-3 flex items-center justify-between gap-3">
               <h2 className="font-display text-2xl leading-tight">{hud.stagDialogue.speaker}</h2>
               <span className="shrink-0 text-xs font-extrabold text-ink-soft">
