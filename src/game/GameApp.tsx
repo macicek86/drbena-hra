@@ -56,6 +56,7 @@ function hudReactKey(h: Hud): string {
     h.stagDialogue?.title ?? "",
     h.stagDialogue?.speaker ?? "",
     h.stagDialogue?.text ?? "",
+    h.fishDialogue ?? "",
     bonus,
   ].join("\u001f");
 }
@@ -524,50 +525,70 @@ export function GameApp() {
         </p>
       )}
 
-      {hud.phase === "dialogue" && hud.stagDialogue && (
+      {hud.phase === "dialogue" && (hud.stagDialogue || hud.fishDialogue !== null) && (
         <FitOverlay
-          testId="stag-dialogue"
+          testId={hud.stagDialogue ? "stag-dialogue" : "fish-dialogue"}
           className="z-30 bg-ink/20"
-          fitKey={hud.stagDialogue.step}
+          fitKey={hud.stagDialogue?.step ?? "fish"}
         >
           <section
             role="dialog"
-            aria-label="Setkání s bílým jelenem"
+            aria-label={hud.stagDialogue ? "Setkání s bílým jelenem" : "Ryba z rybníka"}
             className="w-full max-w-md rounded-3xl border-[3px] border-gold bg-cream p-5 text-ink shadow-xl sm:p-6"
           >
-            <p className="text-xs font-extrabold tracking-widest text-bow">
-              {hud.stagDialogue.chapter
-                ? `SETKÁNÍ ${hud.stagDialogue.chapter} Z ${hud.stagDialogue.chapters}`
-                : "DALŠÍ POVÍDÁNÍ V OBOŘE"}
-            </p>
-            <h2 className="mt-1 font-display text-xl leading-tight text-bow">{hud.stagDialogue.title}</h2>
+            {hud.stagDialogue ? (
+              <>
+                <p className="text-xs font-extrabold tracking-widest text-bow">
+                  {hud.stagDialogue.chapter
+                    ? `SETKÁNÍ ${hud.stagDialogue.chapter} Z ${hud.stagDialogue.chapters}`
+                    : "DALŠÍ POVÍDÁNÍ V OBOŘE"}
+                </p>
+                <h2 className="mt-1 font-display text-xl leading-tight text-bow">{hud.stagDialogue.title}</h2>
+              </>
+            ) : (
+              <p className="text-xs font-extrabold tracking-widest text-bow">U KOPIDLENSKÉHO RYBNÍKA</p>
+            )}
             <div className="mt-3 flex items-center justify-between gap-3">
-              <h2 className="font-display text-2xl leading-tight">{hud.stagDialogue.speaker}</h2>
-              <span className="shrink-0 text-xs font-extrabold text-ink-soft">
-                {hud.stagDialogue.step}/{hud.stagDialogue.total}
-              </span>
+              <h2 className="font-display text-2xl leading-tight">
+                {hud.stagDialogue?.speaker ?? "Ryba z rybníka"}
+              </h2>
+              {hud.stagDialogue && (
+                <span className="shrink-0 text-xs font-extrabold text-ink-soft">
+                  {hud.stagDialogue.step}/{hud.stagDialogue.total}
+                </span>
+              )}
             </div>
             <p className="mt-3 min-h-16 text-lg font-semibold leading-snug" aria-live="polite">
-              {hud.stagDialogue.text}
+              {hud.stagDialogue?.text ?? hud.fishDialogue}
             </p>
-            <div className="mt-5 grid grid-cols-[1fr_2fr] gap-2">
+            {hud.stagDialogue ? (
+              <div className="mt-5 grid grid-cols-[1fr_2fr] gap-2">
+                <button
+                  type="button"
+                  className="flex min-h-12 items-center justify-center rounded-full border-2 border-ink bg-cream-deep px-3 text-sm font-extrabold"
+                  onClick={() => gameRef.current?.advanceStagDialogue(true)}
+                >
+                  Přeskočit
+                </button>
+                <button
+                  type="button"
+                  className="flex min-h-12 items-center justify-center rounded-full border-2 border-ink bg-bow px-3 text-base font-extrabold text-cream"
+                  onClick={() => gameRef.current?.advanceStagDialogue()}
+                >
+                  {hud.stagDialogue.step === hud.stagDialogue.total ? "Pokračovat v běhu" : "Dál"}
+                </button>
+              </div>
+            ) : (
               <button
                 type="button"
-                className="flex min-h-12 items-center justify-center rounded-full border-2 border-ink bg-cream-deep px-3 text-sm font-extrabold"
-                onClick={() => gameRef.current?.advanceStagDialogue(true)}
+                className="mt-5 flex min-h-12 w-full items-center justify-center rounded-full border-2 border-ink bg-bow px-3 text-base font-extrabold text-cream"
+                onClick={() => gameRef.current?.continueFishDialogue()}
               >
-                Přeskočit
+                Pokračovat
               </button>
-              <button
-                type="button"
-                className="flex min-h-12 items-center justify-center rounded-full border-2 border-ink bg-bow px-3 text-base font-extrabold text-cream"
-                onClick={() => gameRef.current?.advanceStagDialogue()}
-              >
-                {hud.stagDialogue.step === hud.stagDialogue.total ? "Pokračovat v běhu" : "Dál"}
-              </button>
-            </div>
+            )}
             <p className="mt-3 text-center text-[11px] font-semibold text-ink-soft">
-              Mezerník nebo Enter = dál · Esc = přeskočit
+              {hud.stagDialogue ? "Mezerník nebo Enter = dál · Esc = přeskočit" : "Mezerník nebo Enter = pokračovat"}
             </p>
           </section>
         </FitOverlay>
