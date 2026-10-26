@@ -135,23 +135,23 @@ const FISH_RISE_SECONDS = 0.85;
 const SCROLL_COMPLETE_MESSAGES = [
   {
     title: "Méé, všechno už víš!",
-    text: "Drběna už všechny dostupné příběhy odhalila. Pergamen ale přinesl dalších 16 bodů!",
+    text: "Drběna už všechny dostupné příběhy odhalila. Tenhle pergamen ale nepřišel nazmar!",
   },
   {
     title: "Kronika má všechno zapsané!",
-    text: "Nová stránka tentokrát nepřibyla. I známý pergamen ale stojí za 16 bodů!",
+    text: "Nová stránka tentokrát nepřibyla. I známý pergamen ale stojí za malou odměnu!",
   },
   {
     title: "To už Drběna četla!",
-    text: "Žádný nový příběh se zatím neschovává. Zato 16 bodů putuje do kapsy!",
+    text: "Žádný nový příběh se zatím neschovává. Aspoň něco přibyde na konto!",
   },
   {
     title: "Tajemství zatím došla!",
-    text: "Všechny příběhy jsou odemčené. Tenhle pergamen má přesto cenu 16 bodů!",
+    text: "Všechny příběhy jsou odemčené. Drběna přece nenechá pergamen jen tak ležet!",
   },
   {
     title: "Méé, známá historie!",
-    text: "Drběna má v kronice už všechno, co se dá objevit. Za pergamen získáváš 16 bodů!",
+    text: "Drběna už v kronice všechno objevila. Kdo hledá dál, nepřijde zkrátka!",
   },
 ] as const;
 
