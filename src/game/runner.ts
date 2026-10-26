@@ -52,6 +52,7 @@ export type Hud = {
     chapter: number | null;
     chapters: number;
   } | null;
+  fishDialogue: string | null;
 };
 
 type Kind =
@@ -258,6 +259,7 @@ export function emptyHud(): Hud {
     progress: 0,
     bonus: null,
     stagDialogue: null,
+    fishDialogue: null,
   };
 }
 
@@ -344,6 +346,7 @@ export class Runner {
   private loadTotal = 1;
   private ready = false;
   private fish = 0;
+  private fishDialogue: string | null = null;
   private fishAge = 0;
   private fishX = 0;
   private lastFish = -1;
@@ -436,6 +439,18 @@ export class Runner {
     this.pushHud(true);
   }
 
+  continueFishDialogue() {
+    if (this.phase !== "dialogue" || this.fishDialogue === null) return;
+    this.fishDialogue = null;
+    this.phase = "play";
+    // Po potvrzení nečekat na odpočet. Ryba se na pozadí ještě krátce ponoří.
+    this.fish = 1.05;
+    this.talk = 0;
+    this.suppress = Math.max(this.suppress, 0.5);
+    this.releaseInputs();
+    this.pushHud(true);
+  }
+
   advanceStagDialogue(skip = false) {
     if (this.phase !== "dialogue") return;
     const lines = this.stagDialogueStory?.lines;
@@ -524,6 +539,7 @@ export class Runner {
     this.lastFish = -1;
     this.fishTold = -1;
     this.fish = 0;
+    this.fishDialogue = null;
     this.fishAge = 0;
     this.bonus = null;
     this.forceMeet = false;
@@ -670,6 +686,9 @@ export class Runner {
     this.stagDialogueDeer = null;
     this.stagDialogueStory = null;
     this.stagDialogueIndex = 0;
+    this.fishDialogue = null;
+    this.fish = 0;
+    this.fishAge = 0;
     this.decorCursor = -30;
     this.nextChunk = 0;
     this.hazardCursor = 999999;
@@ -703,8 +722,13 @@ export class Runner {
     if (this.phase === "dialogue") {
       // Nenechat Enter/mezeru zároveň aktivovat tlačítko a posunout dialog podruhé.
       if (["Enter", "Space", "ArrowRight", "Escape"].includes(code)) event.preventDefault();
-      if (!event.repeat && (code === "Enter" || code === "Space" || code === "ArrowRight")) this.advanceStagDialogue();
-      else if (!event.repeat && code === "Escape") this.advanceStagDialogue(true);
+      if (!event.repeat && (code === "Enter" || code === "Space" || code === "ArrowRight")) {
+        if (this.fishDialogue !== null) this.continueFishDialogue();
+        else this.advanceStagDialogue();
+      } else if (!event.repeat && code === "Escape") {
+        if (this.fishDialogue !== null) this.continueFishDialogue();
+        else this.advanceStagDialogue(true);
+      }
       return;
     }
     if (this.phase === "bonus") return;
@@ -907,7 +931,11 @@ export class Runner {
     this.pollPad();
     if (this.phase === "loading" || this.phase === "splash") return;
     if (this.phase === "pause" || this.phase === "bonus" || this.phase === "dialogue") {
-      if (this.phase === "dialogue") this.anim += dt * 2;
+      if (this.phase === "dialogue") {
+        this.anim += dt * 2;
+        // Hláška ryby už nemá časový limit; ryba zůstane nad vodou do potvrzení.
+        if (this.fishDialogue !== null) this.fishAge += dt;
+      }
       if (this.phase === "bonus") {
         this.anim += dt * 3;
         this.fishAge += dt;
@@ -955,6 +983,11 @@ export class Runner {
       }
       this.decayJuice(dt);
       return;
+    }
+    // Krátká animace ponoření po stisku „Pokračovat“, ale běh už nezdržuje.
+    if (this.fish > 0) {
+      this.fish = Math.max(0, this.fish - dt);
+      this.fishAge += dt;
     }
 
     const speed = this.phase === "play" && this.stagHolds() ? 0 : this.currentSpeed();
@@ -1731,8 +1764,10 @@ export class Runner {
     const jump = Boolean(pad.buttons[0]?.pressed || pad.buttons[12]?.pressed || (pad.axes[1] ?? 0) < -0.65);
     const duck = Boolean(pad.buttons[1]?.pressed || pad.buttons[13]?.pressed || (pad.axes[1] ?? 0) > 0.65);
     if (jump && !this.prevPadJump) {
-      if (this.phase === "dialogue") this.advanceStagDialogue();
-      else this.jumpEdge = true;
+      if (this.phase === "dialogue") {
+        if (this.fishDialogue !== null) this.continueFishDialogue();
+        else this.advanceStagDialogue();
+      } else this.jumpEdge = true;
     }
     this.prevPadJump = jump;
     this.padJump = jump;
@@ -2518,6 +2553,7 @@ export class Runner {
             chapters: STAG_STORIES.length,
           }
         : null,
+      fishDialogue: this.phase === "dialogue" ? this.fishDialogue : null,
     });
   }
 
@@ -2565,11 +2601,13 @@ export class Runner {
     if (FISH.length > 1 && index === this.fishTold) index = (index + 1) % FISH.length;
     this.fishTold = index;
     this.bonus = null;
+    this.fishDialogue = FISH[index] ?? FISH[0]!;
     this.fish = 5.2;
-    this.talk = 5.2;
-    this.tale = FISH[index] ?? FISH[0]!;
-    this.taleTag = "Ryba z rybníka";
-    this.taleLife = 5.2;
+    this.talk = 0;
+    this.tale = "";
+    this.taleTag = "Příhoda";
+    this.taleLife = 0;
+    this.phase = "dialogue";
     this.sfx.fact();
     this.pushHud(true);
   }
@@ -2629,7 +2667,8 @@ export class Runner {
     const duration = 5.2;
     const t = 1 - this.fish / duration;
     const rise = Math.min(1, this.fishAge / 0.85);
-    const peek = this.phase === "bonus" ? rise : t < 0.16 ? t / 0.16 : t > 0.84 ? (1 - t) / 0.16 : 1;
+    const heldAboveWater = this.phase === "bonus" || (this.phase === "dialogue" && this.fishDialogue !== null);
+    const peek = heldAboveWater ? rise : t < 0.16 ? t / 0.16 : t > 0.84 ? (1 - t) / 0.16 : 1;
     const water = this.groundY - this.u * 0.58;
     const x = this.fishX - this.camera;
     const fh = this.u * 1.05;
