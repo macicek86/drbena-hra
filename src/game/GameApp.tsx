@@ -53,6 +53,7 @@ function hudReactKey(h: Hud): string {
     h.best,
     h.bestGossips,
     h.stagDialogue?.step ?? 0,
+    h.stagDialogue?.title ?? "",
     h.stagDialogue?.speaker ?? "",
     h.stagDialogue?.text ?? "",
     bonus,
@@ -534,7 +535,12 @@ export function GameApp() {
             aria-label="Setkání s bílým jelenem"
             className="w-full max-w-md rounded-3xl border-[3px] border-gold bg-cream p-5 text-ink shadow-xl sm:p-6"
           >
-            <p className="text-xs font-extrabold tracking-widest text-bow">POHÁDKOVÉ SETKÁNÍ V OBOŘE</p>
+            <p className="text-xs font-extrabold tracking-widest text-bow">
+              {hud.stagDialogue.chapter
+                ? `SETKÁNÍ ${hud.stagDialogue.chapter} Z ${hud.stagDialogue.chapters}`
+                : "DALŠÍ POVÍDÁNÍ V OBOŘE"}
+            </p>
+            <h2 className="mt-1 font-display text-xl leading-tight text-bow">{hud.stagDialogue.title}</h2>
             <div className="mt-3 flex items-center justify-between gap-3">
               <h2 className="font-display text-2xl leading-tight">{hud.stagDialogue.speaker}</h2>
               <span className="shrink-0 text-xs font-extrabold text-ink-soft">
