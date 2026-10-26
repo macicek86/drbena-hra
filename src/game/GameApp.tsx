@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { BookOpen, Heart, Pause, Play, RotateCcw, Share2, Volume2, VolumeX } from "lucide-react";
+import { BookOpen, Heart, MessageCircle, Pause, Play, RotateCcw, Share2, Volume2, VolumeX } from "lucide-react";
 import { AlarmCard } from "@/game/GoatAlarmScene";
 import { ChronicleBook } from "@/game/ChronicleBook";
 import { FitOverlay } from "@/game/FitOverlay";
@@ -49,6 +49,7 @@ function hudReactKey(h: Hud): string {
     h.showTale ? 1 : 0,
     h.line,
     h.taleTag,
+    h.taleTitle,
     h.ready ? 1 : 0,
     Math.round(h.progress * 100),
     h.best,
@@ -484,28 +485,33 @@ export function GameApp() {
         </header>
       )}
 
-      {hud.showTale && hud.line && hud.phase === "play" && (
-        <article className="pointer-events-none absolute inset-x-0 top-40 z-10 mx-auto w-[min(100%-1.5rem,32rem)] rounded-3xl border-2 border-ink bg-cream px-4 py-3 shadow-lg sm:top-36">
-          <p className="text-xs font-extrabold tracking-wide text-bow">{hud.taleTag}</p>
-          <p className="mt-1 text-sm leading-snug">{hud.line}</p>
-        </article>
-      )}
-
-      {hud.fact && !hud.showTale && hud.phase === "play" && (
+      {hud.phase === "play" && (hud.fact || (hud.showTale && hud.line)) && (
         <article
-          className="pointer-events-none absolute inset-x-0 top-40 z-10 mx-auto w-[min(100%-1.5rem,32rem)] rounded-3xl border-[3px] border-gold bg-cream px-4 py-3 shadow-[0_0_0_4px_rgba(232,163,23,0.22),0_12px_26px_rgba(32,27,20,0.2)] sm:top-36"
+          className={`pointer-events-none absolute inset-x-0 top-40 z-10 mx-auto w-[min(100%-1.5rem,32rem)] rounded-3xl border-[3px] bg-cream px-4 py-3 sm:top-36 ${
+            hud.fact
+              ? "border-gold shadow-[0_0_0_4px_rgba(232,163,23,0.22),0_12px_26px_rgba(32,27,20,0.2)]"
+              : "border-bow shadow-[0_0_0_4px_rgba(228,87,122,0.18),0_12px_26px_rgba(32,27,20,0.2)]"
+          }`}
           role="status"
           aria-live="polite"
         >
           <div className="flex items-start gap-3">
-            <BookOpen className="mt-0.5 size-7 shrink-0 text-bow" aria-hidden="true" />
+            {hud.fact
+              ? <BookOpen className="mt-0.5 size-7 shrink-0 text-bow" aria-hidden="true" />
+              : <MessageCircle className="mt-0.5 size-7 shrink-0 text-bow" aria-hidden="true" />}
             <div className="min-w-0">
-              <p className="text-xs font-extrabold tracking-wide text-bow">{hud.factLabel || "Nové tajemství odhaleno!"}</p>
-              <h2 className="mt-0.5 font-display text-xl leading-tight">{hud.fact.title}</h2>
-              <p className="mt-1 text-sm font-bold leading-snug text-ink-soft">
-                {hud.factComplete ? hud.fact.text : "Nový příběh čeká v kronice."}
+              <p className="text-xs font-extrabold tracking-wide text-bow">
+                {hud.fact ? hud.factLabel || "Nové tajemství odhaleno!" : hud.taleTag}
               </p>
-              {hud.factComplete && (
+              <h2 className="mt-0.5 font-display text-xl leading-tight">
+                {hud.fact ? hud.fact.title : hud.taleTitle || "Drběnina příhoda"}
+              </h2>
+              <p className="mt-1 text-sm font-bold leading-snug text-ink-soft">
+                {hud.fact
+                  ? hud.factComplete ? hud.fact.text : "Nový příběh čeká v kronice."
+                  : hud.line}
+              </p>
+              {hud.fact?.title && hud.factComplete && (
                 <p className="mt-2 inline-flex items-center rounded-full border border-gold/70 bg-gold/15 px-3 py-1 text-sm font-extrabold text-ink">
                   +16 bodů za pergamen
                 </p>
