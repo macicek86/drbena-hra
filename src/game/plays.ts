@@ -1,6 +1,7 @@
 const endpoint = String((import.meta.env as Record<string, string | undefined>).VITE_PLAYS_URL ?? "").replace(/\/$/, "");
 const NAME_KEY = "drbena-jmeno";
 const PLAYER_KEY = "drbena-hrac";
+const PLAYER_ID_KEY = "drbena-kod-hrace";
 const NAME_CONFIRMED_KEY = "drbena-jmeno-potvrzeno";
 
 const ADJECTIVES = ["Zvědav", "Bystr", "Tajn", "Rychl", "Ušat", "Mlsn", "Všetečn", "Hbit", "Vesel", "Chytr", "Odvážn", "Nenápadn", "Upovídan", "Ospal"];
@@ -88,6 +89,20 @@ export function confirmName(name: string): string {
   return chosen;
 }
 
+/** Anonymous random id kept in this browser, so the newsroom can tell two players with the same name apart. */
+function playerId(): string {
+  try {
+    let id = localStorage.getItem(PLAYER_ID_KEY) ?? "";
+    if (!/^[a-z0-9-]{8,64}$/.test(id)) {
+      id = typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 12)}`;
+      localStorage.setItem(PLAYER_ID_KEY, id);
+    }
+    return id;
+  } catch {
+    return "";
+  }
+}
+
 /** The name sent with a score: never empty, so the board is not full of identical defaults. */
 function scoreName(): string {
   const name = savedName().trim();
@@ -142,12 +157,12 @@ export function reportPlayer() {
     .catch(() => {});
 }
 
-export function submitScore(score: number, gossips: number) {
+export function submitScore(score: number, gossips: number, seconds: number) {
   if (!endpoint || score < 1) return;
   void fetch(`${endpoint}/score`, {
     method: "POST",
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ score, gossips, name: scoreName() }),
+    body: JSON.stringify({ score, gossips, seconds: Math.round(seconds), name: scoreName(), player: playerId() }),
     keepalive: true,
   })
     .then((res) => readStats(res))
