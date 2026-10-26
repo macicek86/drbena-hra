@@ -41,6 +41,7 @@ export type Hud = {
   line: string;
   showTale: boolean;
   taleTag: string;
+  taleTitle: string;
   ready: boolean;
   progress: number;
   bonus: BonusHud | null;
@@ -168,6 +169,15 @@ const FISH = [
   "Drběno, tenhle drb je tak hluboký, že na něj nestačí ani náš rybník!",
 ];
 
+const TALE_TITLES: Partial<Record<Kind, string>> = {
+  fence: "Drběna a plot",
+  pot: "Jablečná nehoda",
+  dog: "Husí poplach",
+  gardener: "Sousedka má novinky",
+  car: "Kravské přežvykování",
+  branch: "Rohy ve větvích",
+};
+
 const LINES: Record<string, string[]> = {
   fence: [
     "Drběna chtěla zjistit, co se povídá za plotem. Teď má plot obtisknutý na čele!",
@@ -283,6 +293,7 @@ export function emptyHud(): Hud {
     line: "",
     showTale: false,
     taleTag: "Příhoda",
+    taleTitle: "",
     ready: false,
     progress: 0,
     bonus: null,
@@ -383,6 +394,7 @@ export class Runner {
   private fishTold = -1;
   private bonus: AnyBonus | null = null;
   private taleTag = "Příhoda";
+  private taleTitle = "";
   private tale = "";
   private taleLife = 0;
   private lastTale: Partial<Record<Kind, number>> = {};
@@ -562,6 +574,7 @@ export class Runner {
     this.lastHazard = null;
     this.hitKind = null;
     this.tale = "";
+    this.taleTitle = "";
     this.taleLife = 0;
     this.talk = 0;
     this.newBest = false;
@@ -1007,7 +1020,9 @@ export class Runner {
       return;
     }
 
-    if (this.taleLife > 0 && this.fish <= 0) {
+    // Oznámení z kroniky má přednost. Příhoda počká a neztratí se,
+    // dokud se zobrazuje nově objevená stránka nebo dokončená kronika.
+    if (this.taleLife > 0 && this.fish <= 0 && this.factLife <= 0) {
       this.taleLife = Math.max(0, this.taleLife - dt);
       if (this.taleLife === 0) this.pushHud(true);
     }
@@ -1196,7 +1211,7 @@ export class Runner {
       life: 0.9,
     });
     this.stars(ent.x - this.camera, this.groundY - ent.lift * this.u, 14);
-    this.taleLife = 0;
+    // Rozběhnutou příhodu nepřerušovat natrvalo, po oznámení kroniky se vrátí.
     if (fact) {
       this.chronicleNew += 1;
       this.scrollsKnown = knownIds().length;
@@ -1232,8 +1247,9 @@ export class Runner {
     this.onGround = false;
     this.hitKind = ent.kind;
     this.tale = this.pickTale(ent.kind);
-    this.taleTag = "Příhoda";
-    this.taleLife = 2.6;
+    this.taleTag = "Příhoda Drběny";
+    this.taleTitle = TALE_TITLES[ent.kind] ?? "Drběnina příhoda";
+    this.taleLife = 3.0;
     this.talk = 0.9;
     this.sfx.hurt();
     this.burst(this.playerX, this.feet - this.u * 0.4, "#e8a317", 8);
@@ -2588,8 +2604,9 @@ export class Runner {
       muted: this.muted,
       coach: this.phase === "play" && !this.taleLife && (!this.coachJump || !this.coachDuck) && this.run < 1400,
       line: this.tale,
-      showTale: this.taleLife > 0 && this.phase === "play",
+      showTale: this.taleLife > 0 && this.factLife <= 0 && this.phase === "play",
       taleTag: this.taleTag,
+      taleTitle: this.taleTitle,
       ready: this.ready,
       progress: Math.min(1, this.loaded / this.loadTotal),
       bonus: this.bonus ? bonusHud(this.bonus) : null,
@@ -2698,6 +2715,7 @@ export class Runner {
     this.tale = gained ? BONUS_PARDON_TALE : "";
     this.taleLife = gained ? 2.2 : 0;
     this.taleTag = gained ? "Ryba z rybníka" : "Příhoda";
+    this.taleTitle = gained ? "Dobrý skutek se vyplatí!" : "";
     this.pushHud(true);
   }
 
