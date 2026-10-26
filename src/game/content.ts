@@ -72,7 +72,7 @@ export const BIOMES: Biome[] = [
   },
 ];
 
-export const BIOME_LEN = 2700;
+export const BIOME_LEN = 6000;
 
 export type PlaceId = "namesti" | "skola" | "zamek" | "sklenik" | "park";
 

@@ -62,6 +62,18 @@ type Kind =
   | "castle"
   | "greenhouse"
   | "pond"
+  | "mlynec-cross"
+  | "mlynec-house"
+  | "mlynec-school"
+  | "ledkov-a"
+  | "ledkov-b"
+  | "drahoraz-church"
+  | "drahoraz-tower"
+  | "apple-0"
+  | "apple-1"
+  | "apple-2"
+  | "linden"
+  | "pseves-heart"
   | "obora"
   | "stag"
   | "firefly"
@@ -93,8 +105,13 @@ const SAVE_KEY = "drbena-kopidlno-v1";
 
 const HAZARDS = new Set<Kind>(["fence", "pot", "dog", "gardener", "car", "branch"]);
 const PICKUPS = new Set<Kind>(["gossip", "heart", "scroll", "firefly"]);
-const LANDMARKS = new Set<Kind>(["houses", "castle", "greenhouse", "pond", "obora", "stag"]);
-const PLACES = new Set<Kind>(["houses", "castle", "greenhouse", "pond", "column", "church", "school", "info"]);
+const LANDMARKS = new Set<Kind>(["houses", "castle", "greenhouse", "pond", "mlynec-cross", "mlynec-house", "mlynec-school", "ledkov-a", "ledkov-b", "drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2", "linden", "pseves-heart", "obora", "stag"]);
+const PLACES = new Set<Kind>(["houses", "castle", "greenhouse", "pond", "mlynec-cross", "mlynec-house", "mlynec-school", "ledkov-a", "ledkov-b", "drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2", "linden", "pseves-heart", "column", "church", "school", "info"]);
+const MLYNEC = new Set<Kind>(["mlynec-cross", "mlynec-house", "mlynec-school"]);
+const LEDKOV = new Set<Kind>(["ledkov-a", "ledkov-b"]);
+const DRAHORAZ = new Set<Kind>(["drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2"]);
+const PSEVES = new Set<Kind>(["linden", "pseves-heart"]);
+const VILLAGES = new Set<Kind>([...MLYNEC, ...LEDKOV, ...DRAHORAZ, ...PSEVES]);
 const PROPS = new Set<Kind>(["bush", "lamp", "tree", "bench", "pigeon", "bin"]);
 const DECOR = new Set<Kind>(["bush", "lamp", "tree", "bench", "pigeon", "bin", "column", "church", "school", "info"]);
 
@@ -164,6 +181,18 @@ const SPEC: Record<Kind, { h: number; hitW: number; hitH: number; lift: number }
   castle: { h: 2.35, hitW: 0, hitH: 0, lift: 0 },
   greenhouse: { h: 2.15, hitW: 0, hitH: 0, lift: 0 },
   pond: { h: 1.85, hitW: 0, hitH: 0, lift: 0.02 },
+  "mlynec-cross": { h: 1.4, hitW: 0, hitH: 0, lift: 0 },
+  "mlynec-house": { h: 1.47, hitW: 0, hitH: 0, lift: 0 },
+  "mlynec-school": { h: 1.55, hitW: 0, hitH: 0, lift: 0 },
+  "ledkov-a": { h: 1.32, hitW: 0, hitH: 0, lift: 0 },
+  "ledkov-b": { h: 1.32, hitW: 0, hitH: 0, lift: 0 },
+  "drahoraz-church": { h: 2.05, hitW: 0, hitH: 0, lift: 0 },
+  "drahoraz-tower": { h: 1.38, hitW: 0, hitH: 0, lift: 0 },
+  "apple-0": { h: 1.48, hitW: 0, hitH: 0, lift: 0 },
+  "apple-1": { h: 1.42, hitW: 0, hitH: 0, lift: 0 },
+  "apple-2": { h: 1.28, hitW: 0, hitH: 0, lift: 0 },
+  linden: { h: 1.72, hitW: 0, hitH: 0, lift: 0 },
+  "pseves-heart": { h: 1.02, hitW: 0, hitH: 0, lift: 0 },
   obora: { h: 2.2, hitW: 0, hitH: 0, lift: 0 },
   stag: { h: 1.5, hitW: 0, hitH: 0, lift: 0 },
   firefly: { h: 0.22, hitW: 1, hitH: 1, lift: 0.9 },
@@ -178,7 +207,7 @@ function hash(n: number): number {
   return x - Math.floor(x);
 }
 
-const ART_REV = "23";
+const ART_REV = "31";
 
 async function loadImage(src: string): Promise<HTMLImageElement | null> {
   try {
@@ -294,6 +323,7 @@ export class Runner {
   private decorCursor = 0;
   private nextChunk = 0;
   private oboraSpans: { from: number; to: number }[] = [];
+  private approaches: { from: number; to: number; village: number }[] = [];
   private lastHazard: Kind | null = null;
   private hitKind: Kind | null = null;
   private loaded = 0;
@@ -431,6 +461,7 @@ export class Runner {
     this.scrollsKnown = knownIds().length;
     this.ents = [];
     this.oboraSpans = [];
+    this.approaches = [];
     this.pops = [];
     this.hazardCursor = this.viewW * 0.92;
     this.nextScroll = this.viewW * (0.35 + Math.random() * 0.7);
@@ -464,6 +495,7 @@ export class Runner {
     this.run = this.camera;
     this.ents = [];
     this.oboraSpans = [];
+    this.approaches = [];
     this.pops = [];
     this.decorCursor = this.camera - 20;
     this.hazardCursor = this.camera + this.viewW * 0.45;
@@ -490,6 +522,18 @@ export class Runner {
       "castle",
       "greenhouse",
       "pond",
+      "mlynec-cross",
+      "mlynec-house",
+      "mlynec-school",
+      "ledkov-a",
+      "ledkov-b",
+      "drahoraz-church",
+      "drahoraz-tower",
+      "apple-0",
+      "apple-1",
+      "apple-2",
+      "linden",
+      "pseves-heart",
       "column",
       "church",
       "school",
@@ -572,6 +616,7 @@ export class Runner {
     this.onGround = true;
     this.ents = [];
     this.oboraSpans = [];
+    this.approaches = [];
     this.decorCursor = -30;
     this.nextChunk = 0;
     this.hazardCursor = 999999;
@@ -1103,14 +1148,14 @@ export class Runner {
     const infoLeft = (chunk + 1) * BIOME_LEN + this.viewW * 0.82 - u * 1.42 - this.visualHalf("info") - u * 0.55;
     const mids = 3;
     const spanAspect = aspects[0]! + aspects[1]! * mids + aspects[2]!;
-    const want = u * 1.45 * spanAspect;
-    let gap = this.viewW * 1.25;
+    const lane = u * 14.5;
+    let gap = Math.max(this.viewW * 1.05, lane);
     let room = infoLeft - glassRight - gap;
-    if (room < want) {
-      gap = Math.max(this.viewW * 0.65, infoLeft - glassRight - want);
-      room = Math.max(u * 12, infoLeft - glassRight - gap);
+    if (room < u * 14) {
+      gap = Math.max(u * 12.5, infoLeft - glassRight - u * 14);
+      room = infoLeft - glassRight - gap;
     }
-    const h = Math.min(u * 1.45, room / spanAspect);
+    const h = Math.min(u * 1.45, Math.max(u * 8, room) / spanAspect);
     return {
       start: glassRight,
       h,
@@ -1168,6 +1213,7 @@ export class Runner {
         sway: u * (0.16 + hash(x + 4) * 0.34),
       });
     }
+    this.approachAfter(left);
   }
 
   private fillWorld() {
@@ -1176,6 +1222,11 @@ export class Runner {
       const skip = this.oboraSpans.find((span) => this.decorCursor > span.from - this.u && this.decorCursor < span.to + this.u * 0.4);
       if (skip) {
         this.decorCursor = skip.to + this.u * 0.45;
+        continue;
+      }
+      const lane = this.approaches.find((row) => this.decorCursor > row.from && this.decorCursor < row.to);
+      if (lane) {
+        this.decorCursor = lane.to + this.u * 0.3;
         continue;
       }
       const mix = biomeMix(this.decorCursor);
@@ -1190,6 +1241,14 @@ export class Runner {
         this.decorCursor += this.u * (1.5 + Math.random() * 1.2);
         continue;
       }
+      if (kind === "bin" && this.approaches.some((row) => this.decorCursor >= row.from && this.decorCursor < row.village)) {
+        this.decorCursor += this.u * (1.5 + Math.random() * 1.2);
+        continue;
+      }
+      if (this.ents.some((ent) => ent.alive && VILLAGES.has(ent.kind) && Math.abs(ent.x - this.decorCursor) < this.visualHalf(ent.kind) * 0.92)) {
+        this.decorCursor += this.u * (1.5 + Math.random() * 1.2);
+        continue;
+      }
       this.ents.push({ kind, x: this.decorCursor, lift: 0, anim: 0, alive: true });
       this.decorCursor += this.u * (1.35 + Math.random() * 1.8);
     }
@@ -1199,14 +1258,18 @@ export class Runner {
       if (biome.id === "park" && this.isOboraChunk(this.nextChunk)) {
         this.spawnObora(this.nextChunk);
       } else {
+        const origin = this.nextChunk * BIOME_LEN + this.viewW * 0.82;
         this.ents.push({
           kind: biome.landmark,
-          x: this.nextChunk * BIOME_LEN + this.viewW * 0.82,
+          x: biome.landmark === "pond" ? this.pondX(this.nextChunk * BIOME_LEN) : origin,
           lift: 0,
           anim: 0,
           alive: true,
         });
-        if (biome.landmark === "pond") this.pondsDirty = true;
+        if (biome.landmark === "pond") {
+          this.pondsDirty = true;
+          this.approachAfter(this.pondX(this.nextChunk * BIOME_LEN) + this.pondHalf());
+        }
       }
       if (biome.id === "namesti") {
         this.ents.push({
@@ -1269,7 +1332,31 @@ export class Runner {
     const fallback =
       kind === "pond"
         ? 1669 / 477
-        : kind === "greenhouse"
+        : kind === "mlynec-cross"
+          ? 599 / 1647
+          : kind === "mlynec-house"
+            ? 737 / 545
+            : kind === "mlynec-school"
+              ? 820 / 574
+              : kind === "ledkov-a"
+                ? 845 / 487
+                : kind === "ledkov-b"
+                  ? 722 / 489
+                  : kind === "drahoraz-church"
+                    ? 1142 / 931
+                    : kind === "drahoraz-tower"
+                      ? 415 / 625
+                      : kind === "apple-0"
+                        ? 967 / 1188
+                        : kind === "apple-1"
+                          ? 967 / 1114
+                          : kind === "apple-2"
+                            ? 863 / 1000
+                            : kind === "linden"
+                              ? 2350 / 440
+                              : kind === "pseves-heart"
+                                ? 1028 / 1309
+                                : kind === "greenhouse"
           ? 1280 / 579
           : kind === "castle" || kind === "school"
             ? 1.29
@@ -1337,7 +1424,7 @@ export class Runner {
     const cycle = BIOME_LEN * 4;
     const base = Math.floor(x / cycle);
     for (let i = base - 1; i <= base + 1; i += 1) {
-      const pondX = (i * 4 + 3) * BIOME_LEN + this.viewW * 0.82;
+      const pondX = this.pondX((i * 4 + 3) * BIOME_LEN);
       const from = pondX - this.u * 8;
       const to = pondX + this.u * 8;
       if (x >= from && x < to) return to;
@@ -1346,6 +1433,15 @@ export class Runner {
       const pad = this.u * 0.4;
       if (x >= span.from - pad && x < span.to + pad) return span.to + pad;
     }
+    let left = Infinity;
+    let right = -Infinity;
+    for (const ent of this.ents) {
+      if (!ent.alive || !VILLAGES.has(ent.kind)) continue;
+      const half = this.visualHalf(ent.kind);
+      left = Math.min(left, ent.x - half);
+      right = Math.max(right, ent.x + half);
+    }
+    if (x >= left && x < right) return right + this.u * 0.3;
     return null;
   }
 
@@ -1364,7 +1460,7 @@ export class Runner {
         [square + u * 12.2, "school"],
         [n * cycle + BIOME_LEN + this.viewW * 0.82, "castle"],
         [n * cycle + BIOME_LEN * 2 + this.viewW * 0.82, "greenhouse"],
-        [n * cycle + BIOME_LEN * 3 + this.viewW * 0.82, "pond"],
+        [this.pondX(n * cycle + BIOME_LEN * 3), "pond"],
       ];
       for (const [center, place] of spots) {
         const inner = this.visualHalf(place) * 0.78;
@@ -2165,6 +2261,31 @@ export class Runner {
     if (this.oboraSpans.some((span) => x >= span.from && x <= span.to)) {
       return { id: "park", name: "Kopidlnenská obora" };
     }
+    const pseves = this.villageBounds(PSEVES);
+    const drahoraz = this.villageBounds(DRAHORAZ);
+    const ledkov = this.villageBounds(LEDKOV);
+    const mlynec = this.villageBounds(MLYNEC);
+    if (pseves) {
+      const lane = this.approaches.find((row) => Math.abs(row.village - (pseves.to + this.u * 0.15)) < this.u);
+      const from = lane ? lane.from : pseves.from - this.u * 0.3;
+      if (x >= from && x < this.nextTown(pseves.from) + this.u * 1.1) return { id: "park", name: "Pševes" };
+    }
+    if (drahoraz) {
+      const lane = this.approaches.find((row) => Math.abs(row.village - (drahoraz.to + this.u * 0.15)) < this.u);
+      const from = lane ? lane.from : drahoraz.from - this.u * 0.4;
+      const until = pseves ? (this.approaches.find((row) => Math.abs(row.village - (pseves.to + this.u * 0.15)) < this.u)?.from ?? pseves.from) : this.nextTown(drahoraz.from) + this.u * 1.1;
+      if (x >= from && x < until) return { id: "park", name: "Drahoraz" };
+    }
+    if (ledkov) {
+      const lane = this.approaches.find((row) => Math.abs(row.village - (ledkov.to + this.u * 0.15)) < this.u);
+      const from = lane ? lane.from : ledkov.from - this.u * 0.4;
+      const until = drahoraz ? (this.approaches.find((row) => Math.abs(row.village - (drahoraz.to + this.u * 0.15)) < this.u)?.from ?? drahoraz.from) : this.nextTown(ledkov.from) + this.u * 1.1;
+      if (x >= from && x < until) return { id: "park", name: "Ledkov" };
+    }
+    if (mlynec && x >= mlynec.from - this.u * 0.3 && x < mlynec.to + this.u * 0.25) {
+      return { id: "park", name: "Mlýnec" };
+    }
+    if (this.approaches.some((row) => x > row.from && x < row.to)) return { id: "park", name: "Zámecký park" };
     const u = this.u;
     const cycle = BIOME_LEN * 4;
     const n = Math.floor(x / cycle);
@@ -2174,7 +2295,7 @@ export class Runner {
     const school = square + u * 12.2;
     const castle = origin + BIOME_LEN + this.viewW * 0.82;
     const glass = origin + BIOME_LEN * 2 + this.viewW * 0.82;
-    const pond = origin + BIOME_LEN * 3 + this.viewW * 0.82;
+    const pond = this.pondX(origin + BIOME_LEN * 3);
     const nextSquare = origin + cycle + this.viewW * 0.82;
     if (x < (church + school) / 2) return { id: "namesti", name: "Náměstí" };
     if (x < (school + castle) / 2) return { id: "skola", name: "Stará škola" };
@@ -2182,6 +2303,121 @@ export class Runner {
     if (x < (glass + pond) / 2) return { id: "sklenik", name: "Palmový skleník" };
     if (x < (pond + nextSquare) / 2) return { id: "park", name: "Zámecký park" };
     return { id: "namesti", name: "Náměstí" };
+  }
+
+  private pondX(chunkStart: number): number {
+    return chunkStart + this.viewW * 0.82;
+  }
+
+  private nextTown(x: number): number {
+    const cycle = BIOME_LEN * 4;
+    const n = Math.floor(x / cycle);
+    const here = n * cycle + this.viewW * 0.82;
+    const houses = here > x ? here : (n + 1) * cycle + this.viewW * 0.82;
+    return houses - this.u * 2.2;
+  }
+
+  private villageBounds(kinds: Set<Kind>): { from: number; to: number } | null {
+    let from = Infinity;
+    let to = -Infinity;
+    for (const ent of this.ents) {
+      if (!ent.alive || !kinds.has(ent.kind)) continue;
+      const half = this.visualHalf(ent.kind);
+      from = Math.min(from, ent.x - half);
+      to = Math.max(to, ent.x + half);
+    }
+    return to < from ? null : { from, to };
+  }
+
+  private rowWidth(parts: { kind: Kind; aspect: number; gap: number }[]): number {
+    return parts.reduce((sum, part) => sum + SPEC[part.kind].h * this.u * part.aspect + part.gap, 0);
+  }
+
+  private plantRow(x: number, parts: { kind: Kind; aspect: number; gap: number }[]) {
+    for (const part of parts) {
+      const w = SPEC[part.kind].h * this.u * part.aspect;
+      this.ents.push({ kind: part.kind, x: x + w / 2, lift: 0, anim: 0, alive: true });
+      x += w + part.gap;
+    }
+  }
+
+  private plantPause(from: number, to: number, bushes: boolean) {
+    const room = to - from;
+    if (room < this.u * 1.15) return;
+    const count = room > this.u * 4.4 ? 4 : 3;
+    const step = room / (count + 1);
+    for (let i = 1; i <= count; i += 1) {
+      const kind: Kind = bushes && i % 2 === 0 ? "bush" : "tree";
+      this.ents.push({ kind, x: from + step * i, lift: 0, anim: 0, alive: true });
+    }
+  }
+
+  private approachAfter(end: number) {
+    if (this.approaches.some((row) => Math.abs(row.from - end) < 12)) return;
+    const u = this.u;
+    const houses = this.nextTown(end + 1) + u * 2.2;
+    const limit = houses - u * 1.42 - this.visualHalf("info") - u * 0.35;
+    const room = limit - end;
+    const mlynec = [
+      { kind: "mlynec-school" as Kind, aspect: 820 / 574, gap: u * 0.22 },
+      { kind: "mlynec-cross" as Kind, aspect: 599 / 1647, gap: 0 },
+    ];
+    const ledkov = [
+      { kind: "ledkov-a" as Kind, aspect: 845 / 487, gap: u * 0.42 },
+      { kind: "ledkov-b" as Kind, aspect: 722 / 489, gap: 0 },
+    ];
+    const drahoraz = [
+      { kind: "drahoraz-church" as Kind, aspect: 1142 / 931, gap: u * 0.05 },
+      { kind: "drahoraz-tower" as Kind, aspect: 415 / 625, gap: u * 0.4 },
+      { kind: "apple-0" as Kind, aspect: 967 / 1188, gap: u * 0.28 },
+      { kind: "apple-1" as Kind, aspect: 967 / 1114, gap: u * 0.26 },
+      { kind: "apple-2" as Kind, aspect: 863 / 1000, gap: 0 },
+    ];
+    const pseves = [
+      { kind: "linden" as Kind, aspect: 2350 / 440, gap: u * 0.28 },
+      { kind: "pseves-heart" as Kind, aspect: 1028 / 1309, gap: 0 },
+    ];
+    const groups = [mlynec, ledkov, drahoraz, pseves];
+    const widths = groups.map((parts) => this.rowWidth(parts));
+    const buildings = widths.reduce((sum, w) => sum + w, 0);
+    if (room < buildings + u * 4.2) return;
+    const slack = room - buildings;
+    const caps = [u * 5.2, u * 4.6, u * 4.2, u * 1.05];
+    const mins = [u * 2.2, u * 2.0, u * 2.0, u * 0.55];
+    let left = slack;
+    const pauses = caps.map((cap, i) => {
+      const reserved = mins.slice(i + 1).reduce((sum, min) => sum + min, 0);
+      const share = Math.min(cap, Math.max(mins[i]!, left - reserved));
+      left -= share;
+      return Math.max(0, share);
+    });
+    let cursor = end;
+    const starts = widths.map((w, i) => {
+      cursor += pauses[i]!;
+      const at = cursor;
+      cursor += w;
+      return at;
+    });
+    if (cursor > limit) {
+      const shift = cursor - limit;
+      for (let i = 0; i < starts.length; i += 1) starts[i] = Math.max(end + u, starts[i]! - shift);
+    }
+    const ends = starts.map((at, i) => at + widths[i]!);
+    groups.forEach((_, i) => {
+      const from = i === 0 ? end : ends[i - 1]!;
+      this.approaches.push({ from, to: starts[i]!, village: ends[i]! + u * 0.15 });
+    });
+    const villageEnd = ends[ends.length - 1]!;
+    for (const ent of this.ents) {
+      if (!ent.alive || ent.x <= end + 4 || ent.x >= villageEnd) continue;
+      const onBuildings = starts.some((at, i) => ent.x >= at && ent.x < ends[i]!);
+      if (PROPS.has(ent.kind) || (onBuildings && HAZARDS.has(ent.kind))) ent.alive = false;
+    }
+    groups.forEach((parts, i) => {
+      const from = i === 0 ? end : ends[i - 1]!;
+      this.plantPause(from, starts[i]!, i === 1);
+      this.plantRow(starts[i]!, parts);
+    });
   }
 
   private pushHud(force: boolean) {
