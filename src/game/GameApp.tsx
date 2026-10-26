@@ -331,67 +331,90 @@ export function GameApp() {
       )}
 
       {hud.phase === "menu" && (
-        <div
-          ref={menuRef}
-          className="menu-fit pointer-events-none absolute inset-0 z-10 overflow-hidden bg-gradient-to-b from-ink/15 via-transparent to-ink/30"
-        >
-          <div className="flex h-full min-h-0 items-start justify-center px-[0.75em] py-[0.65em] sm:items-center sm:justify-end sm:px-[2em]">
-            <section
-              ref={menuContentRef}
-              className="pointer-events-auto w-full max-w-[25em] shrink-0 rounded-[1.8em] border-[3px] border-gold/70 bg-cream/90 px-[1.25em] py-[1em] text-center text-ink shadow-[0_14px_50px_rgba(36,28,22,0.28)] backdrop-blur-sm"
-            >
-              <p className="text-[0.7em] font-extrabold tracking-[0.28em] text-bow">KOPIDLNO</p>
-              <h1 className="mt-[0.1em] font-display leading-none">
-                <span className="block text-[3.4em]">Drběna</span>
-                <span className="block text-[1.65em] text-bow">sbírá drby</span>
+        <div ref={menuRef} className="menu-fit pointer-events-none absolute inset-0 z-10 overflow-hidden">
+          {/* Menu je součástí živého náměstí; žádná neprůhledná karta přes celou scénu. */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-[38%] bg-gradient-to-b from-ink/40 via-ink/15 to-transparent" />
+          <div className="flex h-full min-h-0 items-start justify-center px-[0.75em] py-[0.65em] sm:items-center sm:justify-end sm:px-[2.25em]">
+            <section ref={menuContentRef} className="pointer-events-auto flex w-full max-w-[24em] shrink-0 flex-col items-center text-center">
+              <p className="text-[0.72em] font-extrabold tracking-[0.35em] text-[#fff0bf] [text-shadow:0_2px_3px_#241c16]">KOPIDLNO</p>
+              <h1 className="mt-[0.2em] font-display leading-[0.88] text-cream [text-shadow:0_3px_0_#58331f,0_5px_8px_#241c16]">
+                <span className="block text-[3.8em]">Drběna</span>
+                <span className="mt-[0.09em] block text-[1.85em] text-[#ffe0a4]">sbírá drby</span>
               </h1>
-              <p className="mt-[0.7em] text-[0.85em] font-extrabold leading-snug text-ink-soft">
-                Méé! Co se dneska povídá v Kopidlně?
+              <p className="mt-[0.75em] rounded-full bg-ink/65 px-[0.9em] py-[0.35em] text-[0.77em] font-extrabold text-cream shadow-md">
+                Méé! Co se dneska povídá?
               </p>
+
+              <label className="mt-[1em] block w-full rounded-[0.7em] border-[3px] border-[#543119] bg-[linear-gradient(175deg,#c9925d_0%,#a66d3d_48%,#85502c_51%,#b07842_100%)] px-[0.85em] py-[0.6em] text-center shadow-[inset_0_2px_2px_#e9ba82,0_5px_0_#462713,0_9px_14px_#241c1666]">
+                <span className="block text-[0.86em] font-extrabold tracking-wide text-[#fff6dd] [text-shadow:0_2px_1px_#543119]">
+                  Jak ti máme říkat?
+                </span>
+                <input
+                  type="text"
+                  autoComplete="nickname"
+                  aria-label="Jméno hráče do žebříčku"
+                  value={name}
+                  maxLength={16}
+                  placeholder="Tvoje jméno (nebo Drběna)"
+                  className="mt-[0.4em] block h-[2.7em] w-full rounded-[0.45em] border-2 border-[#58351f] bg-[#fff7e6] px-[0.8em] text-center text-[0.95em] font-extrabold text-ink outline-none placeholder:text-ink-soft/70 focus-visible:ring-4 focus-visible:ring-gold"
+                  onChange={(event) => { setName(event.target.value); saveName(event.target.value); }}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      event.stopPropagation();
+                      event.currentTarget.blur();
+                      gameRef.current?.begin();
+                    }
+                  }}
+                />
+              </label>
+
               <button
                 type="button"
-                className="mx-auto mt-[1.1em] flex min-h-[3.8em] w-full items-center justify-center gap-[0.6em] rounded-full border-[3px] border-ink bg-bow px-[0.8em] font-extrabold text-cream shadow-[0_5px_0_#241c16] transition-transform hover:-translate-y-0.5 active:translate-y-0.5"
+                className="mt-[1em] flex min-h-[3.8em] w-full items-center justify-center gap-[0.6em] rounded-[0.8em] border-[3px] border-[#4c2919] bg-[linear-gradient(175deg,#efb75d_0%,#d58d36_46%,#b06b2d_51%,#d79642_100%)] px-[1em] font-display text-[1.2em] text-[#2f2016] shadow-[inset_0_2px_2px_#ffdeb0,0_6px_0_#57321a,0_10px_16px_#241c1677] transition-transform hover:-translate-y-[2px] active:translate-y-[3px] focus-visible:outline focus-visible:outline-4 focus-visible:outline-cream"
                 onClick={() => gameRef.current?.begin()}
               >
-                <span className="text-[1.2em]">Vyrazit za drby!</span>
-                <ArrowRight className="size-[1.5em]" aria-hidden="true" />
+                Vyrazit za drby!
+                <ArrowRight className="size-[1.35em]" aria-hidden="true" />
               </button>
-              <div className="mt-[1.1em] grid grid-cols-2 gap-[0.6em]">
+
+              <div className="mt-[0.9em] grid w-full grid-cols-2 gap-[0.7em]">
                 <button
                   type="button"
-                  className="flex min-h-[5.5em] flex-col items-center justify-center gap-[0.35em] rounded-[1.1em] border-2 border-ink/65 bg-[#fff8e8]/95 p-[0.5em] text-ink shadow-sm transition-transform hover:-translate-y-0.5"
+                  className="flex min-h-[3.8em] items-center justify-center gap-[0.5em] rounded-[0.7em] border-[3px] border-[#4c2919] bg-[linear-gradient(175deg,#c99660_0%,#9f6538_51%,#89532f_52%,#af7644_100%)] px-[0.55em] text-cream shadow-[inset_0_2px_2px_#eac18e,0_5px_0_#4d2c19,0_8px_12px_#241c1655] transition-transform hover:-translate-y-[2px] active:translate-y-[2px] focus-visible:outline focus-visible:outline-4 focus-visible:outline-cream"
                   onClick={() => openChronicle()}
                 >
-                  <BookOpen className="size-[1.8em] text-bow" aria-hidden="true" />
-                  <span className="font-display text-[1.05em] leading-none">Kronika</span>
-                  <span className="text-[0.72em] font-extrabold text-ink-soft">
-                    {bookProgress.known}/{bookProgress.total} příběhů
+                  <BookOpen className="size-[1.4em] shrink-0" aria-hidden="true" />
+                  <span className="flex flex-col items-start">
+                    <span className="font-display text-[1.08em]">Kronika</span>
+                    <span className="text-[0.65em] font-extrabold text-[#ffebc7]">{bookProgress.known}/{bookProgress.total} příběhů</span>
                   </span>
                 </button>
                 <button
                   type="button"
-                  className="flex min-h-[5.5em] flex-col items-center justify-center gap-[0.35em] rounded-[1.1em] border-2 border-ink/65 bg-[#fff8e8]/95 p-[0.5em] text-ink shadow-sm transition-transform hover:-translate-y-0.5"
+                  className="flex min-h-[3.8em] items-center justify-center gap-[0.5em] rounded-[0.7em] border-[3px] border-[#4c2919] bg-[linear-gradient(175deg,#c99660_0%,#9f6538_51%,#89532f_52%,#af7644_100%)] px-[0.55em] text-cream shadow-[inset_0_2px_2px_#eac18e,0_5px_0_#4d2c19,0_8px_12px_#241c1655] transition-transform hover:-translate-y-[2px] active:translate-y-[2px] focus-visible:outline focus-visible:outline-4 focus-visible:outline-cream"
                   onClick={() => setMenuPanel("records")}
                 >
-                  <Trophy className="size-[1.8em] text-bow" aria-hidden="true" />
-                  <span className="font-display text-[1.05em] leading-none">Rekordy</span>
-                  <span className="text-[0.72em] font-extrabold text-ink-soft">
-                    {hud.best > 0 ? `Tvůj rekord: ${hud.best}` : "Žebříček hráčů"}
+                  <Trophy className="size-[1.4em] shrink-0" aria-hidden="true" />
+                  <span className="flex flex-col items-start">
+                    <span className="font-display text-[1.08em]">Rekordy</span>
+                    <span className="text-[0.65em] font-extrabold text-[#ffebc7]">{hud.best > 0 ? `Tvůj: ${hud.best}` : "Žebříček"}</span>
                   </span>
                 </button>
               </div>
-              <div className="mt-[0.9em] flex items-center justify-between gap-[0.35em]">
+
+              <div className="mt-[0.9em] flex w-full justify-between gap-[0.5em]">
                 <button
                   type="button"
-                  className="flex min-h-[2.7em] items-center gap-[0.3em] rounded-full px-[0.55em] text-[0.8em] font-extrabold text-ink-soft hover:bg-cream-deep"
+                  className="flex min-h-[2.6em] items-center gap-[0.4em] rounded-full bg-ink/70 px-[0.9em] text-[0.8em] font-extrabold text-cream shadow-sm hover:bg-ink/85"
                   onClick={() => setMenuPanel("help")}
                 >
-                  <CircleHelp className="size-[1.25em]" aria-hidden="true" />
+                  <CircleHelp className="size-[1.3em]" aria-hidden="true" />
                   Jak hrát
                 </button>
                 <button
                   type="button"
-                  className="flex min-h-[2.7em] items-center gap-[0.35em] rounded-full px-[0.55em] text-[0.8em] font-extrabold text-ink-soft hover:bg-cream-deep"
+                  className="flex min-h-[2.6em] items-center gap-[0.4em] rounded-full bg-ink/70 px-[0.9em] text-[0.8em] font-extrabold text-cream shadow-sm hover:bg-ink/85"
                   onClick={() => gameRef.current?.toggleMute()}
                   aria-label={hud.muted ? "Zapnout zvuk" : "Vypnout zvuk"}
                 >
@@ -399,14 +422,17 @@ export function GameApp() {
                   {hud.muted ? "Zvuk vypnut" : "Zvuk zapnut"}
                 </button>
               </div>
-              <p className="mt-[0.2em] text-[0.65em] font-bold leading-tight text-ink-soft">
+              <p className="mt-[0.8em] text-[0.65em] font-extrabold leading-tight text-cream/90 [text-shadow:0_1px_3px_#241c16]">
                 ♪ Esmeralda – František Matěj Hilmar
               </p>
-              <p className="mt-[0.5em] text-[0.62em] font-extrabold text-ink-soft/75">
+              <p className="mt-[0.25em] text-[0.62em] font-bold text-cream/80 [text-shadow:0_1px_3px_#241c16]">
                 © Kopidlenská drbna | Camledian
               </p>
             </section>
           </div>
+          <p className="pointer-events-none absolute bottom-[25%] left-[9%] hidden max-w-[18em] -rotate-3 rounded-[1em] border-2 border-ink bg-cream/90 px-[1em] py-[0.65em] text-[0.9em] font-extrabold text-ink shadow-lg lg:block">
+            Drběna už nastražila uši!
+          </p>
         </div>
       )}
 
@@ -424,16 +450,10 @@ export function GameApp() {
               {hud.bestGossips > 0 ? ` · ${hud.bestGossips} drbů` : ""}
             </p>
             {players !== null && <p className="mt-1 text-sm font-bold text-ink-soft">{playerLabel(players)}</p>}
-            <label className="mt-4 block">
-              <span className="text-sm font-extrabold">Jméno do žebříčku</span>
-              <input
-                value={name}
-                maxLength={16}
-                placeholder="Drběna"
-                className="mt-1 h-12 w-full rounded-xl border-2 border-ink bg-white px-4 font-extrabold outline-none focus-visible:border-bow"
-                onChange={(event) => { setName(event.target.value); saveName(event.target.value); }}
-              />
-            </label>
+            <p className="mt-3 rounded-xl bg-cream-deep px-3 py-2 text-sm font-extrabold text-ink-soft">
+              Jméno v žebříčku: <span className="text-ink">{name.trim() || "Drběna"}</span>
+              <span className="block text-xs font-bold">Změnit ho můžeš přímo v hlavním menu.</span>
+            </p>
             {board.length > 0 ? (
               <ol className="mt-4 rounded-xl border-2 border-ink/25 bg-white/70 px-3 py-2">
                 {board.slice(0, 5).map((row, index) => (
