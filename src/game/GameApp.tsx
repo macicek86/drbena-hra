@@ -349,16 +349,6 @@ export function GameApp() {
               <p className="mt-[0.65em]">
                 <span className="text-[0.875em] font-extrabold text-cream [text-shadow:0_1px_0_#241c16]">Klepni a skoč. Táhni dolů a pokrč se.</span>
               </p>
-              <button
-                type="button"
-                className="mx-auto mt-[0.45em] text-[0.8em] font-extrabold text-cream/80 underline decoration-cream/40 underline-offset-4 [text-shadow:0_1px_0_#241c16]"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  gameRef.current?.beginAtStag();
-                }}
-              >
-                K jelenovi
-              </button>
               {hud.best > 0 && (
                 <p className="mt-[0.25em]">
                   <span className="text-[0.875em] font-extrabold text-gold [text-shadow:0_1px_0_#241c16]">
