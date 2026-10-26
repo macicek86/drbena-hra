@@ -72,7 +72,24 @@ export const BIOMES: Biome[] = [
   },
 ];
 
-export const BIOME_LEN = 6000;
+// Scény Kopidlna jsou blízko sebe, mezi místními částmi patří delší krajina.
+export const CYCLE_LEN = 28000;
+export const STAGE_OFFSETS = [0, 3200, 6400, 9600] as const;
+
+export function stageStart(index: number): number {
+  const cycle = Math.floor(index / 4);
+  const part = ((index % 4) + 4) % 4;
+  return cycle * CYCLE_LEN + STAGE_OFFSETS[part]!;
+}
+
+export function stageIndex(x: number): number {
+  const cycle = Math.floor(x / CYCLE_LEN);
+  const local = x - cycle * CYCLE_LEN;
+  const part = local < STAGE_OFFSETS[1] ? 0
+    : local < STAGE_OFFSETS[2] ? 1
+    : local < STAGE_OFFSETS[3] ? 2 : 3;
+  return cycle * 4 + part;
+}
 
 export type PlaceId = "namesti" | "skola" | "zamek" | "sklenik" | "park";
 
@@ -89,11 +106,12 @@ export function rgbCss(c: RGB): string {
 }
 
 export function biomeMix(camera: number): { biome: Biome; tint: Biome; t: number; name: string } {
-  const f = camera / BIOME_LEN;
-  const i = Math.floor(f);
-  const frac = f - i;
+  const i = stageIndex(camera);
   const a = BIOMES[((i % 4) + 4) % 4]!;
   const b = BIOMES[(((i + 1) % 4) + 4) % 4]!;
-  const t = frac < 0.78 ? 0 : (frac - 0.78) / 0.22;
+  const end = stageStart(i + 1);
+  // Přechod barev má stejnou krátkou délku u všech etap, i v dlouhé krajině mezi vesnicemi.
+  const fade = Math.min(900, (end - stageStart(i)) * 0.22);
+  const t = Math.max(0, Math.min(1, (camera - (end - fade)) / fade));
   return { biome: a, tint: b, t, name: t > 0.55 ? b.name : a.name };
 }
