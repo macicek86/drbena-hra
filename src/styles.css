@@ -25,6 +25,13 @@ body {
   font-family: var(--font-sans);
 }
 
+/* Under the gesture bar of the phone (below the game, see main in GameApp): while a dimmed panel is open
+   (kronika, kdo hraje, žebříček), the strip is dimmed the same way, so it does not shine as bright green. */
+html:has(main .bg-ink\/55),
+html:has(main .bg-ink\/55) body {
+  background: #3c4f29;
+}
+
 @layer base {
   button:not(:disabled),
   [role="button"]:not(:disabled) {
