@@ -6,16 +6,16 @@ const close = (a: number, b: number) => assert.ok(Math.abs(a - b) < 1e-6, `${a} 
 
 test("rozjezd roste pomalu a dlouho", () => {
   assert.equal(speedShape(0).fraction, 0);
-  close(speedShape(1).fraction, 0.7);
-  close(speedShape(2).fraction, 0.88);
-  assert.deepEqual(speedShape(3), { fraction: 1, extra: 0 });
-  close(speedShape(5).extra, 0.1);
-  close(speedShape(20).extra, 0.2);
+  close(speedShape(1).fraction, 0.72);
+  assert.deepEqual(speedShape(2), { fraction: 1, extra: 0 });
+  close(speedShape(3).extra, 0.1);
+  close(speedShape(5).extra, 0.3);
+  close(speedShape(20).extra, 0.4);
 });
 
 test("zkušený hráč má rychlejší rozjezd jen v prvním kole", () => {
   close(speedShape(0, true).fraction, WARM_START);
-  close(speedShape(1, true).fraction, 0.7);
+  close(speedShape(1, true).fraction, 0.72);
   assert.deepEqual(speedShape(2, true), speedShape(2));
 });
 
@@ -31,7 +31,7 @@ test("rušno je uprostřed cesty a dvojice tam přibývají", () => {
   assert.equal(roadZone(90, 0, 100), "cesta");
   assert.equal(pairChance(0, "mesto"), 0);
   assert.ok(pairChance(1, "cesta-rusna") > pairChance(0, "cesta-rusna"));
-  assert.equal(pairChance(6, "cesta-rusna"), 0.3);
+  assert.equal(pairChance(6, "cesta-rusna"), 0.5);
 });
 
 test("oddech přijde po dvou nárazech krátce za sebou a ne hned znovu", () => {
