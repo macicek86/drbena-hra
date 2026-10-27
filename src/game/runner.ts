@@ -1227,7 +1227,6 @@ export class Runner {
       life: 0.9,
     });
     this.stars(ent.x - this.camera, this.groundY - ent.lift * this.u, 14);
-    // Rozběhnutou příhodu nepřerušovat natrvalo, po oznámení kroniky se vrátí.
     if (fact) {
       this.chronicleNew += 1;
       this.scrollsKnown = knownIds().length;
@@ -2453,7 +2452,7 @@ export class Runner {
 
   private placeAt(x: number): { id: PlaceId; name: string } {
     if (this.oboraSpans.some((span) => x >= span.from && x <= span.to)) {
-      return { id: "park", name: "Kopidlnenská obora" };
+      return { id: "park", name: "Kopidlenská obora" };
     }
     const village = this.villageZones.find((zone) => x >= zone.from - this.u * 0.08 && x < zone.to + this.u * 0.08);
     if (village) return { id: village.id, name: village.name };
@@ -2621,7 +2620,8 @@ export class Runner {
       muted: this.muted,
       coach: this.phase === "play" && !this.taleLife && (!this.coachJump || !this.coachDuck) && this.run < 1400,
       line: this.tale,
-      showTale: this.taleLife > 0 && this.factLife <= 0 && this.phase === "play",
+      // Příhoda se ukáže i během oznámení kroniky (karty jsou pod sebou), jinak by do té doby vypršela.
+      showTale: this.taleLife > 0 && this.phase === "play",
       taleTag: this.taleTag,
       taleTitle: this.taleTitle,
       ready: this.ready,
