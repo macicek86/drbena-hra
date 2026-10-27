@@ -1638,6 +1638,37 @@ export class Runner {
     }
   }
 
+  /**
+   * Rybník Zrcadlo v Mlýnci je nakreslený jako ostrůvek: na koncích se břeh zvedá a spodní rohy jsou průhledné,
+   * takže by břeh visel ve vzduchu. Keře v popředí na obou koncích ty rohy zakryjí a napojí rybník na trávu u cesty.
+   */
+  private drawMirrorPondEnds(ctx: CanvasRenderingContext2D) {
+    const img = this.art.bush;
+    if (!(img instanceof HTMLImageElement) || !img.height) return;
+    const aspect = img.width / img.height;
+    const feet = this.groundY + 2;
+    const bushes = [
+      // [výška v u, posun od okraje rybníka dovnitř v u]: velký keř přes zvednutý roh, menší ven na trávu.
+      [0.66, 0.24],
+      [0.44, -0.2],
+    ] as const;
+    for (const ent of this.ents) {
+      if (!ent.alive || ent.kind !== "mlynec-pond") continue;
+      const half = this.visualHalf("mlynec-pond");
+      const left = ent.x - this.camera - half;
+      const right = ent.x - this.camera + half;
+      if (right < -this.cullMargin || left > this.viewW + this.cullMargin) continue;
+      for (const [size, inset] of bushes) {
+        const h = size * this.u;
+        const w = h * aspect;
+        const baked = this.baked(img, h * this.scale);
+        for (const x of [left + inset * this.u, right - inset * this.u]) {
+          ctx.drawImage(baked, this.snap(x - w / 2), this.snap(feet - h), w, h);
+        }
+      }
+    }
+  }
+
   private drawOboraEndTrees(ctx: CanvasRenderingContext2D) {
     const img = this.art.tree;
     if (!(img instanceof HTMLImageElement) || !img.height) return;
@@ -2041,6 +2072,7 @@ export class Runner {
       this.drawEnt(ctx, ent);
     }
     this.drawPondEndTrees(ctx);
+    this.drawMirrorPondEnds(ctx);
     this.drawOboraEndTrees(ctx);
 
     ctx.fillStyle = col("path");
@@ -2559,7 +2591,8 @@ export class Runner {
   private plantRow(x: number, parts: { kind: Kind; gap: number }[]) {
     for (const part of parts) {
       const w = this.visualHalf(part.kind) * 2;
-      this.ents.push({ kind: part.kind, x: x + w / 2, lift: 0, anim: 0, alive: true });
+      // Rybník Zrcadlo trochu zapustit do trávy: dole má tenký průhledný proužek.
+      this.ents.push({ kind: part.kind, x: x + w / 2, lift: part.kind === "mlynec-pond" ? -0.035 : 0, anim: 0, alive: true });
       x += w + part.gap;
     }
   }
