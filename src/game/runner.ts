@@ -313,7 +313,7 @@ function hash(n: number): number {
   return x - Math.floor(x);
 }
 
-const ART_REV = "35";
+const ART_REV = "36";
 
 async function loadImage(src: string): Promise<HTMLImageElement | null> {
   try {
@@ -1424,7 +1424,7 @@ export class Runner {
     const u = this.u;
     const aspects = [2146 / 632, 2172 / 632, 2140 / 632];
     const glassRight = stageStart(chunk - 1) + this.viewW * 0.82 + this.visualHalf("greenhouse") + u * 1.05;
-    const infoLeft = stageStart(chunk + 1) + this.viewW * 0.82 - u * 1.42 - this.visualHalf("info") - u * 0.55;
+    const infoLeft = stageStart(chunk + 1) + this.viewW * 0.82 - this.infoOffset() - this.visualHalf("info") - u * 0.55;
     const mids = 3;
     const spanAspect = aspects[0]! + aspects[1]! * mids + aspects[2]!;
     const lane = u * 14.5;
@@ -1563,7 +1563,7 @@ export class Runner {
       if (biome.id === "namesti") {
         this.ents.push({
           kind: "info",
-          x: stageStart(this.nextChunk) + this.viewW * 0.82 - this.u * 1.42,
+          x: stageStart(this.nextChunk) + this.viewW * 0.82 - this.infoOffset(),
           lift: 0,
           anim: 0,
           alive: true,
@@ -1664,7 +1664,7 @@ export class Runner {
                 : kind === "column"
                   ? 587 / 820
                   : kind === "info"
-                    ? 900 / 707
+                    ? 1100 / 568
                     : kind === "tree"
                       ? 402 / 440
                       : kind === "branch"
@@ -1784,6 +1784,11 @@ export class Runner {
     return this.ents.some((ent) => ent.alive && PLACES.has(ent.kind) && Math.abs(ent.x - at) < this.visualHalf(ent.kind) + half);
   }
 
+  /** Infocentrum stojí hned vlevo vedle radnice (houses), jen s úzkou mezerou. */
+  private infoOffset(): number {
+    return this.visualHalf("houses") + this.visualHalf("info") + this.u * 0.12;
+  }
+
   private onPlaceFace(x: number, kind: Kind, cover = 0.78, pad = 0): boolean {
     const reach = this.visualHalf(kind) + pad;
     const u = this.u;
@@ -1792,7 +1797,7 @@ export class Runner {
     for (let n = n0; n <= n0 + 2; n += 1) {
       const square = n * cycle + this.viewW * 0.82;
       const spots: [number, Kind][] = [
-        [square - u * 1.42, "info"],
+        [square - this.infoOffset(), "info"],
         [square, "houses"],
         [square + u * 3.3, "column"],
         [square + u * 7.6, "church"],
@@ -2727,7 +2732,7 @@ export class Runner {
     if (this.approaches.some((row) => Math.abs(row.from - end) < 12)) return;
     const u = this.u;
     const houses = this.nextTown(end + 1) + u * 2.2;
-    const limit = houses - u * 1.42 - this.visualHalf("info") - u * 0.35;
+    const limit = houses - this.infoOffset() - this.visualHalf("info") - u * 0.35;
     const room = limit - end;
 
     // Po rybníku / oboře následují čtyři samostatné vsi, poté návrat do Kopidlna.
