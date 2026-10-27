@@ -156,8 +156,8 @@ export function GameApp() {
     beginChosen();
   }
   const [chronicleNewFirst, setChronicleNewFirst] = useState(false);
-  // Recompute saved progress when the game phase or the number of new entries changes.
-  const bookProgress = useMemo(() => chronicleBook(), [hud.phase, hud.chronicleNew]);
+  // Recompute saved progress when the game phase, the number of new entries or the player changes.
+  const bookProgress = useMemo(() => chronicleBook(), [hud.phase, hud.chronicleNew, profiles?.current]);
 
   function openChronicle(showNewest = false) {
     setChronicleNewFirst(showNewest);

@@ -2,7 +2,7 @@ import { cleanNickname } from "./names.ts";
 
 /**
  * Players on this device. Several people can share one phone: each player has an anonymous id (the newsroom
- * tells players apart by it), a nickname and a personal record. The Chronicle stays shared for the device.
+ * tells players apart by it), a nickname, a personal record and their own Chronicle (src/game/chronicle.ts).
  * Everything lives in localStorage; nothing about the player leaves the device except id, nickname and scores.
  */
 export type Profile = { id: string; name: string; best: number; gossips: number };
@@ -15,6 +15,9 @@ const LEGACY_ID = "drbena-kod-hrace";
 const LEGACY_SAVE = "drbena-kopidlno-v1";
 
 export const MAX_PROFILES = 8;
+
+/** The Chronicle of one player is stored under `${CHRONICLE_KEY}:${id}` (src/game/chronicle.ts). */
+export const CHRONICLE_KEY = "drbena-kronika-v1";
 
 const ID = /^[a-z0-9-]{8,64}$/;
 
@@ -103,6 +106,11 @@ export function renameProfile(id: string, name: string): Profiles {
 export function removeProfile(id: string): Profiles {
   const profiles = loadProfiles();
   const list = profiles.list.filter((p) => p.id !== id);
+  try {
+    localStorage.removeItem(`${CHRONICLE_KEY}:${id}`);
+  } catch {
+    /* private mode */
+  }
   return store({ current: profiles.current === id ? (list[0]?.id ?? "") : profiles.current, list });
 }
 
