@@ -183,6 +183,8 @@ const BIG_HAZARDS = new Set<Kind>(["branch", "laundry"]);
 const FOREST: readonly Kind[] = ["forest-oak", "forest-birch", "forest-pine", "forest-spruce", "forest-linden", "forest-maple", "forest-rowan", "forest-willow"];
 /** Krajina na cestě mezi vesnicemi: les, hájky mezi loukami, stromy podél cesty, nebo pole. */
 type Scene = "les" | "haj" | "stromy" | "pole";
+/** Stromy v zámeckém parku a kolem rybníka. */
+const PARK_TREES: readonly Kind[] = ["forest-oak", "forest-linden", "forest-maple", "forest-birch", "forest-willow", "forest-spruce"];
 const PROPS = new Set<Kind>([...FOREST, "bush", "lamp", "tree", "bench", "pigeon", "bin"]);
 const DECOR = new Set<Kind>([...FOREST, "bush", "lamp", "tree", "bench", "pigeon", "bin", "column", "church", "school", "info", ...SIGNS]);
 
@@ -1578,12 +1580,22 @@ export class Runner {
       }
       const mix = biomeMix(this.decorCursor);
       const town = mix.biome.id === "namesti";
+      // Zámek, skleník a rybník jsou v zámeckém parku: víc stromů než na náměstí.
       const bag: Kind[] = town
         ? ["lamp", "bush", "bench", "bin", "tree", "bush", "pigeon"]
         : mix.biome.id === "park"
-          ? ["tree", "bush", "bench", "tree", "bush", "pigeon"]
-          : ["tree", "bush", "lamp", "bush", "bench", "bin", "pigeon"];
+          ? ["tree", "tree", "bush", "bench", "tree", "bush", "pigeon"]
+          : mix.biome.id === "zamek"
+            ? ["tree", "tree", "bush", "lamp", "bench", "tree", "pigeon"]
+            : ["tree", "bush", "tree", "lamp", "bench", "bin", "tree", "pigeon"];
       let kind = bag[Math.floor(Math.random() * bag.length)]!;
+      // V zámeckém parku, u skleníku a u rybníka rostou stromy jako kolem Kopidlna (jeřáb a borovice
+      // k parku nepatří); na náměstí zůstává lípa z náměstí.
+      let size: number | undefined;
+      if (kind === "tree" && !town) {
+        kind = PARK_TREES[Math.floor(Math.random() * PARK_TREES.length)]!;
+        size = Math.round((0.85 + Math.random() * 0.15) * 20) / 20;
+      }
       if (kind !== "bin" && PROPS.has(kind) && this.onPlaceFace(this.decorCursor, kind)) {
         this.decorCursor += this.u * (1.5 + Math.random() * 1.2);
         continue;
@@ -1596,7 +1608,7 @@ export class Runner {
         this.decorCursor += this.u * (1.5 + Math.random() * 1.2);
         continue;
       }
-      this.ents.push({ kind, x: this.decorCursor, lift: 0, anim: 0, alive: true });
+      this.ents.push({ kind, x: this.decorCursor, lift: 0, anim: 0, alive: true, size, face: Math.random() < 0.5 ? -1 : 1 });
       this.decorCursor += this.u * (1.35 + Math.random() * 1.8);
     }
     const horizon = this.camera + this.visualHalf("pond") + this.viewW * 0.22 + this.u;
@@ -3076,7 +3088,7 @@ export class Runner {
     this.feet = this.groundY;
     this.releaseInputs();
     for (const ent of this.ents) {
-      if (ent.kind === "tree" && Math.abs(ent.x - (x - this.u * 1.15)) < this.u * 2.6) ent.alive = false;
+      if ((ent.kind === "tree" || FOREST.includes(ent.kind)) && Math.abs(ent.x - (x - this.u * 1.15)) < this.u * 2.6) ent.alive = false;
       if (!HAZARDS.has(ent.kind) || !ent.alive) continue;
       if (ent.x > x - this.u * 9.2 && ent.x < x + this.u * 8) ent.alive = false;
     }
