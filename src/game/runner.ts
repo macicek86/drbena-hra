@@ -94,6 +94,7 @@ type Kind =
   | "apple-1"
   | "apple-2"
   | "linden"
+  | "pseves-house"
   | "pseves-heart"
   | "obora"
   | "stag"
@@ -142,14 +143,14 @@ function safeBottom(): number {
 
 const HAZARDS = new Set<Kind>(["fence", "pot", "dog", "gardener", "car", "branch", "cyclist", "laundry"]);
 const PICKUPS = new Set<Kind>(["gossip", "heart", "scroll", "firefly"]);
-const LANDMARKS = new Set<Kind>(["houses", "castle", "greenhouse", "pond", "mlynec-cross", "mlynec-house", "mlynec-bell", "mlynec-school", "mlynec-pond", "ledkov-a", "ledkov-b", "drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2", "linden", "pseves-heart", "obora", "stag"]);
+const LANDMARKS = new Set<Kind>(["houses", "castle", "greenhouse", "pond", "mlynec-cross", "mlynec-house", "mlynec-bell", "mlynec-school", "mlynec-pond", "ledkov-a", "ledkov-b", "drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2", "linden", "pseves-house", "pseves-heart", "obora", "stag"]);
 // Cedule na začátku obcí: jen kulisa, nikdy překážka (src/game/runner.ts, approachAfter).
 const SIGNS = ["sign-mlynec", "sign-ledkov", "sign-drahoraz", "sign-pseves", "sign-kopidlno"] as const;
-const PLACES = new Set<Kind>([...SIGNS, "houses", "castle", "greenhouse", "pond", "mlynec-cross", "mlynec-house", "mlynec-bell", "mlynec-school", "mlynec-pond", "ledkov-a", "ledkov-b", "drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2", "linden", "pseves-heart", "column", "church", "school", "info"]);
+const PLACES = new Set<Kind>([...SIGNS, "houses", "castle", "greenhouse", "pond", "mlynec-cross", "mlynec-house", "mlynec-bell", "mlynec-school", "mlynec-pond", "ledkov-a", "ledkov-b", "drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2", "linden", "pseves-house", "pseves-heart", "column", "church", "school", "info"]);
 const MLYNEC = new Set<Kind>(["mlynec-cross", "mlynec-house", "mlynec-bell", "mlynec-school", "mlynec-pond"]);
 const LEDKOV = new Set<Kind>(["ledkov-a", "ledkov-b"]);
 const DRAHORAZ = new Set<Kind>(["drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2"]);
-const PSEVES = new Set<Kind>(["linden", "pseves-heart"]);
+const PSEVES = new Set<Kind>(["pseves-house", "linden", "pseves-heart"]);
 const VILLAGES = new Set<Kind>([...MLYNEC, ...LEDKOV, ...DRAHORAZ, ...PSEVES]);
 /**
  * Větev a prádlo nesmí zakrýt budovy ani cedule (coversScenery), jinak se vymění za malou překážku.
@@ -292,6 +293,7 @@ const SPEC: Record<Kind, { h: number; hitW: number; hitH: number; lift: number }
   "apple-2": { h: 1.28, hitW: 0, hitH: 0, lift: 0 },
   linden: { h: 1.72, hitW: 0, hitH: 0, lift: 0 },
   "pseves-heart": { h: 1.02, hitW: 0, hitH: 0, lift: 0 },
+  "pseves-house": { h: 1.5, hitW: 0, hitH: 0, lift: 0 },
   obora: { h: 2.2, hitW: 0, hitH: 0, lift: 0 },
   stag: { h: 1.5, hitW: 0, hitH: 0, lift: 0 },
   firefly: { h: 0.22, hitW: 1, hitH: 1, lift: 0.9 },
@@ -311,7 +313,7 @@ function hash(n: number): number {
   return x - Math.floor(x);
 }
 
-const ART_REV = "34";
+const ART_REV = "35";
 
 async function loadImage(src: string): Promise<HTMLImageElement | null> {
   try {
@@ -716,6 +718,7 @@ export class Runner {
       "apple-1",
       "apple-2",
       "linden",
+      "pseves-house",
       "pseves-heart",
       "column",
       "church",
@@ -1645,7 +1648,9 @@ export class Runner {
                           : kind === "apple-2"
                             ? 863 / 1000
                             : kind === "linden"
-                              ? 2350 / 440
+                              ? 1334 / 440
+                              : kind === "pseves-house"
+                                ? 1400 / 516
                               : kind === "pseves-heart"
                                 ? 1028 / 1309
                                 : kind === "greenhouse"
@@ -2747,13 +2752,14 @@ export class Runner {
         { kind: "apple-2", gap: 0 },
       ] },
       { id: "pseves", name: "Pševes", parts: [
+        { kind: "pseves-house", gap: u * 0.3 },
         { kind: "linden", gap: u * 0.15 },
         { kind: "pseves-heart", gap: 0 },
       ] },
     ];
     // Prádlo na šňůře: překážka na podlézání jen ve vsích, mezi stavbami. Každá ves ho má
     // s poloviční šancí, v kole aspoň jedna. Místo ve vsi je za `after`-tou stavbou.
-    const laundryAfter = [1, 0, 1, 0];
+    const laundryAfter = [1, 0, 1, 1];
     const withLaundry = groups.map(() => Math.random() < 0.5);
     if (!withLaundry.some(Boolean)) withLaundry[Math.floor(Math.random() * groups.length)] = true;
     groups.forEach((group, i) => {
