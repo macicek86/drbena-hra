@@ -1423,8 +1423,8 @@ export class Runner {
   private oboraLayout(chunk: number) {
     const u = this.u;
     const aspects = [2146 / 632, 2172 / 632, 2140 / 632];
-    const glassRight = stageStart(chunk - 1) + this.viewW * 0.82 + this.visualHalf("greenhouse") + u * 1.05;
-    const infoLeft = stageStart(chunk + 1) + this.viewW * 0.82 - this.infoOffset() - this.visualHalf("info") - u * 0.55;
+    const glassRight = stageStart(chunk - 1) + this.anchor() + this.visualHalf("greenhouse") + u * 1.05;
+    const infoLeft = stageStart(chunk + 1) + this.anchor() - this.infoOffset() - this.visualHalf("info") - u * 0.55;
     const mids = 3;
     const spanAspect = aspects[0]! + aspects[1]! * mids + aspects[2]!;
     const lane = u * 14.5;
@@ -1547,7 +1547,7 @@ export class Runner {
       if (biome.id === "park" && this.isOboraChunk(this.nextChunk)) {
         this.spawnObora(this.nextChunk);
       } else {
-        const origin = stageStart(this.nextChunk) + this.viewW * 0.82;
+        const origin = stageStart(this.nextChunk) + this.anchor();
         this.ents.push({
           kind: biome.landmark,
           x: biome.landmark === "pond" ? this.pondX(stageStart(this.nextChunk)) : origin,
@@ -1563,28 +1563,28 @@ export class Runner {
       if (biome.id === "namesti") {
         this.ents.push({
           kind: "info",
-          x: stageStart(this.nextChunk) + this.viewW * 0.82 - this.infoOffset(),
+          x: stageStart(this.nextChunk) + this.anchor() - this.infoOffset(),
           lift: 0,
           anim: 0,
           alive: true,
         });
         this.ents.push({
           kind: "column",
-          x: stageStart(this.nextChunk) + this.viewW * 0.82 + this.u * 3.3,
+          x: stageStart(this.nextChunk) + this.anchor() + this.u * 3.3,
           lift: 0,
           anim: 0,
           alive: true,
         });
         this.ents.push({
           kind: "church",
-          x: stageStart(this.nextChunk) + this.viewW * 0.82 + this.u * 7.6,
+          x: stageStart(this.nextChunk) + this.anchor() + this.u * 7.6,
           lift: 0,
           anim: 0,
           alive: true,
         });
         this.ents.push({
           kind: "school",
-          x: stageStart(this.nextChunk) + this.viewW * 0.82 + this.u * 12.2,
+          x: stageStart(this.nextChunk) + this.anchor() + this.u * 12.2,
           lift: 0,
           anim: 0,
           alive: true,
@@ -1784,6 +1784,14 @@ export class Runner {
     return this.ents.some((ent) => ent.alive && PLACES.has(ent.kind) && Math.abs(ent.x - at) < this.visualHalf(ent.kind) + half);
   }
 
+  /**
+   * Kde od začátku každého úseku stojí jeho hlavní stavba (radnice, zámek, skleník). Běžně 82 % šířky
+   * obrazovky; na úzké obrazovce dál, ať je na startu celé infocentrum vidět až před kozou.
+   */
+  private anchor(): number {
+    return Math.max(this.viewW * 0.82, this.playerX + this.u * 0.7 + this.infoOffset() + this.visualHalf("info"));
+  }
+
   /** Infocentrum stojí hned vlevo vedle radnice (houses), jen s úzkou mezerou. */
   private infoOffset(): number {
     return this.visualHalf("houses") + this.visualHalf("info") + this.u * 0.12;
@@ -1795,15 +1803,15 @@ export class Runner {
     const cycle = CYCLE_LEN;
     const n0 = Math.floor(x / cycle) - 1;
     for (let n = n0; n <= n0 + 2; n += 1) {
-      const square = n * cycle + this.viewW * 0.82;
+      const square = n * cycle + this.anchor();
       const spots: [number, Kind][] = [
         [square - this.infoOffset(), "info"],
         [square, "houses"],
         [square + u * 3.3, "column"],
         [square + u * 7.6, "church"],
         [square + u * 12.2, "school"],
-        [stageStart(n * 4 + 1) + this.viewW * 0.82, "castle"],
-        [stageStart(n * 4 + 2) + this.viewW * 0.82, "greenhouse"],
+        [stageStart(n * 4 + 1) + this.anchor(), "castle"],
+        [stageStart(n * 4 + 2) + this.anchor(), "greenhouse"],
         [this.pondX(stageStart(n * 4 + 3)), "pond"],
       ];
       for (const [center, place] of spots) {
@@ -2661,13 +2669,13 @@ export class Runner {
     const cycle = CYCLE_LEN;
     const n = Math.floor(x / cycle);
     const origin = n * cycle;
-    const square = origin + this.viewW * 0.82;
+    const square = origin + this.anchor();
     const church = square + u * 7.6;
     const school = square + u * 12.2;
-    const castle = stageStart(n * 4 + 1) + this.viewW * 0.82;
-    const glass = stageStart(n * 4 + 2) + this.viewW * 0.82;
+    const castle = stageStart(n * 4 + 1) + this.anchor();
+    const glass = stageStart(n * 4 + 2) + this.anchor();
     const pond = this.pondX(stageStart(n * 4 + 3));
-    const nextSquare = origin + cycle + this.viewW * 0.82;
+    const nextSquare = origin + cycle + this.anchor();
     if (x < (church + school) / 2) return { id: "namesti", name: "Náměstí" };
     if (x < (school + castle) / 2) return { id: "skola", name: "Stará škola" };
     if (x < (castle + glass) / 2) return { id: "zamek", name: "Zámek" };
@@ -2677,14 +2685,14 @@ export class Runner {
   }
 
   private pondX(chunkStart: number): number {
-    return chunkStart + this.viewW * 0.82;
+    return chunkStart + this.anchor();
   }
 
   private nextTown(x: number): number {
     const cycle = CYCLE_LEN;
     const n = Math.floor(x / cycle);
-    const here = n * cycle + this.viewW * 0.82;
-    const houses = here > x ? here : (n + 1) * cycle + this.viewW * 0.82;
+    const here = n * cycle + this.anchor();
+    const houses = here > x ? here : (n + 1) * cycle + this.anchor();
     return houses - this.u * 2.2;
   }
 
