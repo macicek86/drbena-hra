@@ -85,6 +85,15 @@ export function GameApp() {
   const [profiles, setProfiles] = useState<Profiles>({ current: "", list: [] });
   const [playersOpen, setPlayersOpen] = useState(false);
   const [whoOpen, setWhoOpen] = useState(false);
+  // Computer with a mouse and keyboard: keyboard hints and no on-screen buttons. Decided after mount (no window on the server).
+  const [keyboard, setKeyboard] = useState(false);
+  useEffect(() => {
+    const query = window.matchMedia("(hover: hover) and (pointer: fine)");
+    const decide = () => setKeyboard(query.matches && navigator.maxTouchPoints === 0);
+    decide();
+    query.addEventListener("change", decide);
+    return () => query.removeEventListener("change", decide);
+  }, []);
   // The start gate runs inside the game loop, so it reads the players through a ref.
   const profilesRef = useRef(profiles);
   profilesRef.current = profiles;
@@ -375,7 +384,7 @@ export function GameApp() {
           <div className="relative z-10 flex w-[min(94vw,680px,84vh)] flex-col items-center">
             <img
               src={`${publicUrl("/game/splash-logo.webp")}?v=4`}
-              alt="Kopidlnenská drbna"
+              alt="Kopidlenská drbna"
               className="z-20 -mb-[7%] w-[108%] max-w-none -rotate-1 drop-shadow-[0_10px_16px_rgba(36,28,22,0.28)]"
             />
             <img
@@ -438,8 +447,8 @@ export function GameApp() {
                 </button>
 
                 <div className="mt-[0.75em] flex justify-center gap-[0.4em] text-[0.8em] font-extrabold text-ink-soft">
-                  <span className="rounded-full bg-cream-deep px-[0.75em] py-[0.25em]">👆 klepni = skok</span>
-                  <span className="rounded-full bg-cream-deep px-[0.75em] py-[0.25em]">👇 táhni dolů = pokrč se</span>
+                  <span className="rounded-full bg-cream-deep px-[0.75em] py-[0.25em]">{keyboard ? "⎵ mezerník = skok" : "👆 klepni = skok"}</span>
+                  <span className="rounded-full bg-cream-deep px-[0.75em] py-[0.25em]">{keyboard ? "↓ šipka dolů = pokrč se" : "👇 táhni dolů = pokrč se"}</span>
                 </div>
 
                 <div className="mt-[0.85em] grid grid-cols-2 gap-[0.6em]">
@@ -708,45 +717,54 @@ export function GameApp() {
       )}
 
       {hud.phase === "play" && (hud.fact || (hud.showTale && hud.line)) && (
-        <article
-          className={`pointer-events-none absolute inset-x-0 top-40 z-10 mx-auto w-[min(100%-1.5rem,32rem)] rounded-3xl border-[3px] bg-cream px-4 py-3 sm:top-36 ${
-            hud.fact
-              ? "border-gold shadow-[0_0_0_4px_rgba(232,163,23,0.22),0_12px_26px_rgba(32,27,20,0.2)]"
-              : "border-bow shadow-[0_0_0_4px_rgba(228,87,122,0.18),0_12px_26px_rgba(32,27,20,0.2)]"
-          }`}
-          role="status"
-          aria-live="polite"
-        >
-          <div className="flex items-start gap-3">
-            {hud.fact
-              ? <BookOpen className="mt-0.5 size-7 shrink-0 text-bow" aria-hidden="true" />
-              : <MessageCircle className="mt-0.5 size-7 shrink-0 text-bow" aria-hidden="true" />}
-            <div className="min-w-0">
-              <p className="text-xs font-extrabold tracking-wide text-bow">
-                {hud.fact ? hud.factLabel || "Nové tajemství odhaleno!" : hud.taleTag}
-              </p>
-              <h2 className="mt-0.5 font-display text-xl leading-tight">
-                {hud.fact ? hud.fact.title : hud.taleTitle || "Drběnina příhoda"}
-              </h2>
-              <p className="mt-1 text-sm font-bold leading-snug text-ink-soft">
-                {hud.fact
-                  ? hud.factComplete ? hud.fact.text : "Nový příběh čeká v kronice."
-                  : hud.line}
-              </p>
-              {hud.fact?.title && hud.factComplete && (
-                <p className="mt-2 inline-flex items-center rounded-full border border-gold/70 bg-gold/15 px-3 py-1 text-sm font-extrabold text-ink">
-                  +16 bodů za pergamen
-                </p>
-              )}
-            </div>
-          </div>
-        </article>
+        // A new story and a mishap can come at once: both cards stay readable, the story on top.
+        <div className="pointer-events-none absolute inset-x-0 top-40 z-10 mx-auto flex w-[min(100%-1.5rem,32rem)] flex-col gap-2 sm:top-36">
+          {hud.fact && (
+            <article
+              className="rounded-3xl border-[3px] border-gold bg-cream px-4 py-3 shadow-[0_0_0_4px_rgba(232,163,23,0.22),0_12px_26px_rgba(32,27,20,0.2)]"
+              role="status"
+              aria-live="polite"
+            >
+              <div className="flex items-start gap-3">
+                <BookOpen className="mt-0.5 size-7 shrink-0 text-bow" aria-hidden="true" />
+                <div className="min-w-0">
+                  <p className="text-xs font-extrabold tracking-wide text-bow">{hud.factLabel || "Nové tajemství odhaleno!"}</p>
+                  <h2 className="mt-0.5 font-display text-xl leading-tight">{hud.fact.title}</h2>
+                  <p className="mt-1 text-sm font-bold leading-snug text-ink-soft">
+                    {hud.factComplete ? hud.fact.text : "Nový příběh čeká v kronice."}
+                  </p>
+                  {hud.fact.title && hud.factComplete && (
+                    <p className="mt-2 inline-flex items-center rounded-full border border-gold/70 bg-gold/15 px-3 py-1 text-sm font-extrabold text-ink">
+                      +16 bodů za pergamen
+                    </p>
+                  )}
+                </div>
+              </div>
+            </article>
+          )}
+          {hud.showTale && hud.line && (
+            <article
+              className={`rounded-3xl border-[3px] border-bow bg-cream shadow-[0_0_0_4px_rgba(228,87,122,0.18),0_12px_26px_rgba(32,27,20,0.2)] ${hud.fact ? "px-4 py-2" : "px-4 py-3"}`}
+              role="status"
+              aria-live="polite"
+            >
+              <div className="flex items-start gap-3">
+                <MessageCircle className={`mt-0.5 shrink-0 text-bow ${hud.fact ? "size-6" : "size-7"}`} aria-hidden="true" />
+                <div className="min-w-0">
+                  <p className="text-xs font-extrabold tracking-wide text-bow">{hud.taleTag}</p>
+                  <h2 className={`mt-0.5 font-display leading-tight ${hud.fact ? "text-lg" : "text-xl"}`}>{hud.taleTitle || "Drběnina příhoda"}</h2>
+                  <p className="mt-1 text-sm font-bold leading-snug text-ink-soft">{hud.line}</p>
+                </div>
+              </div>
+            </article>
+          )}
+        </div>
       )}
 
       {hud.coach && !hud.fact && !hud.showTale && hud.phase === "play" && (
         <p className="pointer-events-none absolute inset-x-3 top-40 text-center text-sm font-extrabold text-ink sm:top-36">
           <span className="rounded-full border-2 border-ink bg-cream/95 px-4 py-2">
-            Klepni = skok. Táhni dolů = pokrč se.
+            {keyboard ? "Mezerník = skok. Šipka dolů = pokrč se." : "Klepni = skok. Táhni dolů = pokrč se."}
           </span>
         </p>
       )}
@@ -847,7 +865,7 @@ export function GameApp() {
         <FitOverlay
           testId="over"
           className="bg-ink/35"
-          fitKey={`${hud.line}:${hud.score}:${hud.chronicleNew}:${players}:${copied}:${JSON.stringify(board)}`}
+          fitKey={`${hud.line}:${hud.score}:${hud.chronicleNew}:${players}:${copied}:${player?.name ?? ""}:${JSON.stringify(board)}`}
         >
           <section className="w-full max-w-sm rounded-3xl border-2 border-ink bg-cream p-6 text-center">
             <p className="text-sm font-extrabold text-bow">Příhoda</p>
@@ -885,18 +903,39 @@ export function GameApp() {
               </button>
             </div>
             {players != null && <p className="mt-2 text-sm font-extrabold text-ink-soft">{playerLabel(players)}</p>}
-            {board.length > 0 && (
-              <ol className="mt-3 text-left text-sm font-extrabold">
-                {board.slice(0, 5).map((row, index) => (
-                  <li key={`${row.name}-${row.score}-${index}`} className="flex justify-between gap-3">
-                    <span>
-                      {index + 1}. {row.name}
-                    </span>
-                    <span>{row.score}</span>
-                  </li>
-                ))}
-              </ol>
-            )}
+            {board.length > 0 && (() => {
+              // The board keeps each player's best score under their current nickname.
+              const mine = player ? board.findIndex((row) => row.name === player.name && row.score === hud.best) : -1;
+              const shown = board.slice(0, 5).map((row, index) => ({ row, index }));
+              if (mine >= 5) shown.push({ row: board[mine]!, index: mine });
+              const gap = mine > 0 ? board[mine - 1]!.score - hud.best + 1 : board.length >= 10 && mine < 0 ? board[9]!.score - hud.best + 1 : 0;
+              return (
+                <>
+                  {mine >= 0 ? (
+                    <p className="mt-2 text-sm font-extrabold text-bow">
+                      {mine === 0 ? "Vedeš celý žebříček!" : `Jsi ${mine + 1}. v žebříčku. Na ${mine}. místo ti chybí ${gap} ${gap === 1 ? "bod" : gap < 5 ? "body" : "bodů"}.`}
+                    </p>
+                  ) : gap > 0 ? (
+                    <p className="mt-2 text-sm font-extrabold text-bow">
+                      Do první desítky ti chybí {gap} {gap === 1 ? "bod" : gap < 5 ? "body" : "bodů"}.
+                    </p>
+                  ) : null}
+                  <ol className="mt-2 text-left text-sm font-extrabold">
+                    {shown.map(({ row, index }) => (
+                      <li
+                        key={`${row.name}-${row.score}-${index}`}
+                        className={`flex justify-between gap-3 rounded-lg px-1.5 ${index === mine ? "bg-gold/25" : ""} ${index === mine && mine >= 5 ? "mt-1 border-t border-dashed border-ink/25 pt-1" : ""}`}
+                      >
+                        <span>
+                          {index + 1}. {row.name}
+                        </span>
+                        <span>{row.score}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </>
+              );
+            })()}
             <div className="mt-4 grid grid-cols-2 gap-2">
               <button
                 type="button"
@@ -936,7 +975,7 @@ export function GameApp() {
         </FitOverlay>
       )}
 
-      {hud.phase === "play" && (
+      {hud.phase === "play" && !keyboard && (
         <div className="absolute inset-x-0 bottom-3 flex items-end justify-between gap-3 px-3 sm:bottom-4 sm:justify-end">
           <button
             type="button"
