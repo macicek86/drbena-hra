@@ -2782,7 +2782,7 @@ export class Runner {
     }
   }
 
-  private plantPause(from: number, to: number, scene: Scene) {
+  private plantPause(from: number, to: number, scene: Scene, byPseves = false) {
     // Kraje mezer necháváme volné, aby ani široká koruna stromu nezakryla
     // sousední vesnici. Krucifix a srdce musí být vidět celé.
     const setback = this.visualHalf("tree") + this.u * 0.55;
@@ -2798,6 +2798,8 @@ export class Runner {
     const a = from + this.u * 0.6;
     const b = to - this.u * 1.7;
     const u = this.u;
+    // U Pševsi bez lip, ať je lipová alej jen jedna.
+    const kinds = byPseves ? FOREST.filter((kind) => kind !== "forest-linden") : FOREST;
     if (scene === "les") {
       this.plantForest(a, b);
       return;
@@ -2809,7 +2811,7 @@ export class Runner {
       for (let i = 0; i < count; i += 1) {
         const width = Math.min(slot * 0.7, u * (3.5 + Math.random() * 2.5));
         const start = a + slot * i + Math.random() * (slot - width);
-        this.plantForest(start, start + width);
+        this.plantForest(start, start + width, kinds);
         if (i < count - 1) this.plantBush(a + slot * (i + 1) - u * 0.2);
       }
       return;
@@ -2819,8 +2821,8 @@ export class Runner {
     let x = a + u * (0.4 + Math.random());
     let last: Kind | null = null;
     for (let guard = 0; guard < 60 && x < b; guard += 1) {
-      let kind = FOREST[Math.floor(Math.random() * FOREST.length)]!;
-      if (kind === last) kind = FOREST[(FOREST.indexOf(kind) + 1) % FOREST.length]!;
+      let kind = kinds[Math.floor(Math.random() * kinds.length)]!;
+      if (kind === last) kind = kinds[(kinds.indexOf(kind) + 1) % kinds.length]!;
       const size = Math.round((0.85 + Math.random() * 0.2) * 20) / 20;
       const half = this.visualHalf(kind) * size;
       if (x + half * 2 > b) break;
@@ -2841,7 +2843,7 @@ export class Runner {
    * Druhy se střídají, velikost a zrcadlení jsou náhodné, ať se les neopakuje. Celé koruny zůstanou
    * mezi `left` a `right`, takže les nezakryje ceduli ani první stavbu vsi.
    */
-  private plantForest(left: number, right: number) {
+  private plantForest(left: number, right: number, kinds: readonly Kind[] = FOREST) {
     const rows: { far: boolean; min: number; max: number; overlap: number; lift: number; start: number }[] = [
       { far: true, min: 0.7, max: 0.85, overlap: 0.62, lift: 0.04, start: this.u * 0.35 },
       { far: false, min: 0.85, max: 1.05, overlap: 0.82, lift: 0, start: 0 },
@@ -2850,8 +2852,8 @@ export class Runner {
       let x = left + row.start;
       let last: Kind | null = null;
       for (let guard = 0; guard < 200; guard += 1) {
-        let kind = FOREST[Math.floor(Math.random() * FOREST.length)]!;
-        if (kind === last) kind = FOREST[(FOREST.indexOf(kind) + 1 + Math.floor(Math.random() * (FOREST.length - 1))) % FOREST.length]!;
+        let kind = kinds[Math.floor(Math.random() * kinds.length)]!;
+        if (kind === last) kind = kinds[(kinds.indexOf(kind) + 1 + Math.floor(Math.random() * (kinds.length - 1))) % kinds.length]!;
         // Velikosti po 0,05, ať se předkreslených obrázků nenadělá moc.
         const size = Math.round((row.min + Math.random() * (row.max - row.min)) * 20) / 20;
         const w = this.visualHalf(kind) * 2 * size;
@@ -2957,18 +2959,24 @@ export class Runner {
       else if (BIG_HAZARDS.has(ent.kind) && this.coversScenery(ent.x, ent.kind)) ent.alive = false;
     }
     // Krajina na cestách: kolem Kopidlna hlavně pole, stromy podél cest a hájky, souvislý les
-    // jen na jedné cestě za kolo. Pořadí se každé kolo zamíchá.
-    const scenes: Scene[] = ["les", "haj", "haj", "stromy", "pole"];
-    for (let i = scenes.length - 1; i > 0; i -= 1) {
+    // jen na jedné cestě za kolo. Pořadí se každé kolo zamíchá, ale u Pševsi les ani hájek není:
+    // mezi Pševsí a Kopidlnem les doopravdy není a lipová alej nesmí splynout s lesem.
+    const nearPseves: Scene = Math.random() < 0.5 ? "stromy" : "pole";
+    const rest: Scene[] = ["haj", "haj", nearPseves === "stromy" ? "pole" : "stromy"];
+    for (let i = rest.length - 1; i > 0; i -= 1) {
       const j = Math.floor(Math.random() * (i + 1));
-      [scenes[i], scenes[j]] = [scenes[j]!, scenes[i]!];
+      [rest[i], rest[j]] = [rest[j]!, rest[i]!];
     }
+    // Les na jedné z prvních tří cest (po rybníku, do Ledkova, do Drahorazi); cesta do Pševsi
+    // dostane, co zbude, jen ne les.
+    rest.splice(Math.floor(Math.random() * 3), 0, "les");
+    const scenes: Scene[] = [...rest, nearPseves];
     for (let i = 0; i < groups.length; i += 1) {
       const from = i === 0 ? end : ends[i - 1]!;
-      this.plantPause(from, starts[i]!, scenes[i]!);
+      this.plantPause(from, starts[i]!, scenes[i]!, i === groups.length - 1);
       this.plantRow(starts[i]!, groups[i]!.parts);
     }
-    this.plantPause(ends[ends.length - 1]!, limit, scenes[4]!);
+    this.plantPause(ends[ends.length - 1]!, limit, scenes[4]!, true);
   }
 
   private pushHud(force: boolean) {
