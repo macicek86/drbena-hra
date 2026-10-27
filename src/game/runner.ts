@@ -3017,9 +3017,11 @@ export class Runner {
     return pool[index] ?? pool[0]!;
   }
 
-  /** The selected player changed (menu): show their record. */
+  /** The selected player changed (menu): show their record and Chronicle. */
   refreshRecord() {
     this.useRecordOf(currentProfile());
+    // Každý hráč má svou kroniku.
+    this.scrollsKnown = knownIds().length;
     this.pushHud(true);
   }
 

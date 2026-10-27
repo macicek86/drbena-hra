@@ -1,6 +1,5 @@
 import bookData from "./chronicle.json" with { type: "json" };
-
-const KEY = "drbena-kronika-v1";
+import { CHRONICLE_KEY as KEY, loadProfiles } from "./profiles.ts";
 
 const MONTHS = [
   "ledna",
@@ -222,9 +221,15 @@ function todayStamp() {
   return `${now.getFullYear()}-${month}-${day}`;
 }
 
+/** Kronika patří hráči, ne zařízení: každý hráč má svou pod `drbena-kronika-v1:<id>`. */
+function slot(): string {
+  const { current } = loadProfiles();
+  return current ? `${KEY}:${current}` : KEY;
+}
+
 function load(): Saved {
   try {
-    return parseFound(localStorage.getItem(KEY));
+    return parseFound(localStorage.getItem(slot()));
   } catch {
     return {};
   }
@@ -232,7 +237,7 @@ function load(): Saved {
 
 function store(found: Saved) {
   try {
-    localStorage.setItem(KEY, JSON.stringify({ v: 1, found }));
+    localStorage.setItem(slot(), JSON.stringify({ v: 1, found }));
   } catch {
     /* kronika zůstane aspoň do konce běhu */
   }
