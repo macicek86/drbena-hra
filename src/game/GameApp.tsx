@@ -9,6 +9,7 @@ import { chronicleBook } from "@/game/chronicle";
 import { BONUS_CALM, BONUS_PARDON, type BonusAction } from "@/game/minigames";
 import { announceName, fetchStats, needsName, playerLabel, previewStats, randomName, type BoardRow } from "@/game/plays";
 import { PlayersSheet } from "@/game/PlayersSheet";
+import { WhoPlays } from "@/game/WhoPlays";
 import { addProfile, loadProfiles, removeProfile, renameProfile, selectProfile, type Profiles } from "@/game/profiles";
 import { publicUrl } from "@/lib/public-url";
 
@@ -83,6 +84,12 @@ export function GameApp() {
   // Players sharing this device (src/game/profiles.ts); loaded after mount, localStorage is not there on the server.
   const [profiles, setProfiles] = useState<Profiles>({ current: "", list: [] });
   const [playersOpen, setPlayersOpen] = useState(false);
+  const [whoOpen, setWhoOpen] = useState(false);
+  // The start gate runs inside the game loop, so it reads the players through a ref.
+  const profilesRef = useRef(profiles);
+  profilesRef.current = profiles;
+  // Set right before a start that already knows who plays, so the gate does not ask again.
+  const playerChosen = useRef(false);
   const player = profiles.list.find((p) => p.id === profiles.current) ?? null;
   const [chronicle, setChronicle] = useState(false);
   const [boardOpen, setBoardOpen] = useState(false);
@@ -121,7 +128,23 @@ export function GameApp() {
   function startPlaying(chosen: string) {
     updatePlayers(addProfile(chosen));
     setAskName(false);
+    beginChosen();
+  }
+
+  function beginChosen() {
+    playerChosen.current = true;
+    setWhoOpen(false);
     gameRef.current?.begin();
+  }
+
+  function playAs(id: string) {
+    updatePlayers(selectProfile(id));
+    beginChosen();
+  }
+
+  function addAndPlay(nextName: string) {
+    updatePlayers(addProfile(nextName));
+    beginChosen();
   }
   const [chronicleNewFirst, setChronicleNewFirst] = useState(false);
   // Recompute saved progress when the game phase or the number of new entries changes.
@@ -150,11 +173,23 @@ export function GameApp() {
     });
     gameRef.current = game;
     // First start from the menu: invite the player to pick a leaderboard name.
+    // Every start from the main menu asks who plays (a new device asks for a nickname). "Znovu" after a game
+    // and starts from other screens keep the same player.
     game.startGate = () => {
-      if (!leaderboardOn.current || !needsName()) return true;
-      setNameDraft((draft) => draft || randomName());
-      setAskName(true);
-      return false;
+      if (playerChosen.current) {
+        playerChosen.current = false;
+        return true;
+      }
+      if (leaderboardOn.current && needsName()) {
+        setNameDraft((draft) => draft || randomName());
+        setAskName(true);
+        return false;
+      }
+      if (profilesRef.current.list.length > 0) {
+        setWhoOpen(true);
+        return false;
+      }
+      return true;
     };
     game.start();
     const onStats = (event: Event) => {
@@ -234,7 +269,7 @@ export function GameApp() {
       observer.disconnect();
       cancelAnimationFrame(frameId);
     };
-  }, [hud.phase, hud.best, hud.bestGossips, players, board, player?.name]);
+  }, [hud.phase, hud.best, hud.bestGossips, players, board]);
 
   async function share() {
     const text = `Drběna nasbírala ${hud.gossips} drbů a ${hud.score} bodů v Kopidlně. Zvládneš víc?`;
@@ -391,17 +426,6 @@ export function GameApp() {
                 className="menu-pop mt-[0.8em] w-full rounded-[1.75em] border-2 border-ink bg-cream/90 p-[1em] shadow-[0_0.4em_0_#241c16] backdrop-blur-md [animation-delay:160ms]"
                 onClick={(event) => event.stopPropagation()}
               >
-                {player && (
-                  <button
-                    type="button"
-                    className="mb-[0.6em] flex w-full items-center justify-center gap-[0.4em] text-[0.85em] font-extrabold text-ink-soft"
-                    onClick={() => setPlayersOpen(true)}
-                  >
-                    <span>Hraje:</span>
-                    <span className="max-w-[12em] truncate text-ink">{player.name}</span>
-                    <span className="rounded-full border-2 border-ink/25 px-[0.6em] text-[0.9em] text-ink">změnit</span>
-                  </button>
-                )}
                 <button
                   type="button"
                   className="group relative flex h-[4em] w-full items-center justify-center gap-[0.5em] rounded-[1.25em] border-2 border-ink bg-bow font-extrabold text-cream shadow-[0_0.3em_0_#241c16] transition-[transform,box-shadow] hover:bg-bow-deep active:translate-y-[0.3em] active:shadow-none"
@@ -545,6 +569,19 @@ export function GameApp() {
             {players != null && <p className="mt-3 text-center text-xs font-extrabold text-ink-soft">{playerLabel(players)}</p>}
           </div>
         </div>
+      )}
+
+      {hud.phase === "menu" && whoOpen && (
+        <WhoPlays
+          profiles={profiles}
+          onPlay={playAs}
+          onAddAndPlay={addAndPlay}
+          onManage={() => {
+            setWhoOpen(false);
+            setPlayersOpen(true);
+          }}
+          onClose={() => setWhoOpen(false)}
+        />
       )}
 
       {hud.phase === "menu" && playersOpen && (
@@ -876,6 +913,7 @@ export function GameApp() {
                 <Share2 className="size-4" /> {copied ? "Hotovo" : "Sdílet"}
               </button>
             </div>
+
             <a
               href="https://www.kopidlenskadrbna.org"
               target="_blank"
