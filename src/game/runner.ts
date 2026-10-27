@@ -67,6 +67,7 @@ type Kind =
   | "car"
   | "branch"
   | "cyclist"
+  | "laundry"
   | "gossip"
   | "heart"
   | "scroll"
@@ -128,7 +129,7 @@ type Art = Record<string, HTMLImageElement | HTMLImageElement[] | null>;
 
 const SAVE_KEY = "drbena-kopidlno-v1";
 
-const HAZARDS = new Set<Kind>(["fence", "pot", "dog", "gardener", "car", "branch", "cyclist"]);
+const HAZARDS = new Set<Kind>(["fence", "pot", "dog", "gardener", "car", "branch", "cyclist", "laundry"]);
 const PICKUPS = new Set<Kind>(["gossip", "heart", "scroll", "firefly"]);
 const LANDMARKS = new Set<Kind>(["houses", "castle", "greenhouse", "pond", "mlynec-cross", "mlynec-house", "mlynec-bell", "mlynec-school", "mlynec-pond", "ledkov-a", "ledkov-b", "drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2", "linden", "pseves-heart", "obora", "stag"]);
 // Cedule na začátku obcí: jen kulisa, nikdy překážka (src/game/runner.ts, approachAfter).
@@ -189,6 +190,7 @@ const TALE_TITLES: Partial<Record<Kind, string>> = {
   car: "Kravské přežvykování",
   branch: "Rohy ve větvích",
   cyclist: "Cyklista s novinkami",
+  laundry: "Prádlo na šňůře",
 };
 
 const LINES: Record<string, string[]> = {
@@ -227,6 +229,11 @@ const LINES: Record<string, string[]> = {
     "Cyklista zazvonil a Drběna myslela, že nese novinku. Novinka zněla: uhni!",
     "Drběna a cyklista se srazili čely. On jel pro rohlíky, ona pro drby. Domů si oba odnesli bouli!",
   ],
+  laundry: [
+    "Drběna chtěla vědět, co se suší u sousedů. Teď to ví přesně: má to na rozích!",
+    "Drběna proběhla pod šňůrou s hlavou nahoře. Ves si teď povídá o koze ve svatebním závoji!",
+    "Prostěradlo vlálo jako vlajka s novinkou. Drběna k němu běžela, a novinka byla jen čerstvě vypraná!",
+  ],
 };
 
 const SPEC: Record<Kind, { h: number; hitW: number; hitH: number; lift: number }> = {
@@ -238,6 +245,8 @@ const SPEC: Record<Kind, { h: number; hitW: number; hitH: number; lift: number }
   branch: { h: 1.02, hitW: 0.84, hitH: 0.52, lift: 0 },
   // Jezdec na kole: naráží se jen do středu (rám a nohy), kola a hlava jsou mimo, ať je přeskok přívětivý.
   cyclist: { h: 1.12, hitW: 0.42, hitH: 0.66, lift: 0 },
+  // Prádlo na šňůře ve vsi: prostěradlo visí tak, že se pod ním dá jen podlézt (box v entBox).
+  laundry: { h: 1.27, hitW: 0, hitH: 0, lift: 0 },
   gossip: { h: 0.42, hitW: 0.62, hitH: 0.62, lift: 0.14 },
   heart: { h: 0.32, hitW: 0.7, hitH: 0.7, lift: 0.72 },
   scroll: { h: 0.5, hitW: 0.55, hitH: 0.62, lift: 0.48 },
@@ -698,6 +707,7 @@ export class Runner {
       "info",
       "dog",
       "cyclist",
+      "laundry",
       ...SIGNS,
       "gossip",
       "scroll",
@@ -1637,6 +1647,8 @@ export class Runner {
                       ? 402 / 440
                       : kind === "branch"
                         ? 805 / 416
+                        : kind === "laundry"
+                        ? 900 / 501
                         : kind === "bench"
                         ? 1344 / 679
                         : kind === "lamp"
@@ -2032,6 +2044,11 @@ export class Runner {
       const W = H * aspect;
       const gap = 0.4 * this.u;
       return { l: cx - W * 0.4, r: cx + W * 0.4, t: feet - H * 0.98, b: feet - gap };
+    }
+    if (ent.kind === "laundry") {
+      // Jen prostěradlo a utěrka mezi kůly, kůly se nepočítají. Spodní okraj je 0,33 výšky nad zemí.
+      const W = h * aspect;
+      return { l: cx - W * 0.35, r: cx + W * 0.39, t: feet - h * 0.86, b: feet - h * 0.34 };
     }
     return box(cx, feet, w * spec.hitW, h * spec.hitH);
   }
@@ -2637,6 +2654,12 @@ export class Runner {
       const w = this.visualHalf(part.kind) * 2;
       // Rybník Zrcadlo trochu zapustit do trávy: dole má tenký průhledný proužek.
       this.ents.push({ kind: part.kind, x: x + w / 2, lift: part.kind === "mlynec-pond" ? -0.035 : 0, anim: 0, alive: true });
+      if (part.kind === "laundry") {
+        // Pod prádlem leží drby, kdo se přikrčí, posbírá je.
+        for (let i = 0; i < 3; i += 1) {
+          this.ents.push({ kind: "gossip", x: x + w / 2 + (i - 1) * this.u * 0.36, lift: 0.08, anim: i, alive: true });
+        }
+      }
       x += w + part.gap;
     }
   }
@@ -2694,6 +2717,18 @@ export class Runner {
         { kind: "pseves-heart", gap: 0 },
       ] },
     ];
+    // Prádlo na šňůře: překážka na podlézání jen ve vsích, mezi stavbami. Každá ves ho má
+    // s poloviční šancí, v kole aspoň jedna. Místo ve vsi je za `after`-tou stavbou.
+    const laundryAfter = [1, 0, 1, 0];
+    const withLaundry = groups.map(() => Math.random() < 0.5);
+    if (!withLaundry.some(Boolean)) withLaundry[Math.floor(Math.random() * groups.length)] = true;
+    groups.forEach((group, i) => {
+      if (!withLaundry[i]) return;
+      const at = laundryAfter[i]!;
+      const before = group.parts[at]!;
+      group.parts.splice(at + 1, 0, { kind: "laundry", gap: Math.max(before.gap, u * 0.3) });
+      before.gap = Math.max(before.gap, u * 0.3);
+    });
     const widths = groups.map((group) => this.rowWidth(group.parts));
     const buildings = widths.reduce((sum, w) => sum + w, 0);
     const slack = room - buildings;
