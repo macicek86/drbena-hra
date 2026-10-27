@@ -359,7 +359,7 @@ function hash(n: number): number {
   return x - Math.floor(x);
 }
 
-const ART_REV = "38";
+const ART_REV = "39";
 
 async function loadImage(src: string): Promise<HTMLImageElement | null> {
   try {
@@ -1746,19 +1746,48 @@ export class Runner {
     return this.visualHalf("pond");
   }
 
+  /**
+   * Konce kopidlenského rybníka: obrázek se na krajích ztrácí do průhledna (pond.webp) a přes oba konce
+   * stojí skupinka stromů a keřů, ať rybník plynule přechází do krajiny a nikde nevisí ve vzduchu.
+   */
   private drawPondEndTrees(ctx: CanvasRenderingContext2D) {
-    const img = this.art.tree;
-    if (!(img instanceof HTMLImageElement) || !img.height) return;
-    const h = SPEC.tree.h * this.u;
-    const tw = h * (img.width / img.height);
-    const baked = this.baked(img, h * this.scale);
-    const feet = this.groundY;
+    const feet = this.groundY + 2;
+    // [druh, výška v u, posun od kraje rybníka ven (+) či dovnitř (-) v u, zrcadlit, zadní řada]
+    const group: [string, number, number, boolean, boolean][] = [
+      ["forest-oak", 1.55, 0.35, false, true],
+      ["forest-birch", 1.6, -0.55, true, true],
+      ["forest-willow", 1.75, -0.05, false, false],
+      ["forest-linden", 1.5, 0.95, true, false],
+      ["bush", 0.5, -0.75, false, false],
+      ["bush", 0.48, 0.45, true, false],
+    ];
     for (const ent of this.ents) {
       if (!ent.alive || ent.kind !== "pond") continue;
-      const edge = ent.x - this.camera + this.pondHalf();
-      if (edge < -this.cullMargin || edge > this.viewW + this.cullMargin) continue;
-      const x = edge + tw * 0.08;
-      ctx.drawImage(baked, this.snap(x - tw / 2), this.snap(feet - h), tw, h);
+      const half = this.pondHalf();
+      const center = ent.x - this.camera;
+      if (center + half < -this.cullMargin || center - half > this.viewW + this.cullMargin) continue;
+      for (const side of [-1, 1] as const) {
+        const edge = center + side * half;
+        for (const [kind, size, out, mirror, far] of group) {
+          const img = this.art[kind];
+          if (!(img instanceof HTMLImageElement) || !img.height) continue;
+          const h = size * this.u;
+          const w = h * (img.width / img.height);
+          const x = edge + side * out * this.u;
+          const baked = far ? this.bakedFar(img, h * this.scale) : this.baked(img, h * this.scale);
+          // Na pravém konci zrcadlově, ať skupinka není dvakrát stejná.
+          const flip = (side === 1) !== mirror;
+          if (flip) {
+            ctx.save();
+            ctx.translate(this.snap(x), 0);
+            ctx.scale(-1, 1);
+            ctx.drawImage(baked, -w / 2, this.snap(feet - h), w, h);
+            ctx.restore();
+          } else {
+            ctx.drawImage(baked, this.snap(x - w / 2), this.snap(feet - h), w, h);
+          }
+        }
+      }
     }
   }
 
