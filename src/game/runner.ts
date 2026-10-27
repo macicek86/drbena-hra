@@ -140,6 +140,8 @@ const LEDKOV = new Set<Kind>(["ledkov-a", "ledkov-b"]);
 const DRAHORAZ = new Set<Kind>(["drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2"]);
 const PSEVES = new Set<Kind>(["linden", "pseves-heart"]);
 const VILLAGES = new Set<Kind>([...MLYNEC, ...LEDKOV, ...DRAHORAZ, ...PSEVES]);
+/** Velké překážky nesmí zakrýt budovy ani cedule (coversScenery), jinak se vymění za malou. */
+const BIG_HAZARDS = new Set<Kind>(["branch", "car", "cyclist", "gardener", "laundry"]);
 const PROPS = new Set<Kind>(["bush", "lamp", "tree", "bench", "pigeon", "bin"]);
 const DECOR = new Set<Kind>(["bush", "lamp", "tree", "bench", "pigeon", "bin", "column", "church", "school", "info", ...SIGNS]);
 
@@ -1750,8 +1752,22 @@ export class Runner {
     return null;
   }
 
-  private onPlaceFace(x: number, kind: Kind): boolean {
-    const reach = this.visualHalf(kind);
+  /**
+   * Zakryla by překážka na tomto místě budovu nebo ceduli? Kopidlenské stavby podle rozvržení
+   * (onPlaceFace v celé šířce), stavby vsí a cedule podle toho, co už ve světě stojí.
+   */
+  private coversScenery(x: number, kind: Kind): boolean {
+    // Cyklista jede koze naproti, cestou ujede asi desetinu obrazovky doleva.
+    const drift = kind === "cyclist" ? this.viewW * 0.1 : 0;
+    const at = x - drift;
+    const pad = this.u * 0.12 + drift;
+    const half = this.visualHalf(kind) + pad;
+    if (this.onPlaceFace(at, kind, 1, pad)) return true;
+    return this.ents.some((ent) => ent.alive && PLACES.has(ent.kind) && Math.abs(ent.x - at) < this.visualHalf(ent.kind) + half);
+  }
+
+  private onPlaceFace(x: number, kind: Kind, cover = 0.78, pad = 0): boolean {
+    const reach = this.visualHalf(kind) + pad;
     const u = this.u;
     const cycle = CYCLE_LEN;
     const n0 = Math.floor(x / cycle) - 1;
@@ -1768,7 +1784,7 @@ export class Runner {
         [this.pondX(stageStart(n * 4 + 3)), "pond"],
       ];
       for (const [center, place] of spots) {
-        const inner = this.visualHalf(place) * 0.78;
+        const inner = this.visualHalf(place) * cover;
         if (x + reach > center - inner && x - reach < center + inner) return true;
       }
     }
@@ -1824,7 +1840,12 @@ export class Runner {
       this.hazardCursor += speed * 0.8;
       return;
     }
-    const kind = this.rollHazard(x);
+    let kind = this.rollHazard(x);
+    if (BIG_HAZARDS.has(kind) && this.coversScenery(x, kind)) {
+      // Před budovou či cedulí jen malá překážka (plot, jablka, husa), ať je pozadí vidět.
+      const small = (["fence", "pot", "dog"] as Kind[]).filter((one) => one !== this.lastHazard);
+      kind = small[Math.floor(Math.random() * small.length)]!;
+    }
     if (kind === "cyclist") {
       // Cyklista jede koze naproti, až když je vidět, a proto startuje o kus dál: z mezery
       // před ním si cestou ujede asi desetinu obrazovky, takže předchozí překážku nedožene.
@@ -1850,7 +1871,7 @@ export class Runner {
     const second = Math.random() < pairChance(loop, zone) ? (kind === "fence" ? "branch" : kind === "pot" ? "fence" : null) : null;
     if (second) {
       const at = x + bulk + speed * pairGap(loop);
-      if (this.pondGapEnd(at) == null) {
+      if (this.pondGapEnd(at) == null && !(BIG_HAZARDS.has(second) && this.coversScenery(at, second))) {
         this.ents.push({ kind: second, x: at, lift: 0, anim: Math.random() * 6, alive: true });
         if (second === "branch") {
           for (let i = 0; i < 3; i += 1) {
@@ -2773,6 +2794,8 @@ export class Runner {
       if (!ent.alive || ent.x <= end || ent.x >= limit) continue;
       if (PROPS.has(ent.kind)) ent.alive = false;
       else if (HAZARDS.has(ent.kind) && starts.some((at, i) => ent.x >= at - hazardPad && ent.x <= ends[i]! + hazardPad)) ent.alive = false;
+      // Cedule stojí před vsí: velká překážka, která už tu byla, by ji zakryla.
+      else if (BIG_HAZARDS.has(ent.kind) && this.coversScenery(ent.x, ent.kind)) ent.alive = false;
     }
     for (let i = 0; i < groups.length; i += 1) {
       const from = i === 0 ? end : ends[i - 1]!;
