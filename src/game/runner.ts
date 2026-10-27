@@ -104,6 +104,7 @@ type Kind =
   | "sign-mlynec"
   | "sign-ledkov"
   | "sign-drahoraz"
+  | "sign-pseves"
   | "sign-kopidlno";
 
 type Ent = { kind: Kind; x: number; lift: number; anim: number; alive: boolean; fly?: number; sway?: number; face?: number; wait?: number };
@@ -131,7 +132,7 @@ const HAZARDS = new Set<Kind>(["fence", "pot", "dog", "gardener", "car", "branch
 const PICKUPS = new Set<Kind>(["gossip", "heart", "scroll", "firefly"]);
 const LANDMARKS = new Set<Kind>(["houses", "castle", "greenhouse", "pond", "mlynec-cross", "mlynec-house", "mlynec-bell", "mlynec-school", "mlynec-pond", "ledkov-a", "ledkov-b", "drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2", "linden", "pseves-heart", "obora", "stag"]);
 // Cedule na začátku obcí: jen kulisa, nikdy překážka (src/game/runner.ts, approachAfter).
-const SIGNS = ["sign-mlynec", "sign-ledkov", "sign-drahoraz", "sign-kopidlno"] as const;
+const SIGNS = ["sign-mlynec", "sign-ledkov", "sign-drahoraz", "sign-pseves", "sign-kopidlno"] as const;
 const PLACES = new Set<Kind>([...SIGNS, "houses", "castle", "greenhouse", "pond", "mlynec-cross", "mlynec-house", "mlynec-bell", "mlynec-school", "mlynec-pond", "ledkov-a", "ledkov-b", "drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2", "linden", "pseves-heart", "column", "church", "school", "info"]);
 const MLYNEC = new Set<Kind>(["mlynec-cross", "mlynec-house", "mlynec-bell", "mlynec-school", "mlynec-pond"]);
 const LEDKOV = new Set<Kind>(["ledkov-a", "ledkov-b"]);
@@ -276,6 +277,7 @@ const SPEC: Record<Kind, { h: number; hitW: number; hitH: number; lift: number }
   "sign-mlynec": { h: 1.05, hitW: 0, hitH: 0, lift: 0 },
   "sign-ledkov": { h: 1.05, hitW: 0, hitH: 0, lift: 0 },
   "sign-drahoraz": { h: 1.05, hitW: 0, hitH: 0, lift: 0 },
+  "sign-pseves": { h: 1.05, hitW: 0, hitH: 0, lift: 0 },
   "sign-kopidlno": { h: 1.05, hitW: 0, hitH: 0, lift: 0 },
 };
 
@@ -284,7 +286,7 @@ function hash(n: number): number {
   return x - Math.floor(x);
 }
 
-const ART_REV = "33";
+const ART_REV = "34";
 
 async function loadImage(src: string): Promise<HTMLImageElement | null> {
   try {
@@ -2718,10 +2720,10 @@ export class Runner {
       this.villageZones.push({ from: starts[i]!, to: ends[i]!, name: groups[i]!.name, id: groups[i]!.id });
     }
     this.approaches.push({ from: ends[ends.length - 1]!, to: limit, village: houses, label: "Cesta do Kopidlna", place: "namesti" });
-    // Cedule obcí stojí kousek před první stavbou vsi. Pševes zatím ceduli nemá.
+    // Cedule obcí stojí kousek před první stavbou vsi.
     // Kopidlno má ceduli jen při návratu na konci „Cesty do Kopidlna“ (na úplném začátku hry ne).
     // Až přibude budova na začátek Kopidlna, postaví se mezi ceduli a infocentrum (posunout `limit`).
-    const signs: (Kind | null)[] = ["sign-mlynec", "sign-ledkov", "sign-drahoraz", null];
+    const signs: (Kind | null)[] = ["sign-mlynec", "sign-ledkov", "sign-drahoraz", "sign-pseves"];
     const signGap = u * 0.35;
     signs.forEach((kind, i) => {
       if (!kind) return;
