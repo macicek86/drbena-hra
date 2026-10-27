@@ -1297,7 +1297,8 @@ export class Runner {
   /** Cyklista jede koze naproti, jakmile vjede na obrazovku (a jen během běhu). */
   private rideCyclists(dt: number) {
     if (this.phase !== "play") return;
-    const pace = Math.max(this.speed, this.speed0) * 0.3;
+    // Pomalu (šestina rychlosti kozy): hráč má na reakci skoro stejně času jako u stojící překážky.
+    const pace = Math.max(this.speed, this.speed0) * 0.16;
     for (const ent of this.ents) {
       if (!ent.alive || ent.kind !== "cyclist") continue;
       if (ent.x - this.camera < this.viewW * 0.98) ent.x -= pace * dt;
@@ -1725,8 +1726,8 @@ export class Runner {
     const kind = this.rollHazard(x);
     if (kind === "cyclist") {
       // Cyklista jede koze naproti, až když je vidět, a proto startuje o kus dál: z mezery
-      // před ním si cestou ujede asi čtvrtinu obrazovky a hráč na něj má pořád dost času.
-      const lead = this.viewW * 0.26;
+      // před ním si cestou ujede asi desetinu obrazovky, takže předchozí překážku nedožene.
+      const lead = this.viewW * 0.16;
       this.ents.push({ kind, x: x + lead, lift: 0, anim: Math.random() * 6, alive: true });
       this.hazardCursor += lead + u * 1.1 + speed * 1.3;
       this.lastHazard = kind;
