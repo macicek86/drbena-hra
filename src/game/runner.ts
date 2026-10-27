@@ -181,6 +181,8 @@ const VILLAGES = new Set<Kind>([...MLYNEC, ...LEDKOV, ...DRAHORAZ, ...PSEVES]);
 const BIG_HAZARDS = new Set<Kind>(["branch", "laundry"]);
 /** Stromy lesa mezi vesnicemi (dub, bříza, borovice, smrk, lípa, javor, jeřáb, vrba). */
 const FOREST: readonly Kind[] = ["forest-oak", "forest-birch", "forest-pine", "forest-spruce", "forest-linden", "forest-maple", "forest-rowan", "forest-willow"];
+/** Krajina na cestě mezi vesnicemi: les, hájky mezi loukami, stromy podél cesty, nebo pole. */
+type Scene = "les" | "haj" | "stromy" | "pole";
 const PROPS = new Set<Kind>([...FOREST, "bush", "lamp", "tree", "bench", "pigeon", "bin"]);
 const DECOR = new Set<Kind>([...FOREST, "bush", "lamp", "tree", "bench", "pigeon", "bin", "column", "church", "school", "info", ...SIGNS]);
 
@@ -2780,7 +2782,7 @@ export class Runner {
     }
   }
 
-  private plantPause(from: number, to: number, bushes: boolean) {
+  private plantPause(from: number, to: number, scene: Scene) {
     // Kraje mezer necháváme volné, aby ani široká koruna stromu nezakryla
     // sousední vesnici. Krucifix a srdce musí být vidět celé.
     const setback = this.visualHalf("tree") + this.u * 0.55;
@@ -2792,8 +2794,46 @@ export class Runner {
       this.ents.push({ kind: "bush", x: (left + right) / 2, lift: 0, anim: 0, alive: true });
       return;
     }
-    void bushes;
-    this.plantForest(from + this.u * 0.6, to - this.u * 1.7);
+    // Celé koruny mezi `a` a `b`: les nezakryje ceduli vsi (stojí kousek před první stavbou).
+    const a = from + this.u * 0.6;
+    const b = to - this.u * 1.7;
+    const u = this.u;
+    if (scene === "les") {
+      this.plantForest(a, b);
+      return;
+    }
+    if (scene === "haj") {
+      // Dva až tři hájky mezi loukami.
+      const count = b - a > u * 26 ? 3 : 2;
+      const slot = (b - a) / count;
+      for (let i = 0; i < count; i += 1) {
+        const width = Math.min(slot * 0.7, u * (3.5 + Math.random() * 2.5));
+        const start = a + slot * i + Math.random() * (slot - width);
+        this.plantForest(start, start + width);
+        if (i < count - 1) this.plantBush(a + slot * (i + 1) - u * 0.2);
+      }
+      return;
+    }
+    // Stromy podél cesty (po jednom, s keři mezi nimi), nebo pole jen s pár stromy a keři.
+    const gap = scene === "stromy" ? [2.4, 3.6] : [5.5, 8];
+    let x = a + u * (0.4 + Math.random());
+    let last: Kind | null = null;
+    for (let guard = 0; guard < 60 && x < b; guard += 1) {
+      let kind = FOREST[Math.floor(Math.random() * FOREST.length)]!;
+      if (kind === last) kind = FOREST[(FOREST.indexOf(kind) + 1) % FOREST.length]!;
+      const size = Math.round((0.85 + Math.random() * 0.2) * 20) / 20;
+      const half = this.visualHalf(kind) * size;
+      if (x + half * 2 > b) break;
+      this.ents.push({ kind, x: x + half, lift: 0, anim: 0, alive: true, size, face: Math.random() < 0.5 ? -1 : 1 });
+      last = kind;
+      const step = u * (gap[0]! + Math.random() * (gap[1]! - gap[0]!));
+      if (Math.random() < 0.6 && x + half * 2 + step * 0.5 < b) this.plantBush(x + half * 2 + step * 0.5);
+      x += half * 2 + step;
+    }
+  }
+
+  private plantBush(x: number) {
+    this.ents.push({ kind: "bush", x, lift: 0, anim: 0, alive: true, face: Math.random() < 0.5 ? -1 : 1 });
   }
 
   /**
@@ -2916,12 +2956,19 @@ export class Runner {
       // Cedule stojí před vsí: větev, která už tu byla, by ji zakryla.
       else if (BIG_HAZARDS.has(ent.kind) && this.coversScenery(ent.x, ent.kind)) ent.alive = false;
     }
+    // Krajina na cestách: kolem Kopidlna hlavně pole, stromy podél cest a hájky, souvislý les
+    // jen na jedné cestě za kolo. Pořadí se každé kolo zamíchá.
+    const scenes: Scene[] = ["les", "haj", "haj", "stromy", "pole"];
+    for (let i = scenes.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [scenes[i], scenes[j]] = [scenes[j]!, scenes[i]!];
+    }
     for (let i = 0; i < groups.length; i += 1) {
       const from = i === 0 ? end : ends[i - 1]!;
-      this.plantPause(from, starts[i]!, i === 1);
+      this.plantPause(from, starts[i]!, scenes[i]!);
       this.plantRow(starts[i]!, groups[i]!.parts);
     }
-    this.plantPause(ends[ends.length - 1]!, limit, false);
+    this.plantPause(ends[ends.length - 1]!, limit, scenes[4]!);
   }
 
   private pushHud(force: boolean) {
