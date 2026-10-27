@@ -299,7 +299,9 @@ export function GameApp() {
   const playing = hud.phase === "play" || hud.phase === "pause" || hud.phase === "over" || hud.phase === "fish-intro" || hud.phase === "bonus" || hud.phase === "dialogue";
 
   return (
-    <main className="fixed inset-0 touch-none overflow-hidden bg-day text-ink select-none">
+    // Chrome na Androidu kreslí hru až k dolnímu okraji displeje (viewport-fit=cover) a přes spodek dává
+    // pruh navigace gesty. Hra proto končí nad ním (safe-area-inset-bottom), ať pruh nic nezakryje.
+    <main className="fixed inset-x-0 top-0 bottom-[env(safe-area-inset-bottom,0px)] touch-none overflow-hidden bg-day text-ink select-none">
       <canvas key="drbena-surface" ref={canvasRef} className="absolute inset-0 h-full w-full touch-none" aria-label="Hra Drběna sbírá drby" />
 
       {(hud.phase === "loading" || hud.phase === "splash") && (
