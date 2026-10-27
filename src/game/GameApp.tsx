@@ -299,9 +299,9 @@ export function GameApp() {
   const playing = hud.phase === "play" || hud.phase === "pause" || hud.phase === "over" || hud.phase === "fish-intro" || hud.phase === "bonus" || hud.phase === "dialogue";
 
   return (
-    // Chrome na Androidu kreslí hru až k dolnímu okraji displeje (viewport-fit=cover) a přes spodek dává
-    // pruh navigace gesty. Hra proto končí nad ním (safe-area-inset-bottom), ať pruh nic nezakryje.
-    <main className="fixed inset-x-0 top-0 bottom-[env(safe-area-inset-bottom,0px)] touch-none overflow-hidden bg-day text-ink select-none">
+    // Chrome na Androidu kreslí hru až k dolnímu okraji displeje (viewport-fit=cover), pod průhledný pruh
+    // navigace gesty. Scéna tam pokračuje, jen tlačítka a okna drží odstup safe-area-inset-bottom.
+    <main className="fixed inset-0 touch-none overflow-hidden bg-day text-ink select-none">
       <canvas key="drbena-surface" ref={canvasRef} className="absolute inset-0 h-full w-full touch-none" aria-label="Hra Drběna sbírá drby" />
 
       {(hud.phase === "loading" || hud.phase === "splash") && (
@@ -514,7 +514,7 @@ export function GameApp() {
 
       {hud.phase === "menu" && boardOpen && (
         <div
-          className="absolute inset-0 z-30 flex items-end justify-center bg-ink/55 p-3 backdrop-blur-sm sm:items-center"
+          className="absolute inset-0 z-30 flex items-end justify-center bg-ink/55 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] backdrop-blur-sm sm:items-center"
           onClick={() => setBoardOpen(false)}
         >
           <div
@@ -616,7 +616,7 @@ export function GameApp() {
 
       {hud.phase === "menu" && askName && (
         <div
-          className="absolute inset-0 z-30 flex items-end justify-center bg-ink/55 p-3 backdrop-blur-sm sm:items-center"
+          className="absolute inset-0 z-30 flex items-end justify-center bg-ink/55 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] backdrop-blur-sm sm:items-center"
           onClick={() => setAskName(false)}
         >
           {/* Deliberately not a <form>: Chrome's password manager treats a form with one text field and a button
@@ -978,7 +978,7 @@ export function GameApp() {
       )}
 
       {hud.phase === "play" && !keyboard && (
-        <div className="absolute inset-x-0 bottom-3 flex items-end justify-between gap-3 px-3 sm:bottom-4 sm:justify-end">
+        <div className="absolute inset-x-0 bottom-[calc(0.75rem+env(safe-area-inset-bottom,0px))] flex items-end justify-between gap-3 px-3 sm:bottom-[calc(1rem+env(safe-area-inset-bottom,0px))] sm:justify-end">
           <button
             type="button"
             className="flex h-20 min-w-36 items-center justify-center rounded-full border-2 border-ink bg-cream px-5 text-lg font-extrabold"

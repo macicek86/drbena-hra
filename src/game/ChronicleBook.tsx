@@ -51,7 +51,7 @@ export function ChronicleBook({ onClose, startAtNewest = false }: { onClose: () 
   const atEnd = current ? index >= reading.length - 1 : chapterIndex >= shelves.length - 1;
 
   return (
-    <div className="absolute inset-0 z-50 flex bg-ink/55 p-[0.4em] sm:p-[0.8em]" onClick={onClose}>
+    <div className="absolute inset-0 z-50 flex bg-ink/55 p-[0.4em] pb-[calc(0.4em+env(safe-area-inset-bottom,0px))] sm:p-[0.8em] sm:pb-[calc(0.8em+env(safe-area-inset-bottom,0px))]" onClick={onClose}>
       <section
         className="chronicle-fit story-leaf mx-auto flex h-full w-full max-w-[46em] flex-col overflow-hidden rounded-[1.2em] border-4 border-ink text-left shadow-lg ring-4 ring-gold"
         onClick={(event) => event.stopPropagation()}

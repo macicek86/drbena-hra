@@ -79,7 +79,7 @@ export function FitOverlay({
     <div
       ref={overlayRef}
       data-fit-overlay={testId}
-      className={`absolute inset-0 flex items-center justify-center overflow-hidden p-3 sm:p-4 ${className}`}
+      className={`absolute inset-0 flex items-center justify-center overflow-hidden p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] sm:p-4 sm:pb-[calc(1rem+env(safe-area-inset-bottom,0px))] ${className}`}
     >
       <div ref={contentRef} data-fit-content className="flex w-full items-center justify-center">
         {children}
