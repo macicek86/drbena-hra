@@ -97,7 +97,11 @@ type Kind =
   | "column"
   | "church"
   | "school"
-  | "info";
+  | "info"
+  | "sign-mlynec"
+  | "sign-ledkov"
+  | "sign-drahoraz"
+  | "sign-kopidlno";
 
 type Ent = { kind: Kind; x: number; lift: number; anim: number; alive: boolean; fly?: number; sway?: number; face?: number; wait?: number };
 
@@ -123,14 +127,16 @@ const SAVE_KEY = "drbena-kopidlno-v1";
 const HAZARDS = new Set<Kind>(["fence", "pot", "dog", "gardener", "car", "branch", "cyclist"]);
 const PICKUPS = new Set<Kind>(["gossip", "heart", "scroll", "firefly"]);
 const LANDMARKS = new Set<Kind>(["houses", "castle", "greenhouse", "pond", "mlynec-cross", "mlynec-house", "mlynec-school", "ledkov-a", "ledkov-b", "drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2", "linden", "pseves-heart", "obora", "stag"]);
-const PLACES = new Set<Kind>(["houses", "castle", "greenhouse", "pond", "mlynec-cross", "mlynec-house", "mlynec-school", "ledkov-a", "ledkov-b", "drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2", "linden", "pseves-heart", "column", "church", "school", "info"]);
+// Cedule na začátku obcí: jen kulisa, nikdy překážka (src/game/runner.ts, approachAfter).
+const SIGNS = ["sign-mlynec", "sign-ledkov", "sign-drahoraz", "sign-kopidlno"] as const;
+const PLACES = new Set<Kind>([...SIGNS, "houses", "castle", "greenhouse", "pond", "mlynec-cross", "mlynec-house", "mlynec-school", "ledkov-a", "ledkov-b", "drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2", "linden", "pseves-heart", "column", "church", "school", "info"]);
 const MLYNEC = new Set<Kind>(["mlynec-cross", "mlynec-house", "mlynec-school"]);
 const LEDKOV = new Set<Kind>(["ledkov-a", "ledkov-b"]);
 const DRAHORAZ = new Set<Kind>(["drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2"]);
 const PSEVES = new Set<Kind>(["linden", "pseves-heart"]);
 const VILLAGES = new Set<Kind>([...MLYNEC, ...LEDKOV, ...DRAHORAZ, ...PSEVES]);
 const PROPS = new Set<Kind>(["bush", "lamp", "tree", "bench", "pigeon", "bin"]);
-const DECOR = new Set<Kind>(["bush", "lamp", "tree", "bench", "pigeon", "bin", "column", "church", "school", "info"]);
+const DECOR = new Set<Kind>(["bush", "lamp", "tree", "bench", "pigeon", "bin", "column", "church", "school", "info", ...SIGNS]);
 
 // Nejdřív se ryba celá vynoří; až pak otevřít dialog či nabídku minihry.
 const FISH_RISE_SECONDS = 0.85;
@@ -260,6 +266,10 @@ const SPEC: Record<Kind, { h: number; hitW: number; hitH: number; lift: number }
   church: { h: 2.2, hitW: 0, hitH: 0, lift: 0 },
   school: { h: 1.45, hitW: 0, hitH: 0, lift: 0 },
   info: { h: 0.78, hitW: 0, hitH: 0, lift: 0 },
+  "sign-mlynec": { h: 1.05, hitW: 0, hitH: 0, lift: 0 },
+  "sign-ledkov": { h: 1.05, hitW: 0, hitH: 0, lift: 0 },
+  "sign-drahoraz": { h: 1.05, hitW: 0, hitH: 0, lift: 0 },
+  "sign-kopidlno": { h: 1.05, hitW: 0, hitH: 0, lift: 0 },
 };
 
 function hash(n: number): number {
@@ -267,7 +277,7 @@ function hash(n: number): number {
   return x - Math.floor(x);
 }
 
-const ART_REV = "32";
+const ART_REV = "33";
 
 async function loadImage(src: string): Promise<HTMLImageElement | null> {
   try {
@@ -668,6 +678,7 @@ export class Runner {
       "info",
       "dog",
       "cyclist",
+      ...SIGNS,
       "gossip",
       "scroll",
       "fish",
@@ -1539,7 +1550,9 @@ export class Runner {
     const h = SPEC[kind].h * this.u;
     const img = this.art[kind];
     const fallback =
-      kind === "pond"
+      (SIGNS as readonly string[]).includes(kind)
+        ? 560 / 690
+        : kind === "pond"
         ? 1669 / 477
         : kind === "mlynec-cross"
           ? 599 / 1647
@@ -2617,6 +2630,16 @@ export class Runner {
       this.villageZones.push({ from: starts[i]!, to: ends[i]!, name: groups[i]!.name, id: groups[i]!.id });
     }
     this.approaches.push({ from: ends[ends.length - 1]!, to: limit, village: houses, label: "Cesta do Kopidlna", place: "namesti" });
+    // Cedule obcí stojí kousek před první stavbou vsi. Pševes zatím ceduli nemá.
+    // Kopidlno má ceduli jen při návratu na konci „Cesty do Kopidlna“ (na úplném začátku hry ne).
+    // Až přibude budova na začátek Kopidlna, postaví se mezi ceduli a infocentrum (posunout `limit`).
+    const signs: (Kind | null)[] = ["sign-mlynec", "sign-ledkov", "sign-drahoraz", null];
+    const signGap = u * 0.35;
+    signs.forEach((kind, i) => {
+      if (!kind) return;
+      this.ents.push({ kind, x: starts[i]! - signGap - this.visualHalf(kind), lift: 0, anim: 0, alive: true });
+    });
+    this.ents.push({ kind: "sign-kopidlno", x: limit - signGap - this.visualHalf("sign-kopidlno"), lift: 0, anim: 0, alive: true });
 
     // Odstranit předem náhodně vygenerované dekorace; vrátit jen venkovskou zeleň
     // v mezerách. V obcích se nesmí objevit ani překážka překrývající budovu.
