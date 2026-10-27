@@ -65,6 +65,7 @@ type Kind =
   | "gardener"
   | "car"
   | "branch"
+  | "cyclist"
   | "gossip"
   | "heart"
   | "scroll"
@@ -119,7 +120,7 @@ type Art = Record<string, HTMLImageElement | HTMLImageElement[] | null>;
 
 const SAVE_KEY = "drbena-kopidlno-v1";
 
-const HAZARDS = new Set<Kind>(["fence", "pot", "dog", "gardener", "car", "branch"]);
+const HAZARDS = new Set<Kind>(["fence", "pot", "dog", "gardener", "car", "branch", "cyclist"]);
 const PICKUPS = new Set<Kind>(["gossip", "heart", "scroll", "firefly"]);
 const LANDMARKS = new Set<Kind>(["houses", "castle", "greenhouse", "pond", "mlynec-cross", "mlynec-house", "mlynec-school", "ledkov-a", "ledkov-b", "drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2", "linden", "pseves-heart", "obora", "stag"]);
 const PLACES = new Set<Kind>(["houses", "castle", "greenhouse", "pond", "mlynec-cross", "mlynec-house", "mlynec-school", "ledkov-a", "ledkov-b", "drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2", "linden", "pseves-heart", "column", "church", "school", "info"]);
@@ -177,6 +178,7 @@ const TALE_TITLES: Partial<Record<Kind, string>> = {
   gardener: "Sousedka má novinky",
   car: "Kravské přežvykování",
   branch: "Rohy ve větvích",
+  cyclist: "Cyklista s novinkami",
 };
 
 const LINES: Record<string, string[]> = {
@@ -210,6 +212,11 @@ const LINES: Record<string, string[]> = {
     "Drběna zaslechla v sadu šustění. Myslela, že někdo drbe. Byly to jen její rohy zamotané ve větvích!",
     "Drběna chtěla přinést do Kopidlna šťavnatou novinku. Z jabloně si ale odnesla jen listí mezi rohy!",
   ],
+  cyclist: [
+    "Drběna chtěla od cyklisty vyzvědět, co je nového v Mlýnci. Než se nadechla, byl i s drbem v Ledkově!",
+    "Cyklista zazvonil a Drběna myslela, že nese novinku. Novinka zněla: uhni!",
+    "Drběna a cyklista se srazili čely. On jel pro rohlíky, ona pro drby. Domů si oba odnesli bouli!",
+  ],
 };
 
 const SPEC: Record<Kind, { h: number; hitW: number; hitH: number; lift: number }> = {
@@ -219,6 +226,8 @@ const SPEC: Record<Kind, { h: number; hitW: number; hitH: number; lift: number }
   gardener: { h: 1.08, hitW: 0.36, hitH: 0.76, lift: 0 },
   car: { h: 0.78, hitW: 0.62, hitH: 0.55, lift: 0 },
   branch: { h: 1.02, hitW: 0.84, hitH: 0.52, lift: 0 },
+  // Jezdec na kole: naráží se jen do středu (rám a nohy), kola a hlava jsou mimo, ať je přeskok přívětivý.
+  cyclist: { h: 1.12, hitW: 0.42, hitH: 0.66, lift: 0 },
   gossip: { h: 0.42, hitW: 0.62, hitH: 0.62, lift: 0.14 },
   heart: { h: 0.32, hitW: 0.7, hitH: 0.7, lift: 0.72 },
   scroll: { h: 0.5, hitW: 0.55, hitH: 0.62, lift: 0.48 },
@@ -658,6 +667,7 @@ export class Runner {
       "school",
       "info",
       "dog",
+      "cyclist",
       "gossip",
       "scroll",
       "fish",
@@ -1069,6 +1079,7 @@ export class Runner {
     }
     this.herdStags(dt);
     this.spookPigeons(dt);
+    this.rideCyclists(dt);
 
     if (this.phase === "play") this.simPlayer(dt);
     else {
@@ -1281,6 +1292,16 @@ export class Runner {
       submitScore(score, this.gossips, this.playSeconds);
     }
     this.pushHud(true);
+  }
+
+  /** Cyklista jede koze naproti, jakmile vjede na obrazovku (a jen během běhu). */
+  private rideCyclists(dt: number) {
+    if (this.phase !== "play") return;
+    const pace = Math.max(this.speed, this.speed0) * 0.3;
+    for (const ent of this.ents) {
+      if (!ent.alive || ent.kind !== "cyclist") continue;
+      if (ent.x - this.camera < this.viewW * 0.98) ent.x -= pace * dt;
+    }
   }
 
   private spookPigeons(dt: number) {
@@ -1702,6 +1723,15 @@ export class Runner {
       return;
     }
     const kind = this.rollHazard(x);
+    if (kind === "cyclist") {
+      // Cyklista jede koze naproti, až když je vidět, a proto startuje o kus dál: z mezery
+      // před ním si cestou ujede asi čtvrtinu obrazovky a hráč na něj má pořád dost času.
+      const lead = this.viewW * 0.26;
+      this.ents.push({ kind, x: x + lead, lift: 0, anim: Math.random() * 6, alive: true });
+      this.hazardCursor += lead + u * 1.1 + speed * 1.3;
+      this.lastHazard = kind;
+      return;
+    }
     this.ents.push({ kind, x, lift: 0, anim: Math.random() * 6, alive: true });
     this.pondsDirty = true;
     if (kind === "fence") {
@@ -1745,6 +1775,9 @@ export class Runner {
     if (stage >= 1) bag.push("gardener");
     if (stage >= 2) bag.push("branch", "fence");
     if (stage >= 3) bag.push("car", "gardener");
+    // Na cestách mezi vesnicemi občas přijede naproti cyklista.
+    const road = this.approaches.some((gap) => x >= gap.from && x < gap.to);
+    if (road && this.lastHazard !== "cyclist" && Math.random() < 0.3) return "cyclist";
     let kind = bag[Math.floor(Math.random() * bag.length)]!;
     if (kind === this.lastHazard) kind = "pot";
     if (kind === "branch" && this.lastHazard === "gardener") kind = "fence";
@@ -2121,6 +2154,9 @@ export class Runner {
       } else {
         bob = Math.abs(Math.sin(this.time * 5 + ent.anim)) * this.u * 0.012;
       }
+    } else if (ent.kind === "cyclist") {
+      bob = Math.abs(Math.sin(this.time * 9 + ent.anim)) * this.u * 0.018;
+      rot = Math.sin(this.time * 4.5 + ent.anim) * 0.025;
     } else if (ent.kind === "car") {
       bob = Math.abs(Math.sin(this.time * 8 + ent.anim)) * this.u * 0.035;
       rot = Math.sin(this.time * 8 + ent.anim) * 0.045;
