@@ -7,7 +7,9 @@ import { NicknameField } from "@/game/NicknameField";
 import { Runner, emptyHud, type Hud } from "@/game/runner";
 import { chronicleBook } from "@/game/chronicle";
 import { BONUS_CALM, BONUS_PARDON, type BonusAction } from "@/game/minigames";
-import { confirmName, fetchStats, needsName, playerLabel, previewStats, randomName, saveName, savedName, type BoardRow } from "@/game/plays";
+import { announceName, fetchStats, needsName, playerLabel, previewStats, randomName, type BoardRow } from "@/game/plays";
+import { PlayersSheet } from "@/game/PlayersSheet";
+import { addProfile, loadProfiles, removeProfile, renameProfile, selectProfile, type Profiles } from "@/game/profiles";
 import { publicUrl } from "@/lib/public-url";
 
 function hudReactKey(h: Hud): string {
@@ -78,16 +80,24 @@ export function GameApp() {
   const [copied, setCopied] = useState(false);
   const [players, setPlayers] = useState<number | null>(previewStats?.players ?? null);
   const [board, setBoard] = useState<BoardRow[]>(previewStats?.board ?? []);
-  const [name, setName] = useState(savedName);
+  // Players sharing this device (src/game/profiles.ts); loaded after mount, localStorage is not there on the server.
+  const [profiles, setProfiles] = useState<Profiles>({ current: "", list: [] });
+  const [playersOpen, setPlayersOpen] = useState(false);
+  const player = profiles.list.find((p) => p.id === profiles.current) ?? null;
   const [chronicle, setChronicle] = useState(false);
   const [boardOpen, setBoardOpen] = useState(false);
   const [askName, setAskName] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
-  const [namePlaceholder, setNamePlaceholder] = useState("Zvědavá Koza");
   const leaderboardOn = useRef(false);
   leaderboardOn.current = players != null;
 
-  useEffect(() => setNamePlaceholder(randomName()), []);
+  useEffect(() => setProfiles(loadProfiles()), []);
+
+  // Every change of players goes through here, so the record on screen follows the selected player.
+  function updatePlayers(next: Profiles) {
+    setProfiles(next);
+    gameRef.current?.refreshRecord();
+  }
 
   // Mobile browsers scroll the page to keep a focused field above the keyboard and sometimes leave it scrolled
   // after the keyboard closes, uncovering the page background under the game. The game never scrolls, so undo it.
@@ -109,8 +119,7 @@ export function GameApp() {
   }, []);
 
   function startPlaying(chosen: string) {
-    const stored = confirmName(chosen);
-    setName(stored);
+    updatePlayers(addProfile(chosen));
     setAskName(false);
     gameRef.current?.begin();
   }
@@ -225,7 +234,7 @@ export function GameApp() {
       observer.disconnect();
       cancelAnimationFrame(frameId);
     };
-  }, [hud.phase, hud.best, hud.bestGossips, players, board]);
+  }, [hud.phase, hud.best, hud.bestGossips, players, board, player?.name]);
 
   async function share() {
     const text = `Drběna nasbírala ${hud.gossips} drbů a ${hud.score} bodů v Kopidlně. Zvládneš víc?`;
@@ -382,6 +391,17 @@ export function GameApp() {
                 className="menu-pop mt-[0.8em] w-full rounded-[1.75em] border-2 border-ink bg-cream/90 p-[1em] shadow-[0_0.4em_0_#241c16] backdrop-blur-md [animation-delay:160ms]"
                 onClick={(event) => event.stopPropagation()}
               >
+                {player && (
+                  <button
+                    type="button"
+                    className="mb-[0.6em] flex w-full items-center justify-center gap-[0.4em] text-[0.85em] font-extrabold text-ink-soft"
+                    onClick={() => setPlayersOpen(true)}
+                  >
+                    <span>Hraje:</span>
+                    <span className="max-w-[12em] truncate text-ink">{player.name}</span>
+                    <span className="rounded-full border-2 border-ink/25 px-[0.6em] text-[0.9em] text-ink">změnit</span>
+                  </button>
+                )}
                 <button
                   type="button"
                   className="group relative flex h-[4em] w-full items-center justify-center gap-[0.5em] rounded-[1.25em] border-2 border-ink bg-bow font-extrabold text-cream shadow-[0_0.3em_0_#241c16] transition-[transform,box-shadow] hover:bg-bow-deep active:translate-y-[0.3em] active:shadow-none"
@@ -487,19 +507,22 @@ export function GameApp() {
                 {hud.bestGossips > 0 ? ` · ${hud.bestGossips} drbů` : ""}
               </p>
             )}
-            <label className="mt-4 block">
-              <span className="text-xs font-extrabold tracking-wide text-ink-soft">PŘEZDÍVKA DO ŽEBŘÍČKU</span>
-              <NicknameField
-                value={name}
-                label="Přezdívka do žebříčku"
-                placeholder={namePlaceholder}
-                className="mt-1 h-11 w-full py-2.5"
-                onChange={(next) => {
-                  setName(next);
-                  saveName(next);
+            <div className="mt-4 flex items-center gap-3 rounded-xl border-2 border-ink/15 bg-cream-deep/60 px-3 py-2">
+              <span className="min-w-0 flex-1">
+                <span className="block text-xs font-extrabold tracking-wide text-ink-soft">HRAJEŠ JAKO</span>
+                <span className="block truncate font-extrabold">{player?.name ?? "zatím nikdo"}</span>
+              </span>
+              <button
+                type="button"
+                className="h-10 shrink-0 rounded-xl border-2 border-ink bg-cream px-3 font-extrabold"
+                onClick={() => {
+                  setBoardOpen(false);
+                  setPlayersOpen(true);
                 }}
-              />
-            </label>
+              >
+                {player ? "Změnit hráče" : "Přidat hráče"}
+              </button>
+            </div>
             {board.length > 0 ? (
               <ol className="mt-4 space-y-1.5">
                 {board.slice(0, 5).map((row, index) => (
@@ -522,6 +545,25 @@ export function GameApp() {
             {players != null && <p className="mt-3 text-center text-xs font-extrabold text-ink-soft">{playerLabel(players)}</p>}
           </div>
         </div>
+      )}
+
+      {hud.phase === "menu" && playersOpen && (
+        <PlayersSheet
+          profiles={profiles}
+          onSelect={(id) => {
+            updatePlayers(selectProfile(id));
+            setPlayersOpen(false);
+          }}
+          onRename={(id, nextName) => {
+            const next = renameProfile(id, nextName);
+            updatePlayers(next);
+            const renamed = next.list.find((p) => p.id === id);
+            if (renamed) announceName(renamed);
+          }}
+          onAdd={(nextName) => updatePlayers(addProfile(nextName))}
+          onRemove={(id) => updatePlayers(removeProfile(id))}
+          onClose={() => setPlayersOpen(false)}
+        />
       )}
 
       {hud.phase === "menu" && askName && (
