@@ -68,6 +68,14 @@ type Kind =
   | "branch"
   | "cyclist"
   | "laundry"
+  | "forest-oak"
+  | "forest-birch"
+  | "forest-pine"
+  | "forest-spruce"
+  | "forest-linden"
+  | "forest-maple"
+  | "forest-rowan"
+  | "forest-willow"
   | "gossip"
   | "heart"
   | "scroll"
@@ -109,7 +117,21 @@ type Kind =
   | "sign-pseves"
   | "sign-kopidlno";
 
-type Ent = { kind: Kind; x: number; lift: number; anim: number; alive: boolean; fly?: number; sway?: number; face?: number; wait?: number };
+type Ent = {
+  kind: Kind;
+  x: number;
+  lift: number;
+  anim: number;
+  alive: boolean;
+  fly?: number;
+  sway?: number;
+  face?: number;
+  wait?: number;
+  /** Násobek velikosti (stromy v lese). */
+  size?: number;
+  /** Zadní řada lesa: kreslí se dřív a ztmavená. */
+  far?: boolean;
+};
 
 type Bit = {
   on: boolean;
@@ -157,8 +179,10 @@ const VILLAGES = new Set<Kind>([...MLYNEC, ...LEDKOV, ...DRAHORAZ, ...PSEVES]);
  * Sousedka (gardener), kráva (car), husa (dog) a cyklista před stavbou stát smějí.
  */
 const BIG_HAZARDS = new Set<Kind>(["branch", "laundry"]);
-const PROPS = new Set<Kind>(["bush", "lamp", "tree", "bench", "pigeon", "bin"]);
-const DECOR = new Set<Kind>(["bush", "lamp", "tree", "bench", "pigeon", "bin", "column", "church", "school", "info", ...SIGNS]);
+/** Stromy lesa mezi vesnicemi (dub, bříza, borovice, smrk, lípa, javor, jeřáb, vrba). */
+const FOREST: readonly Kind[] = ["forest-oak", "forest-birch", "forest-pine", "forest-spruce", "forest-linden", "forest-maple", "forest-rowan", "forest-willow"];
+const PROPS = new Set<Kind>([...FOREST, "bush", "lamp", "tree", "bench", "pigeon", "bin"]);
+const DECOR = new Set<Kind>([...FOREST, "bush", "lamp", "tree", "bench", "pigeon", "bin", "column", "church", "school", "info", ...SIGNS]);
 
 // Nejdřív se ryba celá vynoří; až pak otevřít dialog či nabídku minihry.
 const FISH_RISE_SECONDS = 0.85;
@@ -282,6 +306,14 @@ const SPEC: Record<Kind, { h: number; hitW: number; hitH: number; lift: number }
   bush: { h: 0.46, hitW: 0, hitH: 0, lift: 0 },
   lamp: { h: 1.42, hitW: 0, hitH: 0, lift: 0 },
   tree: { h: 1.85, hitW: 0, hitH: 0, lift: 0 },
+  "forest-oak": { h: 1.75, hitW: 0, hitH: 0, lift: 0 },
+  "forest-birch": { h: 1.85, hitW: 0, hitH: 0, lift: 0 },
+  "forest-pine": { h: 2.0, hitW: 0, hitH: 0, lift: 0 },
+  "forest-spruce": { h: 2.0, hitW: 0, hitH: 0, lift: 0 },
+  "forest-linden": { h: 1.7, hitW: 0, hitH: 0, lift: 0 },
+  "forest-maple": { h: 1.65, hitW: 0, hitH: 0, lift: 0 },
+  "forest-rowan": { h: 1.4, hitW: 0, hitH: 0, lift: 0 },
+  "forest-willow": { h: 1.6, hitW: 0, hitH: 0, lift: 0 },
   bench: { h: 0.5, hitW: 0, hitH: 0, lift: 0 },
   pigeon: { h: 0.36, hitW: 0, hitH: 0, lift: 0 },
   bin: { h: 0.56, hitW: 0, hitH: 0, lift: 0 },
@@ -325,7 +357,7 @@ function hash(n: number): number {
   return x - Math.floor(x);
 }
 
-const ART_REV = "37";
+const ART_REV = "38";
 
 async function loadImage(src: string): Promise<HTMLImageElement | null> {
   try {
@@ -374,7 +406,9 @@ export class Runner {
   private ctx: CanvasRenderingContext2D | null;
   private sfx = new Sfx();
   private art: Art = {};
-  private bakes = new WeakMap<HTMLImageElement, { h: number; canvas: HTMLCanvasElement }>();
+  private farBakes = new WeakMap<HTMLImageElement, Map<number, HTMLCanvasElement>>();
+  /** Předkreslené obrázky podle výšky; víc výšek na obrázek (stromy v lese mají několik velikostí). */
+  private bakes = new WeakMap<HTMLImageElement, Map<number, HTMLCanvasElement>>();
   private raf = 0;
   private alive = true;
   private last = 0;
@@ -739,6 +773,14 @@ export class Runner {
       "dog",
       "cyclist",
       "laundry",
+      "forest-oak",
+      "forest-birch",
+      "forest-pine",
+      "forest-spruce",
+      "forest-linden",
+      "forest-maple",
+      "forest-rowan",
+      "forest-willow",
       ...SIGNS,
       "gossip",
       "scroll",
@@ -977,6 +1019,7 @@ export class Runner {
     this.speedMax = 500 * (this.viewW / 740) * pace;
     this.skyGrad = null;
     this.bakes = new WeakMap();
+    this.farBakes = new WeakMap();
     this.pondsDirty = true;
   }
 
@@ -1014,6 +1057,7 @@ export class Runner {
       if (lost) {
         this.skyGrad = null;
         this.bakes = new WeakMap();
+    this.farBakes = new WeakMap();
         this.ctx = this.canvas.getContext("2d");
       }
     } finally {
@@ -2184,6 +2228,13 @@ export class Runner {
       if (!ent.alive || ent.kind !== "stag" || (ent.face ?? 0) !== 1 || (ent.sway ?? 0) !== 1) continue;
       this.drawStagMeet(ctx, ent);
     }
+    // Zadní řada lesa za vším ostatním (i za cedulemi).
+    for (const ent of this.ents) {
+      if (!ent.alive || !ent.far) continue;
+      const sx = ent.x - cam;
+      if (sx < -margin || sx > this.viewW + margin) continue;
+      this.drawEnt(ctx, ent);
+    }
     for (const ent of this.ents) {
       if (!ent.alive || !PLACES.has(ent.kind)) continue;
       const sx = ent.x - cam;
@@ -2191,7 +2242,7 @@ export class Runner {
       this.drawEnt(ctx, ent);
     }
     for (const ent of this.ents) {
-      if (!ent.alive || !PROPS.has(ent.kind) || ent.fly) continue;
+      if (!ent.alive || !PROPS.has(ent.kind) || ent.fly || ent.far) continue;
       const sx = ent.x - cam;
       if (sx < -margin || sx > this.viewW + margin) continue;
       this.drawEnt(ctx, ent);
@@ -2320,7 +2371,7 @@ export class Runner {
   private drawEnt(ctx: CanvasRenderingContext2D, ent: Ent) {
     const spec = SPEC[ent.kind];
     const pulse = ent.kind === "gossip" || ent.kind === "scroll" ? 1 + Math.sin(this.time * 5 + ent.anim) * 0.06 : 1;
-    const baseH = spec.h * this.u;
+    const baseH = spec.h * this.u * (ent.size ?? 1);
     const h = baseH * pulse;
     let bob = ent.kind === "gossip" || ent.kind === "scroll" ? Math.sin(this.time * 4 + ent.anim) * this.u * 0.04 : 0;
     let rot = 0;
@@ -2353,7 +2404,8 @@ export class Runner {
     const img = this.spriteFor(ent);
     if (!img) return;
     const w = h * (img.width / img.height);
-    const baked = this.baked(img, baseH * this.scale);
+    const baked = ent.far ? this.bakedFar(img, baseH * this.scale) : this.baked(img, baseH * this.scale);
+    if (ent.face === -1 && FOREST.includes(ent.kind)) flip = -1;
     if (rot || flip < 0) {
       ctx.save();
       ctx.translate(this.snap(cx), this.snap(feet - h * 0.55));
@@ -2740,11 +2792,34 @@ export class Runner {
       this.ents.push({ kind: "bush", x: (left + right) / 2, lift: 0, anim: 0, alive: true });
       return;
     }
-    const count = Math.min(6, Math.max(2, Math.floor(room / (this.u * 3))));
-    const step = room / (count + 1);
-    for (let i = 1; i <= count; i += 1) {
-      const kind: Kind = bushes && i % 2 === 0 ? "bush" : "tree";
-      this.ents.push({ kind, x: left + step * i, lift: 0, anim: 0, alive: true });
+    void bushes;
+    this.plantForest(from + this.u * 0.6, to - this.u * 1.7);
+  }
+
+  /**
+   * Les mezi vesnicemi: dvě řady stromů z FOREST, přední plná a přes sebe, zadní menší a ztmavená.
+   * Druhy se střídají, velikost a zrcadlení jsou náhodné, ať se les neopakuje. Celé koruny zůstanou
+   * mezi `left` a `right`, takže les nezakryje ceduli ani první stavbu vsi.
+   */
+  private plantForest(left: number, right: number) {
+    const rows: { far: boolean; min: number; max: number; overlap: number; lift: number; start: number }[] = [
+      { far: true, min: 0.7, max: 0.85, overlap: 0.62, lift: 0.04, start: this.u * 0.35 },
+      { far: false, min: 0.85, max: 1.05, overlap: 0.82, lift: 0, start: 0 },
+    ];
+    for (const row of rows) {
+      let x = left + row.start;
+      let last: Kind | null = null;
+      for (let guard = 0; guard < 200; guard += 1) {
+        let kind = FOREST[Math.floor(Math.random() * FOREST.length)]!;
+        if (kind === last) kind = FOREST[(FOREST.indexOf(kind) + 1 + Math.floor(Math.random() * (FOREST.length - 1))) % FOREST.length]!;
+        // Velikosti po 0,05, ať se předkreslených obrázků nenadělá moc.
+        const size = Math.round((row.min + Math.random() * (row.max - row.min)) * 20) / 20;
+        const w = this.visualHalf(kind) * 2 * size;
+        if (x + w > right) break;
+        this.ents.push({ kind, x: x + w / 2, lift: row.lift, anim: 0, alive: true, size, far: row.far, face: Math.random() < 0.5 ? -1 : 1 });
+        last = kind;
+        x += w * row.overlap;
+      }
     }
   }
 
@@ -3140,10 +3215,35 @@ export class Runner {
     return Math.round(value * scale) / scale;
   }
 
+  /** Strom v zadní řadě lesa: ztmavený a do modrozelena, ať les působí hluboký. */
+  private bakedFar(img: HTMLImageElement, deviceH: number): HTMLCanvasElement {
+    const h = Math.max(1, Math.round(deviceH));
+    const sizes = this.farBakes.get(img) ?? new Map<number, HTMLCanvasElement>();
+    const prev = sizes.get(h);
+    if (prev) return prev;
+    const base = this.baked(img, deviceH);
+    const canvas = document.createElement("canvas");
+    canvas.width = base.width;
+    canvas.height = base.height;
+    const g = canvas.getContext("2d");
+    if (g) {
+      g.drawImage(base, 0, 0);
+      g.globalCompositeOperation = "source-atop";
+      g.fillStyle = "rgba(38, 72, 58, 0.38)";
+      g.fillRect(0, 0, canvas.width, canvas.height);
+    }
+    sizes.set(h, canvas);
+    this.farBakes.set(img, sizes);
+    return canvas;
+  }
+
   private baked(img: HTMLImageElement, deviceH: number): HTMLCanvasElement {
     const h = Math.max(1, Math.round(deviceH));
-    const prev = this.bakes.get(img);
-    if (prev && prev.h === h) return prev.canvas;
+    const sizes = this.bakes.get(img) ?? new Map<number, HTMLCanvasElement>();
+    const prev = sizes.get(h);
+    if (prev) return prev;
+    // Výšky jedné velikosti se při změně zoomu nemnoží donekonečna: stará se zahodí.
+    if (sizes.size > 16) sizes.clear();
     const w = Math.max(1, Math.round(h * (img.width / Math.max(1, img.height))));
     const canvas = document.createElement("canvas");
     canvas.width = w;
@@ -3154,7 +3254,8 @@ export class Runner {
       g.imageSmoothingQuality = "high";
       g.drawImage(img, 0, 0, w, h);
     }
-    this.bakes.set(img, { h, canvas });
+    sizes.set(h, canvas);
+    this.bakes.set(img, sizes);
     return canvas;
   }
 
