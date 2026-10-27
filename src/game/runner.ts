@@ -163,6 +163,18 @@ const DECOR = new Set<Kind>(["bush", "lamp", "tree", "bench", "pigeon", "bin", "
 // Nejdřív se ryba celá vynoří; až pak otevřít dialog či nabídku minihry.
 const FISH_RISE_SECONDS = 0.85;
 
+/** Náběh s malým přešvihnutím: 0 → kousek přes 1 → 1. */
+function easeOutBack(k: number): number {
+  const p = Math.min(1, Math.max(0, k));
+  const c = 1.6;
+  return 1 + (c + 1) * Math.pow(p - 1, 3) + c * Math.pow(p - 1, 2);
+}
+
+function easeIn(k: number): number {
+  const p = Math.min(1, Math.max(0, k));
+  return p * p;
+}
+
 const SCROLL_COMPLETE_MESSAGES = [
   {
     title: "Méé, všechno už víš!",
@@ -2992,28 +3004,134 @@ export class Runner {
     if (!(img instanceof HTMLImageElement)) return;
     const duration = 5.2;
     const t = 1 - this.fish / duration;
-    const rise = Math.min(1, this.fishAge / FISH_RISE_SECONDS);
+    const age = this.fishAge;
+    const rise = Math.min(1, age / FISH_RISE_SECONDS);
     const heldAboveWater = this.phase === "fish-intro" || this.phase === "bonus" || (this.phase === "dialogue" && this.fishDialogue !== null);
-    const peek = heldAboveWater ? rise : t < 0.16 ? t / 0.16 : t > 0.84 ? (1 - t) / 0.16 : 1;
+    // Vynoření s přešvihnutím (ryba vyskočí kousek nad a usadí se), ponoření plynule zrychluje.
+    const peek = heldAboveWater ? easeOutBack(rise) : t < 0.16 ? easeOutBack(t / 0.16) : t > 0.84 ? 1 - easeIn(1 - (1 - t) / 0.16) : 1;
+    const sinking = !heldAboveWater && t > 0.84;
     const water = this.groundY - this.u * 0.58;
     const x = this.fishX - this.camera;
     const fh = this.u * 1.05;
     const fw = fh * (img.width / img.height);
-    const bob = Math.sin(this.time * 5) * this.u * 0.03;
+    const settled = Math.min(1, Math.max(0, (age - FISH_RISE_SECONDS) / 0.6));
+    const bob = Math.sin(this.time * 3.2) * this.u * 0.025 * settled;
     const top = water - peek * fh * 0.76 + bob;
+    // Při vynořování se ryba trochu natáhne a nakloní, nahoře se pohupuje.
+    const speedUp = heldAboveWater ? Math.max(0, 1 - rise) : sinking ? 0.6 : 0;
+    const stretch = 1 + 0.1 * speedUp;
+    // Ryba kouká doleva: kladný úhel zvedá hlavu (vynořování), záporný ji sklání (potápění).
+    const tilt = (heldAboveWater ? 0.22 * (1 - Math.min(1, rise * 1.3)) : sinking ? -0.2 * (1 - peek) : 0) + Math.sin(this.time * 2.1) * 0.035 * settled;
     const baked = this.baked(img, fh * this.scale);
+
+    this.drawFishRipples(ctx, x, water, fw, age, sinking ? 1 - peek : 0);
+
     ctx.save();
     ctx.beginPath();
-    ctx.rect(-30, -30, this.viewW + 60, water + 8);
+    // Obdélník začíná nad obrazovkou (-30), proto výška + 30: ryba je oříznutá přesně na hladině.
+    ctx.rect(-30, -30, this.viewW + 60, water + 30 + 2);
     ctx.clip();
-    ctx.drawImage(baked, this.snap(x - fw / 2), this.snap(top), fw, fh);
+    ctx.translate(x, top + fh * 0.62);
+    ctx.rotate(tilt);
+    ctx.scale(1 / Math.sqrt(stretch), stretch);
+    ctx.drawImage(baked, -fw / 2, -fh * 0.62, fw, fh);
     ctx.restore();
+
+    // Hladina přes spodek ryby: průsvitný pruh vody a pěna, ať ryba z vody opravdu vylézá.
+    const half = fw * (0.34 + 0.06 * peek);
     ctx.save();
-    ctx.strokeStyle = "rgba(255,255,255,0.85)";
-    ctx.lineWidth = 2;
+    const band = ctx.createLinearGradient(0, water - this.u * 0.07, 0, water + 6);
+    band.addColorStop(0, "rgba(120, 170, 205, 0)");
+    band.addColorStop(1, "rgba(110, 165, 205, 0.55)");
+    ctx.fillStyle = band;
     ctx.beginPath();
-    ctx.ellipse(x, water, fw * (0.28 + peek * 0.08), this.u * 0.045, 0, 0, Math.PI * 2);
-    ctx.stroke();
+    ctx.ellipse(x, water + 2, half, this.u * 0.08, 0, 0, Math.PI * 2);
+    ctx.fill();
+    const foam = 11;
+    for (let i = 0; i < foam; i += 1) {
+      const k = (i + 0.5 + Math.sin(i * 7.3) * 0.35) / foam;
+      const fx = x + (k * 2 - 1) * half * 0.95;
+      const wave = Math.sin(this.time * 6 + i * 1.7) * this.u * 0.012;
+      const r = this.u * (0.018 + 0.02 * Math.abs(Math.sin(i * 2.3 + this.time * 2.4))) * (0.5 + 0.5 * peek);
+      ctx.fillStyle = `rgba(255, 255, 255, ${(0.45 + 0.35 * Math.abs(Math.sin(i * 3.1))).toFixed(2)})`;
+      ctx.beginPath();
+      ctx.ellipse(fx, water + wave, r * 1.6, r, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+
+    this.drawFishSplash(ctx, x, water, fw, fh, top, age, heldAboveWater);
+  }
+
+  /** Kapka vody: průsvitná modrobílá s malým odleskem. */
+  private drop(ctx: CanvasRenderingContext2D, x: number, y: number, r: number, alpha: number) {
+    ctx.fillStyle = `rgba(190, 225, 248, ${(0.75 * alpha).toFixed(3)})`;
+    ctx.beginPath();
+    ctx.ellipse(x, y, r, r * 1.3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = `rgba(255, 255, 255, ${(0.9 * alpha).toFixed(3)})`;
+    ctx.beginPath();
+    ctx.arc(x - r * 0.35, y - r * 0.4, r * 0.35, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  /** Kruhy na hladině: tři při vynoření, pak jemně dokola, při ponoření další. */
+  private drawFishRipples(ctx: CanvasRenderingContext2D, x: number, water: number, fw: number, age: number, sink: number) {
+    const starts = [0, 0.22, 0.48];
+    const life = 1.5;
+    const rings: number[] = [];
+    for (const at of starts) rings.push(age - at);
+    for (let at = 1.6; at < age; at += 1.7) rings.push(age - at);
+    if (sink > 0) rings.push(sink * 0.9, sink * 0.9 - 0.25);
+    ctx.save();
+    ctx.lineWidth = 2;
+    for (const since of rings) {
+      if (since < 0 || since > life) continue;
+      const k = since / life;
+      const ease = 1 - (1 - k) * (1 - k);
+      ctx.strokeStyle = `rgba(255, 255, 255, ${(0.75 * (1 - k)).toFixed(3)})`;
+      ctx.beginPath();
+      ctx.ellipse(x, water + 1, fw * (0.36 + 0.55 * ease), this.u * (0.05 + 0.06 * ease), 0, 0, Math.PI * 2);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  /** Šplouchnutí při vynoření (kapky po parabole) a občasné kapky stékající z ryby, dokud je nahoře. */
+  private drawFishSplash(ctx: CanvasRenderingContext2D, x: number, water: number, fw: number, fh: number, top: number, age: number, held: boolean) {
+    const u = this.u;
+    const g = u * 5.5;
+    ctx.save();
+    for (let i = 0; i < 12; i += 1) {
+      const born = 0.12 + (i % 5) * 0.035;
+      const since = age - born;
+      if (since < 0) continue;
+      const side = i % 2 === 0 ? -1 : 1;
+      const spread = 0.25 + ((i * 37) % 11) / 11 * 0.75;
+      const vx = side * spread * u * 1.6;
+      const vy = -(1.6 + ((i * 53) % 7) / 7 * 1.6) * u;
+      // Kapky odlétají od hlavy a ocasu ven, ne přes rybu.
+      const px = x + side * fw * (0.34 + 0.12 * spread) + vx * since;
+      const py = water + vy * since + 0.5 * g * since * since;
+      if (py > water + 4 || since > 1.6) continue;
+      const r = u * (0.013 + ((i * 29) % 5) * 0.003);
+      this.drop(ctx, px, py, r, 1 - since / 1.6);
+    }
+    if (held && age > FISH_RISE_SECONDS) {
+      // Kapka steče z ryby zhruba každých 0,9 s a dopadne do vody.
+      const period = 0.9;
+      for (let n = 0; n < 2; n += 1) {
+        const cycle = Math.floor((age - FISH_RISE_SECONDS) / period) - n;
+        if (cycle < 0) continue;
+        const since = age - FISH_RISE_SECONDS - cycle * period;
+        const off = ((cycle * 0.618) % 1) * 2 - 1;
+        const dx = x + off * fw * 0.3;
+        const from = top + fh * 0.62;
+        const py = from + 0.5 * g * since * since;
+        if (py > water) continue;
+        this.drop(ctx, dx, py, u * 0.016, 1);
+      }
+    }
     ctx.restore();
   }
 
