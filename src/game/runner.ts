@@ -81,6 +81,8 @@ type Kind =
   | "pond"
   | "mlynec-cross"
   | "mlynec-house"
+  | "mlynec-bell"
+  | "mlynec-pond"
   | "mlynec-school"
   | "ledkov-a"
   | "ledkov-b"
@@ -126,11 +128,11 @@ const SAVE_KEY = "drbena-kopidlno-v1";
 
 const HAZARDS = new Set<Kind>(["fence", "pot", "dog", "gardener", "car", "branch", "cyclist"]);
 const PICKUPS = new Set<Kind>(["gossip", "heart", "scroll", "firefly"]);
-const LANDMARKS = new Set<Kind>(["houses", "castle", "greenhouse", "pond", "mlynec-cross", "mlynec-house", "mlynec-school", "ledkov-a", "ledkov-b", "drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2", "linden", "pseves-heart", "obora", "stag"]);
+const LANDMARKS = new Set<Kind>(["houses", "castle", "greenhouse", "pond", "mlynec-cross", "mlynec-house", "mlynec-bell", "mlynec-school", "mlynec-pond", "ledkov-a", "ledkov-b", "drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2", "linden", "pseves-heart", "obora", "stag"]);
 // Cedule na začátku obcí: jen kulisa, nikdy překážka (src/game/runner.ts, approachAfter).
 const SIGNS = ["sign-mlynec", "sign-ledkov", "sign-drahoraz", "sign-kopidlno"] as const;
-const PLACES = new Set<Kind>([...SIGNS, "houses", "castle", "greenhouse", "pond", "mlynec-cross", "mlynec-house", "mlynec-school", "ledkov-a", "ledkov-b", "drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2", "linden", "pseves-heart", "column", "church", "school", "info"]);
-const MLYNEC = new Set<Kind>(["mlynec-cross", "mlynec-house", "mlynec-school"]);
+const PLACES = new Set<Kind>([...SIGNS, "houses", "castle", "greenhouse", "pond", "mlynec-cross", "mlynec-house", "mlynec-bell", "mlynec-school", "mlynec-pond", "ledkov-a", "ledkov-b", "drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2", "linden", "pseves-heart", "column", "church", "school", "info"]);
+const MLYNEC = new Set<Kind>(["mlynec-cross", "mlynec-house", "mlynec-bell", "mlynec-school", "mlynec-pond"]);
 const LEDKOV = new Set<Kind>(["ledkov-a", "ledkov-b"]);
 const DRAHORAZ = new Set<Kind>(["drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2"]);
 const PSEVES = new Set<Kind>(["linden", "pseves-heart"]);
@@ -247,9 +249,13 @@ const SPEC: Record<Kind, { h: number; hitW: number; hitH: number; lift: number }
   castle: { h: 2.35, hitW: 0, hitH: 0, lift: 0 },
   greenhouse: { h: 2.15, hitW: 0, hitH: 0, lift: 0 },
   pond: { h: 1.85, hitW: 0, hitH: 0, lift: 0.02 },
-  "mlynec-cross": { h: 1.4, hitW: 0, hitH: 0, lift: 0 },
+  // Krucifix a zvonička jsou stejně vysoké a nižší než škola.
+  "mlynec-cross": { h: 1.15, hitW: 0, hitH: 0, lift: 0 },
+  "mlynec-bell": { h: 1.15, hitW: 0, hitH: 0, lift: 0 },
   "mlynec-house": { h: 1.47, hitW: 0, hitH: 0, lift: 0 },
   "mlynec-school": { h: 1.55, hitW: 0, hitH: 0, lift: 0 },
+  // Rybník Zrcadlo v Mlýnci: jen kulisa (ryba vyskakuje jen z kopidlenského rybníka, kind "pond").
+  "mlynec-pond": { h: 1.45, hitW: 0, hitH: 0, lift: 0 },
   "ledkov-a": { h: 1.32, hitW: 0, hitH: 0, lift: 0 },
   "ledkov-b": { h: 1.32, hitW: 0, hitH: 0, lift: 0 },
   "drahoraz-church": { h: 2.05, hitW: 0, hitH: 0, lift: 0 },
@@ -661,7 +667,8 @@ export class Runner {
       "greenhouse",
       "pond",
       "mlynec-cross",
-      "mlynec-house",
+      "mlynec-bell",
+      "mlynec-pond",
       "mlynec-school",
       "ledkov-a",
       "ledkov-b",
@@ -1556,6 +1563,10 @@ export class Runner {
         ? 1669 / 477
         : kind === "mlynec-cross"
           ? 599 / 1647
+          : kind === "mlynec-bell"
+            ? 121 / 900
+            : kind === "mlynec-pond"
+            ? 1800 / 409
           : kind === "mlynec-house"
             ? 737 / 545
             : kind === "mlynec-school"
@@ -2583,10 +2594,12 @@ export class Runner {
     // Po rybníku / oboře následují čtyři samostatné vsi, poté návrat do Kopidlna.
     // Stavby uvnitř každé vsi drží pohromadě, volný prostor patří POUZE mezi obce.
     const groups: { id: PlaceId; name: string; parts: { kind: Kind; gap: number }[] }[] = [
+      // Mlýnec: krucifix, zvonička, škola a rybník Zrcadlo (dům ze vsi už ve hře není).
       { id: "mlynec", name: "Mlýnec", parts: [
-        { kind: "mlynec-house", gap: u * 0.16 },
-        { kind: "mlynec-school", gap: u * 0.2 },
-        { kind: "mlynec-cross", gap: 0 },
+        { kind: "mlynec-cross", gap: u * 0.3 },
+        { kind: "mlynec-bell", gap: u * 0.3 },
+        { kind: "mlynec-school", gap: u * 0.25 },
+        { kind: "mlynec-pond", gap: 0 },
       ] },
       { id: "ledkov", name: "Ledkov", parts: [
         { kind: "ledkov-a", gap: u * 0.22 },
