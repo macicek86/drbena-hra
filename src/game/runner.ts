@@ -140,8 +140,11 @@ const LEDKOV = new Set<Kind>(["ledkov-a", "ledkov-b"]);
 const DRAHORAZ = new Set<Kind>(["drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2"]);
 const PSEVES = new Set<Kind>(["linden", "pseves-heart"]);
 const VILLAGES = new Set<Kind>([...MLYNEC, ...LEDKOV, ...DRAHORAZ, ...PSEVES]);
-/** Velké překážky nesmí zakrýt budovy ani cedule (coversScenery), jinak se vymění za malou. */
-const BIG_HAZARDS = new Set<Kind>(["branch", "car", "cyclist", "gardener", "laundry"]);
+/**
+ * Větev a prádlo nesmí zakrýt budovy ani cedule (coversScenery), jinak se vymění za malou překážku.
+ * Sousedka (gardener), kráva (car), husa (dog) a cyklista před stavbou stát smějí.
+ */
+const BIG_HAZARDS = new Set<Kind>(["branch", "laundry"]);
 const PROPS = new Set<Kind>(["bush", "lamp", "tree", "bench", "pigeon", "bin"]);
 const DECOR = new Set<Kind>(["bush", "lamp", "tree", "bench", "pigeon", "bin", "column", "church", "school", "info", ...SIGNS]);
 
@@ -1757,10 +1760,8 @@ export class Runner {
    * (onPlaceFace v celé šířce), stavby vsí a cedule podle toho, co už ve světě stojí.
    */
   private coversScenery(x: number, kind: Kind): boolean {
-    // Cyklista jede koze naproti, cestou ujede asi desetinu obrazovky doleva.
-    const drift = kind === "cyclist" ? this.viewW * 0.1 : 0;
-    const at = x - drift;
-    const pad = this.u * 0.12 + drift;
+    const at = x;
+    const pad = this.u * 0.12;
     const half = this.visualHalf(kind) + pad;
     if (this.onPlaceFace(at, kind, 1, pad)) return true;
     return this.ents.some((ent) => ent.alive && PLACES.has(ent.kind) && Math.abs(ent.x - at) < this.visualHalf(ent.kind) + half);
@@ -1842,7 +1843,7 @@ export class Runner {
     }
     let kind = this.rollHazard(x);
     if (BIG_HAZARDS.has(kind) && this.coversScenery(x, kind)) {
-      // Před budovou či cedulí jen malá překážka (plot, jablka, husa), ať je pozadí vidět.
+      // Před budovou či cedulí místo větve plot, jablka nebo husa, ať je pozadí vidět.
       const small = (["fence", "pot", "dog"] as Kind[]).filter((one) => one !== this.lastHazard);
       kind = small[Math.floor(Math.random() * small.length)]!;
     }
@@ -2794,7 +2795,7 @@ export class Runner {
       if (!ent.alive || ent.x <= end || ent.x >= limit) continue;
       if (PROPS.has(ent.kind)) ent.alive = false;
       else if (HAZARDS.has(ent.kind) && starts.some((at, i) => ent.x >= at - hazardPad && ent.x <= ends[i]! + hazardPad)) ent.alive = false;
-      // Cedule stojí před vsí: velká překážka, která už tu byla, by ji zakryla.
+      // Cedule stojí před vsí: větev, která už tu byla, by ji zakryla.
       else if (BIG_HAZARDS.has(ent.kind) && this.coversScenery(ent.x, ent.kind)) ent.alive = false;
     }
     for (let i = 0; i < groups.length; i += 1) {
