@@ -6,16 +6,16 @@
  * „Kolo“ je jedna cesta Kopidlno → vesnice → zpět do Kopidlna (CYCLE_LEN v content.ts).
  */
 
-/** Kolik z rozdílu mezi počáteční a plnou rychlostí je na konci kola: 1. kolo 70 %, 2. kolo 88 %, 3. kolo 100 %. */
+/** Kolik z rozdílu mezi počáteční a plnou rychlostí je na konci kola: 1. kolo 72 %, 2. kolo 100 %. */
 const SPEED_KNOTS: readonly [number, number][] = [
   [0, 0],
-  [1, 0.7],
-  [2, 0.88],
-  [3, 1],
+  [1, 0.72],
+  [2, 1],
 ];
-/** Po třetím kole hra ještě přidává o 5 % za kolo, nejvýš o 20 % (od sedmého kola). */
-const SPEED_EXTRA_PER_LOOP = 0.05;
-const SPEED_EXTRA_MAX = 0.2;
+/** Od třetího kola hra přidává o 10 % za kolo, nejvýš o 40 % (od šestého kola). */
+const SPEED_EXTRA_PER_LOOP = 0.1;
+const SPEED_EXTRA_MAX = 0.4;
+const SPEED_EXTRA_FROM = 2;
 
 /**
  * Rychlejší rozjezd pro hráče, kteří už aspoň jednou došli na konec prvního kola: začnou na téhle
@@ -38,7 +38,7 @@ export function speedShape(loops: number, warm = false): { fraction: number; ext
     }
   }
   if (warm && p < 1) fraction = Math.max(fraction, WARM_START + (SPEED_KNOTS[1]![1] - WARM_START) * p);
-  const extra = Math.min(SPEED_EXTRA_MAX, Math.max(0, p - 3) * SPEED_EXTRA_PER_LOOP);
+  const extra = Math.min(SPEED_EXTRA_MAX, Math.max(0, p - SPEED_EXTRA_FROM) * SPEED_EXTRA_PER_LOOP);
   return { fraction, extra };
 }
 
@@ -56,9 +56,9 @@ export function roadZone(x: number, from: number, to: number): Zone {
 /** Základní mezera mezi překážkami v sekundách běhu: v prvním kole po částech Kopidlna, pak po kolech. */
 function baseGap(loop: number, part: number): number {
   if (loop <= 0) return [1.45, 1.32, 1.22, 1.14][Math.max(0, Math.min(3, part))]!;
-  if (loop === 1) return 1.08;
-  if (loop === 2) return 1.03;
-  return 0.98;
+  if (loop === 1) return 1.02;
+  if (loop === 2) return 0.94;
+  return 0.88;
 }
 
 const ZONE_GAP: Record<Zone, number> = {
@@ -68,8 +68,11 @@ const ZONE_GAP: Record<Zone, number> = {
   "cesta-rusna": 0.9,
 };
 
-/** Nejkratší mezera: koza je ve vzduchu 0,92 s, pod tím by dvě překážky po sobě nešly přeskočit. */
-export const MIN_GAP = 0.96;
+/**
+ * Nejkratší mezera od konce překážky k začátku další: koza je ve vzduchu 0,92 s, ale skok začíná
+ * před překážkou a končí za ní, takže mezi dvěma stačí asi 0,8 s. Kousek rezervy na reakci.
+ */
+export const MIN_GAP = 0.86;
 
 /** Mezera za překážkou v sekundách běhu (násobí se rychlostí). */
 export function hazardGap(loop: number, part: number, zone: Zone): number {
@@ -78,10 +81,37 @@ export function hazardGap(loop: number, part: number, zone: Zone): number {
 
 /** Šance, že za překážkou hned přijde druhá (dvojice): hlavně v rušných úsecích cest a v dalších kolech. */
 export function pairChance(loop: number, zone: Zone): number {
-  if (zone === "cesta-rusna") return [0.1, 0.18, 0.24][loop] ?? 0.3;
-  if (zone === "cesta") return loop >= 2 ? 0.1 : 0;
-  if (loop >= 4) return 0.12;
-  return loop >= 2 ? 0.06 : 0;
+  if (zone === "cesta-rusna") return [0.12, 0.3, 0.42][loop] ?? 0.5;
+  if (zone === "cesta") return [0, 0.15, 0.25][loop] ?? 0.3;
+  if (zone === "obec") return 0;
+  return [0, 0.08, 0.15, 0.2][loop] ?? 0.25;
+}
+
+/** Rozestup dvojice překážek v sekundách běhu: v dalších kolech jsou blíž u sebe. */
+export function pairGap(loop: number): number {
+  return [1.5, 1.4, 1.25][loop] ?? 1.1;
+}
+
+/** Volno za cyklistou v sekundách běhu (jede naproti, proto víc než za stojící překážkou). */
+export function cyclistGap(loop: number): number {
+  return [1.3, 1.2, 1.1][loop] ?? 1.0;
+}
+
+/** Volno za svitkem kroniky v sekundách běhu (od, do). */
+export function scrollGap(loop: number): [number, number] {
+  return loop <= 0 ? [0.7, 1.15] : loop === 1 ? [0.6, 0.95] : [0.5, 0.8];
+}
+
+/** Šance, že místo překážky přijde řada drbů. V dalších kolech je drbů míň a překážek víc. */
+export function gossipChance(loop: number, part: number): number {
+  if (loop <= 0) return part >= 2 ? 0.28 : part === 0 ? 0.24 : 0.22;
+  return loop === 1 ? 0.22 : 0.17;
+}
+
+/** Mezera za řadou drbů v sekundách běhu. */
+export function gossipGap(loop: number, part: number): number {
+  if (loop <= 0) return part === 0 ? 0.7 : 0.55;
+  return loop === 1 ? 0.5 : 0.42;
 }
 
 /** Chvilka oddechu: druhý náraz do této doby po prvním. */

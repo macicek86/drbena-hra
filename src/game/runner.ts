@@ -5,7 +5,7 @@ import { bonusAct as actBonus, bonusHud, BONUS_PARDON_TALE, createOfferedMini, f
 import { tickAlarm, type AlarmEvent } from "./goatAlarm.ts";
 import { reportPlayer, submitScore } from "@/game/plays";
 import { currentProfile, ensureProfile, recordGame } from "@/game/profiles";
-import { hazardGap, MERCY_SECONDS, MERCY_COOLDOWN, mercyDue, mercySlow, pairChance, roadZone, speedShape, WARM_BEST, type Zone } from "@/game/difficulty";
+import { cyclistGap, gossipChance, gossipGap, hazardGap, pairGap, scrollGap, MERCY_SECONDS, MERCY_COOLDOWN, mercyDue, mercySlow, pairChance, roadZone, speedShape, WARM_BEST, type Zone } from "@/game/difficulty";
 import { publicUrl } from "@/lib/public-url";
 import {
   CYCLE_LEN,
@@ -1778,6 +1778,7 @@ export class Runner {
       this.hazardCursor += 4 * u * 0.4 + speed * 0.62;
       return;
     }
+    const loop = Math.floor(Math.max(0, x) / CYCLE_LEN);
     if (run > 280 && x >= this.nextScroll && !this.scrollAhead()) {
       const low = this.scrolls < 2;
       const early = this.scrollsRun < 2;
@@ -1787,20 +1788,21 @@ export class Runner {
       this.scrollsRun += 1;
       this.save();
       const gap = early ? 1.7 + Math.random() * 1.8 : 4.5 + Math.random() * 7;
-      this.hazardCursor += speed * (0.7 + Math.random() * 0.45);
+      const [near, far] = scrollGap(loop);
+      this.hazardCursor += speed * (near + Math.random() * (far - near));
       this.nextScroll = this.hazardCursor + speed * gap;
       return;
     }
     const roll = Math.random();
     const stage = stageIndex(Math.max(0, x));
-    const gossipP = stage >= 2 ? 0.28 : stage === 0 ? 0.24 : 0.22;
+    const gossipP = gossipChance(loop, stage % 4);
     if (roll < gossipP) {
       const n = 3 + (Math.random() < 0.45 ? 2 : 0);
       const lift = stage >= 2 ? (Math.random() < 0.5 ? 0.92 : 0.14) : Math.random() < 0.7 ? 0.14 : 0.92;
       for (let i = 0; i < n; i += 1) {
         this.ents.push({ kind: "gossip", x: x + i * u * 0.4, lift, anim: i, alive: true });
       }
-      this.hazardCursor += n * u * 0.4 + speed * (stage === 0 ? 0.7 : 0.55);
+      this.hazardCursor += n * u * 0.4 + speed * gossipGap(loop, stage % 4);
       return;
     }
     if (roll < gossipP + 0.06 && this.lives < 3 && run > 500) {
@@ -1814,7 +1816,7 @@ export class Runner {
       // před ním si cestou ujede asi desetinu obrazovky, takže předchozí překážku nedožene.
       const lead = this.viewW * 0.16;
       this.ents.push({ kind, x: x + lead, lift: 0, anim: Math.random() * 6, alive: true });
-      this.hazardCursor += lead + u * 1.1 + speed * 1.3;
+      this.hazardCursor += lead + u * 1.1 + speed * cyclistGap(loop);
       this.lastHazard = kind;
       return;
     }
@@ -1831,10 +1833,9 @@ export class Runner {
     }
     const bulk = kind === "car" ? u * 1.7 : kind === "branch" ? u * 1.2 : kind === "pot" ? u * 0.85 : kind === "gardener" ? u * 0.85 : u * 0.55;
     const zone = this.zoneAt(x);
-    const loop = Math.floor(Math.max(0, x) / CYCLE_LEN);
     const second = Math.random() < pairChance(loop, zone) ? (kind === "fence" ? "branch" : kind === "pot" ? "fence" : null) : null;
     if (second) {
-      const at = x + bulk + speed * 1.5;
+      const at = x + bulk + speed * pairGap(loop);
       if (this.pondGapEnd(at) == null) {
         this.ents.push({ kind: second, x: at, lift: 0, anim: Math.random() * 6, alive: true });
         if (second === "branch") {
@@ -1869,6 +1870,8 @@ export class Runner {
     if (stage >= 1) bag.push("gardener");
     if (stage >= 2) bag.push("branch", "fence");
     if (stage >= 3) bag.push("car", "gardener");
+    // Od třetího kola jsou těžší překážky (auto, větev, zahradník) častější.
+    if (stage >= 8) bag.push("car", "branch", "gardener");
     // Na cestách mezi vesnicemi občas přijede naproti cyklista.
     const road = this.approaches.some((gap) => x >= gap.from && x < gap.to);
     if (road && this.lastHazard !== "cyclist" && Math.random() < 0.3) return "cyclist";
