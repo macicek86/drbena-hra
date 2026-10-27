@@ -129,6 +129,17 @@ type Art = Record<string, HTMLImageElement | HTMLImageElement[] | null>;
 
 const SAVE_KEY = "drbena-kopidlno-v1";
 
+/** Výška pruhu navigace gesty pod hrou v CSS px (env(safe-area-inset-bottom), jinde 0). */
+function safeBottom(): number {
+  if (typeof document === "undefined" || !document.body) return 0;
+  const probe = document.createElement("div");
+  probe.style.cssText = "position:fixed;left:0;bottom:0;width:1px;height:env(safe-area-inset-bottom,0px);visibility:hidden;pointer-events:none";
+  document.body.appendChild(probe);
+  const h = probe.getBoundingClientRect().height;
+  probe.remove();
+  return Number.isFinite(h) ? h : 0;
+}
+
 const HAZARDS = new Set<Kind>(["fence", "pot", "dog", "gardener", "car", "branch", "cyclist", "laundry"]);
 const PICKUPS = new Set<Kind>(["gossip", "heart", "scroll", "firefly"]);
 const LANDMARKS = new Set<Kind>(["houses", "castle", "greenhouse", "pond", "mlynec-cross", "mlynec-house", "mlynec-bell", "mlynec-school", "mlynec-pond", "ledkov-a", "ledkov-b", "drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2", "linden", "pseves-heart", "obora", "stag"]);
@@ -934,7 +945,8 @@ export class Runner {
     this.viewW = cssW < 560 ? 530 : cssW < 980 ? 760 : 1000;
     this.scale = (cssW * dpr) / this.viewW;
     this.viewH = (cssH * dpr) / this.scale;
-    const barCss = cssW < 860 ? 118 : 36;
+    // Pod tlačítky Skok a Pokrčit je na Androidu ještě pruh navigace gesty (safe-area-inset-bottom).
+    const barCss = (cssW < 860 ? 118 : 36) + safeBottom();
     const bar = barCss * (this.viewW / Math.max(1, cssW));
     this.groundY = this.viewH - bar - 8;
     this.u = Math.min(156, Math.max(112, this.viewW * 0.25));

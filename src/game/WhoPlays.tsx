@@ -32,7 +32,7 @@ export function WhoPlays({ profiles, onPlay, onAddAndPlay, onManage, onClose }: 
   }
 
   return (
-    <div className="absolute inset-0 z-30 flex items-end justify-center bg-ink/55 p-3 backdrop-blur-sm sm:items-center" onClick={onClose}>
+    <div className="absolute inset-0 z-30 flex items-end justify-center bg-ink/55 p-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] backdrop-blur-sm sm:items-center" onClick={onClose}>
       <div
         role="dialog"
         aria-label="Kdo hraje?"
