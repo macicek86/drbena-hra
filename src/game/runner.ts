@@ -5,6 +5,7 @@ import { bonusAct as actBonus, bonusHud, BONUS_PARDON_TALE, createOfferedMini, f
 import { tickAlarm, type AlarmEvent } from "./goatAlarm.ts";
 import { reportPlayer, submitScore } from "@/game/plays";
 import { currentProfile, ensureProfile, recordGame } from "@/game/profiles";
+import { hazardGap, MERCY_SECONDS, MERCY_COOLDOWN, mercyDue, mercySlow, pairChance, roadZone, speedShape, WARM_BEST, type Zone } from "@/game/difficulty";
 import { publicUrl } from "@/lib/public-url";
 import {
   CYCLE_LEN,
@@ -371,6 +372,12 @@ export class Runner {
   private shake = 0;
   private flash = 0;
   private lives = 3;
+  /** Chvilka oddechu po dvou nárazech krátce za sebou (src/game/difficulty.ts). */
+  private lastHit = -100;
+  private mercy = 0;
+  private mercyUntil = 0;
+  /** Rychlejší rozjezd pro hráče s rekordem aspoň za první kolo. */
+  private warm = false;
   private bonusLife = false;
   private gossips = 0;
   private gossipScore = 0;
@@ -584,6 +591,10 @@ export class Runner {
     this.shake = 0;
     this.flash = 0;
     this.lives = 3;
+    this.lastHit = -100;
+    this.mercy = 0;
+    this.mercyUntil = 0;
+    this.warm = this.best >= WARM_BEST;
     this.bonusLife = false;
     this.gossips = 0;
     this.gossipScore = 0;
@@ -968,11 +979,10 @@ export class Runner {
 
   private currentSpeed(): number {
     if (this.phase === "menu") return this.speed0 * 0.62;
-    const loop = CYCLE_LEN;
-    const first = Math.min(1, this.run / loop);
-    const base = this.speed0 + (this.speedMax - this.speed0) * first;
-    const later = Math.min(1, Math.max(0, this.run - loop) / (loop * 2));
-    return base * (1 + 0.15 * later) * this.oboraPace() * this.stagWonder();
+    // Pomalý a dlouhý rozjezd: plná rychlost až ve třetím kole, pak ještě kousek navíc (difficulty.ts).
+    const { fraction, extra } = speedShape(this.run / CYCLE_LEN, this.warm);
+    const base = this.speed0 + (this.speedMax - this.speed0) * fraction;
+    return base * (1 + extra) * mercySlow(this.mercy) * this.oboraPace() * this.stagWonder();
   }
 
   private stagWonder(): number {
@@ -1284,6 +1294,10 @@ export class Runner {
   private hurt(ent: Ent) {
     ent.alive = false;
     this.lives -= 1;
+    const now = this.playSeconds;
+    const rest = this.lives > 0 && mercyDue(now, this.lastHit, this.mercyUntil);
+    if (rest) this.breather();
+    this.lastHit = now;
     this.invuln = 1.35;
     this.shake = 0.35;
     this.flash = 0;
@@ -1291,9 +1305,9 @@ export class Runner {
     this.onGround = false;
     this.hitKind = ent.kind;
     this.tale = this.pickTale(ent.kind);
-    this.taleTag = "Příhoda Drběny";
+    this.taleTag = rest ? "Příhoda Drběny · chvilka oddechu" : "Příhoda Drběny";
     this.taleTitle = TALE_TITLES[ent.kind] ?? "Drběnina příhoda";
-    this.taleLife = 3.0;
+    this.taleLife = rest ? 4.0 : 3.0;
     this.talk = 0.9;
     this.sfx.hurt();
     this.burst(this.playerX, this.feet - this.u * 0.4, "#e8a317", 8);
@@ -1310,6 +1324,22 @@ export class Runner {
       submitScore(score, this.gossips, this.playSeconds);
     }
     this.pushHud(true);
+  }
+
+  /**
+   * Dva nárazy krátce za sebou: hra na chvíli zpomalí, uklidí překážky těsně před kozou
+   * a pošle srdíčko. Stejně pro všechny, další oddech až po MERCY_COOLDOWN.
+   */
+  private breather() {
+    this.mercy = MERCY_SECONDS;
+    this.mercyUntil = this.playSeconds + MERCY_COOLDOWN;
+    const from = this.camera + this.playerX;
+    const to = from + this.viewW * 0.9;
+    for (const ent of this.ents) {
+      if (ent.alive && HAZARDS.has(ent.kind) && ent.x > from && ent.x < to) ent.alive = false;
+    }
+    if (this.lives < 3) this.ents.push({ kind: "heart", x: from + this.viewW * 0.55, lift: 0.72, anim: 0, alive: true });
+    this.hazardCursor = Math.max(this.hazardCursor, to);
   }
 
   /** Cyklista jede koze naproti, jakmile vjede na obrazovku (a jen během běhu). */
@@ -1800,7 +1830,9 @@ export class Runner {
       }
     }
     const bulk = kind === "car" ? u * 1.7 : kind === "branch" ? u * 1.2 : kind === "pot" ? u * 0.85 : kind === "gardener" ? u * 0.85 : u * 0.55;
-    const second = stage >= 4 && Math.random() < 0.18 ? (kind === "fence" ? "branch" : kind === "pot" ? "fence" : null) : null;
+    const zone = this.zoneAt(x);
+    const loop = Math.floor(Math.max(0, x) / CYCLE_LEN);
+    const second = Math.random() < pairChance(loop, zone) ? (kind === "fence" ? "branch" : kind === "pot" ? "fence" : null) : null;
     if (second) {
       const at = x + bulk + speed * 1.5;
       if (this.pondGapEnd(at) == null) {
@@ -1816,9 +1848,15 @@ export class Runner {
         return;
       }
     }
-    const gapT = stage <= 0 ? 1.42 : stage === 1 ? 1.26 : stage === 2 ? 1.14 : stage === 3 ? 1.06 : 0.98;
-    this.hazardCursor += bulk + speed * gapT;
+    // Rytmus: klid ve městě a v obcích, rušno uprostřed cest mezi obcemi (difficulty.ts).
+    this.hazardCursor += bulk + speed * hazardGap(loop, stage % 4, zone);
     this.lastHazard = kind;
+  }
+
+  private zoneAt(x: number): Zone {
+    if (this.villageZones.some((zone) => x >= zone.from && x < zone.to)) return "obec";
+    const road = this.approaches.find((gap) => x >= gap.from && x < gap.to);
+    return road ? roadZone(x, road.from, road.to) : "mesto";
   }
 
   private scrollAhead() {
@@ -1859,6 +1897,7 @@ export class Runner {
     this.shake = Math.max(0, this.shake - dt * 2.4);
     this.flash = Math.max(0, this.flash - dt * 2.5);
     this.invuln = Math.max(0, this.invuln - dt);
+    if (this.phase === "play") this.mercy = Math.max(0, this.mercy - dt);
     for (const pop of this.pops) pop.life -= dt;
     this.pops = this.pops.filter((pop) => pop.life > 0);
     for (const bit of this.bits) {
