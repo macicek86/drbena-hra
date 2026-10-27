@@ -330,7 +330,7 @@ const SPEC: Record<Kind, { h: number; hitW: number; hitH: number; lift: number }
   "mlynec-bell": { h: 1.15, hitW: 0, hitH: 0, lift: 0 },
   "mlynec-house": { h: 1.47, hitW: 0, hitH: 0, lift: 0 },
   "mlynec-school": { h: 1.55, hitW: 0, hitH: 0, lift: 0 },
-  // Rybník Zrcadlo v Mlýnci: jen kulisa (ryba vyskakuje jen z kopidlenského rybníka, kind "pond").
+  // Rybník Zrcadlo v Mlýnci: jen kulisa (ryba vyskakuje jen ze Zámeckého rybníka v Kopidlně, kind "pond").
   "mlynec-pond": { h: 1.45, hitW: 0, hitH: 0, lift: 0 },
   "ledkov-a": { h: 1.32, hitW: 0, hitH: 0, lift: 0 },
   "ledkov-b": { h: 1.32, hitW: 0, hitH: 0, lift: 0 },
@@ -1759,7 +1759,7 @@ export class Runner {
   }
 
   /**
-   * Konce kopidlenského rybníka: obrázek se na krajích ztrácí do průhledna (pond.webp) a přes oba konce
+   * Konce Zámeckého rybníka v Kopidlně: obrázek se na krajích ztrácí do průhledna (pond.webp) a přes oba konce
    * stojí skupinka stromů a keřů, ať rybník plynule přechází do krajiny a nikde nevisí ve vzduchu.
    */
   private drawPondEndTrees(ctx: CanvasRenderingContext2D) {

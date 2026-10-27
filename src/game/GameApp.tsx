@@ -792,7 +792,7 @@ export function GameApp() {
                 <h2 className="mt-1 font-display text-xl leading-tight text-bow">{hud.stagDialogue.title}</h2>
               </>
             ) : (
-              <p className="text-xs font-extrabold tracking-widest text-bow">U KOPIDLENSKÉHO RYBNÍKA</p>
+              <p className="text-xs font-extrabold tracking-widest text-bow">U ZÁMECKÉHO RYBNÍKA</p>
             )}
             <div className="mt-3 flex items-center justify-between gap-3">
               <h2 className="font-display text-2xl leading-tight">
