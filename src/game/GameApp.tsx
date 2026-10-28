@@ -3,6 +3,7 @@ import { BookOpen, Heart, MessageCircle, Pause, Play, RotateCcw, Dices, Share2, 
 import { AlarmCard } from "@/game/GoatAlarmScene";
 import { ChronicleBook } from "@/game/ChronicleBook";
 import { FitOverlay } from "@/game/FitOverlay";
+import { ErbQuizCard } from "@/game/ErbQuizCard";
 import { NicknameField } from "@/game/NicknameField";
 import { Runner, emptyHud, type Hud } from "@/game/runner";
 import { chronicleBook } from "@/game/chronicle";
@@ -63,6 +64,9 @@ function hudReactKey(h: Hud): string {
     h.stagDialogue?.speaker ?? "",
     h.stagDialogue?.text ?? "",
     h.fishDialogue ?? "",
+    h.erbQuiz?.id ?? "",
+    h.erbQuiz?.selected ?? -1,
+    h.erbQuiz?.reaction ?? "",
     bonus,
   ].join("\u001f");
 }
@@ -181,6 +185,7 @@ export function GameApp() {
       setHud(next);
     });
     gameRef.current = game;
+    game.onRadnice = () => game.openErbQuiz();
     // First start from the menu: invite the player to pick a leaderboard name.
     // Every start from the main menu asks who plays (a new device asks for a nickname). "Znovu" after a game
     // and starts from other screens keep the same player.
@@ -296,7 +301,7 @@ export function GameApp() {
     }
   }
 
-  const playing = hud.phase === "play" || hud.phase === "pause" || hud.phase === "over" || hud.phase === "fish-intro" || hud.phase === "bonus" || hud.phase === "dialogue";
+  const playing = hud.phase === "play" || hud.phase === "pause" || hud.phase === "over" || hud.phase === "fish-intro" || hud.phase === "bonus" || hud.phase === "dialogue" || hud.phase === "erb-quiz";
 
   return (
     // Chrome na Androidu kreslí hru až k dolnímu okraji displeje (viewport-fit=cover), pod průhledný pruh
@@ -698,7 +703,7 @@ export function GameApp() {
               >
                 {hud.muted ? <VolumeX className="size-5" /> : <Volume2 className="size-5" />}
               </button>
-              {hud.phase !== "over" && hud.phase !== "bonus" && hud.phase !== "dialogue" && hud.phase !== "fish-intro" && (
+              {hud.phase !== "over" && hud.phase !== "bonus" && hud.phase !== "dialogue" && hud.phase !== "fish-intro" && hud.phase !== "erb-quiz" && (
                 <button
                   type="button"
                   className="flex size-11 items-center justify-center rounded-full border-2 border-ink bg-cream"
@@ -837,6 +842,21 @@ export function GameApp() {
               {hud.stagDialogue ? "Mezerník nebo Enter = dál · Esc = přeskočit" : "Mezerník nebo Enter = pokračovat"}
             </p>
           </section>
+        </FitOverlay>
+      )}
+
+      {hud.phase === "erb-quiz" && hud.erbQuiz && (
+        <FitOverlay
+          testId="erb-quiz"
+          className="z-30 bg-ink/35"
+          fitKey={String(hud.erbQuiz.id) + ":" + String(hud.erbQuiz.selected)}
+        >
+          <ErbQuizCard
+            quiz={hud.erbQuiz}
+            onAnswer={(index) => gameRef.current?.answerErb(index)}
+            onContinue={() => gameRef.current?.finishErbQuiz()}
+            onSkip={() => gameRef.current?.finishErbQuiz()}
+          />
         </FitOverlay>
       )}
 
