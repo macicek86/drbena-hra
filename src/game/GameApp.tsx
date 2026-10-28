@@ -4,10 +4,11 @@ import { AlarmCard } from "@/game/GoatAlarmScene";
 import { ChronicleBook } from "@/game/ChronicleBook";
 import { FitOverlay } from "@/game/FitOverlay";
 import { ErbQuizCard } from "@/game/ErbQuizCard";
+import { UntangleCard } from "@/game/UntangleCard";
 import { NicknameField } from "@/game/NicknameField";
 import { Runner, emptyHud, type Hud } from "@/game/runner";
 import { chronicleBook } from "@/game/chronicle";
-import { BONUS_CALM, BONUS_PARDON, type BonusAction } from "@/game/minigames";
+import { type BonusAction } from "@/game/minigames";
 import { announceName, fetchStats, needsName, playerLabel, previewStats, randomName, type BoardRow } from "@/game/plays";
 import { PlayersSheet } from "@/game/PlayersSheet";
 import { WhoPlays } from "@/game/WhoPlays";
@@ -991,7 +992,7 @@ export function GameApp() {
         <FitOverlay
           testId="bonus"
           className="z-30 bg-ink/40"
-          fitKey={`${hud.bonus.id}:${hud.bonus.stage}:${hud.bonus.wrong}:${hud.bonus.id === "alarm" ? hud.bonus.note : hud.bonus.success}:${hud.bonusLife}:${hud.lives}`}
+          fitKey={`${hud.bonus.id}:${hud.bonus.stage}:${hud.bonus.wrong}:${hud.bonus.id === "alarm" ? hud.bonus.note : `${hud.bonus.success}:${hud.bonus.picked ?? ""}:${hud.bonus.cards.join("|")}`}:${hud.bonusLife}:${hud.lives}`}
         >
           <BonusCard bonus={hud.bonus} lives={hud.lives} gained={hud.bonusLife} onAct={(action) => gameRef.current?.bonusAct(action)} />
         </FitOverlay>
@@ -1052,110 +1053,5 @@ function BonusCard({
   onAct: (action: BonusAction) => void;
 }) {
   if (bonus.id === "alarm") return <AlarmCard bonus={bonus} lives={lives} gained={gained} onAct={onAct} />;
-  return (
-    <section className="bonus-fit w-full max-w-[28em] rounded-[1.5em] border-2 border-ink bg-cream p-[1em] text-center shadow-lg sm:p-[1.5em]">
-      <p className="text-[0.75em] font-extrabold tracking-wide text-bow">Ryba z rybníka</p>
-      <h2 className="mt-[0.25em] leading-none">
-        <span className="font-display text-[2.25em]">{bonus.title}</span>
-      </h2>
-      {bonus.stage !== "done" && (
-        <p className="mt-[0.75em]">
-          <span className="text-[0.875em] leading-snug text-ink-soft">{bonus.prompt}</span>
-        </p>
-      )}
-      {bonus.stage === "offer" && (
-        <div className="mt-[1.25em] grid grid-cols-2 gap-[0.5em]">
-          <button
-            type="button"
-            className="flex h-[3.5em] items-center justify-center rounded-full border-2 border-ink bg-bow font-extrabold text-cream"
-            onClick={() => onAct({ type: "play" })}
-          >
-            <span className="text-[1.125em]">Hrát</span>
-          </button>
-          <button
-            type="button"
-            className="flex h-[3.5em] items-center justify-center rounded-full border-2 border-ink bg-cream font-extrabold"
-            onClick={() => onAct({ type: "decline" })}
-          >
-            <span className="text-[1.125em]">Ne, díky</span>
-          </button>
-        </div>
-      )}
-      {bonus.stage === "play" && (
-        <>
-          <div className="mt-[1em] flex flex-col gap-[0.5em]">
-            {bonus.cards.map((card, index) => (
-              <button
-                key={`${card}-${index}`}
-                type="button"
-                aria-pressed={bonus.picked === index}
-                className={`rounded-[0.75em] border-2 px-[0.75em] py-[0.3em] text-left font-extrabold leading-snug ${
-                  bonus.picked === index ? "border-ink bg-gold" : "border-ink bg-[#fff8ea]"
-                }`}
-                onClick={() => onAct({ type: "pick", index })}
-              >
-                <span className="text-[1em] sm:text-[1.125em]">{card}</span>
-              </button>
-            ))}
-          </div>
-          <p className="mt-[0.75em]">
-            <span className="text-[0.75em] font-extrabold text-ink-soft">Klepni na dvě kartičky a prohoď je.</span>
-          </p>
-          {bonus.wrong && (
-            <p className="mt-[0.5em]">
-              <span className="text-[0.875em] font-extrabold text-bow">{bonus.wrong}</span>
-            </p>
-          )}
-          <button
-            type="button"
-            className="mt-[1em] flex h-[3.5em] w-full items-center justify-center rounded-full border-2 border-ink bg-bow font-extrabold text-cream"
-            onClick={() => onAct({ type: "check" })}
-          >
-            <span className="text-[1.125em]">Zkontrolovat</span>
-          </button>
-          <button
-            type="button"
-            className="mt-[0.5em] flex h-[3em] w-full items-center justify-center rounded-full border-2 border-ink bg-cream font-extrabold"
-            onClick={() => onAct({ type: "skip" })}
-          >
-            Přeskočit
-          </button>
-        </>
-      )}
-      {bonus.stage === "done" && (
-        <>
-          <p className="mt-[0.75em]">
-            <span className="text-[0.875em] leading-snug">{bonus.success}</span>
-          </p>
-          <p className="mt-[0.75em] leading-none text-bow">
-            <span className="font-display text-[2.25em]">+{bonus.reward}</span>
-          </p>
-          <LifeReward lives={lives} gained={gained} />
-          <button
-            type="button"
-            className="mt-[1.25em] flex h-[3.5em] w-full items-center justify-center rounded-full border-2 border-ink bg-bow font-extrabold text-cream"
-            onClick={() => onAct({ type: "continue" })}
-          >
-            <span className="text-[1.125em]">Pokračovat</span>
-          </button>
-        </>
-      )}
-    </section>
-  );
-}
-
-function LifeReward({ lives, gained }: { lives: number; gained: boolean }) {
-  return (
-    <div className="mt-[0.5em]">
-      <div className="flex items-center justify-center gap-[0.25em]" aria-label={gained ? BONUS_PARDON : `Klid: ${lives}`}>
-        {Array.from({ length: Math.max(3, lives) }, (_, i) => (
-          <Heart
-            key={i}
-            className={`size-[1.75em] ${i < lives ? "fill-bow text-bow" : "text-ink/25"} ${gained && i === lives - 1 ? "scale-125" : ""}`}
-          />
-        ))}
-      </div>
-      <p className={`mt-[0.25em] font-extrabold ${gained ? "text-bow" : "text-ink-soft"}`}>{gained ? BONUS_PARDON : BONUS_CALM}</p>
-    </div>
-  );
+  return <UntangleCard bonus={bonus} gained={gained} onAct={onAct} />;
 }
