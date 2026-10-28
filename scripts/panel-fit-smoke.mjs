@@ -90,6 +90,10 @@ try {
     await assertPanelFits(page, name, "bonus");
     await page.getByTestId("add-row").click();
     await assertPanelFits(page, name + " extended", "bonus");
+    await page.getByTestId("switch-bonus-stage").click();
+    await assertPanelFits(page, name + " výsledek", "bonus");
+    await page.getByTestId("switch-bonus-stage").click();
+    await assertPanelFits(page, name + " pozvánka", "bonus");
     assert.deepEqual(errors, [], name + ": no browser errors");
     await context.close();
   }
