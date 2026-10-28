@@ -6,12 +6,10 @@ type UntangleHud = Extract<BonusHud, { id: "untangle" }>;
 /** Stejný vzhled dialogu jako erbovní hádanka, ale původní přehazování útržků zůstává beze změny. */
 export function UntangleCard({
   bonus,
-  lives,
   gained,
   onAct,
 }: {
   bonus: UntangleHud;
-  lives: number;
   gained: boolean;
   onAct: (action: BonusAction) => void;
 }) {
