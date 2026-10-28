@@ -55,7 +55,14 @@ export function ErbQuizCard({
             Správně: {quiz.answers[quiz.correct]}
           </p>}
           <p className="mt-2 text-center text-sm font-semibold leading-snug text-ink-soft">{quiz.explanation}</p>
-          {won && <p className="mt-2 text-center font-display text-xl text-bow">+{quiz.earned} bodů</p>}
+          {won && (
+            <div className="mt-2 text-center">
+              <p className="font-display text-xl text-bow">+{quiz.earned} bodů</p>
+              <p className="mt-1 font-extrabold text-[#3b814f]">
+                {quiz.lifeGranted ? "❤️ +1 život! Jedna příhoda se nepočítá." : "❤️ Životy máš naplno (max. 4)."}
+              </p>
+            </div>
+          )}
           <div className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-center text-sm font-extrabold">
             <a className="inline-flex items-center gap-1 text-bow underline underline-offset-2"
               href={quiz.history.href} target="_blank" rel="noopener noreferrer">
