@@ -185,6 +185,29 @@ const FOREST: readonly Kind[] = ["forest-oak", "forest-birch", "forest-pine", "f
 type Scene = "les" | "haj" | "stromy" | "pole";
 /** Stromy v zámeckém parku a kolem rybníka. */
 const PARK_TREES: readonly Kind[] = ["forest-oak", "forest-linden", "forest-maple", "forest-birch", "forest-willow", "forest-spruce"];
+/**
+ * Skupinka přes konec kulisy: [obrázek, výška v u, posun od kraje ven (+) či dovnitř (-) v u, zrcadlit,
+ * zadní řada (ztmavená)]. Kreslí se v tomhle pořadí, zadní řada první.
+ */
+type EndPiece = readonly [string, number, number, boolean, boolean];
+const POND_END: readonly EndPiece[] = [
+  ["forest-oak", 1.55, 0.35, false, true],
+  ["forest-birch", 1.6, -0.55, true, true],
+  ["forest-willow", 1.75, -0.05, false, false],
+  ["forest-linden", 1.5, 0.95, true, false],
+  ["bush", 0.5, -0.75, false, false],
+  ["bush", 0.48, 0.45, true, false],
+];
+// Obora je les za plotem: jehličnany a dub; dovnitř jen kousek, ať strom nezakryje ceduli obory.
+// Před oborou je jen kousek trávy ke skleníku (asi 1 u), skupinka proto nesahá ven dál než to.
+const OBORA_END: readonly EndPiece[] = [
+  ["forest-pine", 1.7, 0.4, false, true],
+  ["forest-birch", 1.55, -0.2, true, true],
+  ["forest-spruce", 1.85, 0.08, false, false],
+  ["forest-oak", 1.25, 0.45, true, false],
+  ["bush", 0.5, 0.05, false, false],
+  ["bush", 0.4, 0.75, true, false],
+];
 const PROPS = new Set<Kind>([...FOREST, "bush", "lamp", "tree", "bench", "pigeon", "bin"]);
 const DECOR = new Set<Kind>([...FOREST, "bush", "lamp", "tree", "bench", "pigeon", "bin", "column", "church", "school", "info", ...SIGNS]);
 
@@ -361,7 +384,7 @@ function hash(n: number): number {
   return x - Math.floor(x);
 }
 
-const ART_REV = "39";
+const ART_REV = "40";
 
 async function loadImage(src: string): Promise<HTMLImageElement | null> {
   try {
@@ -1763,42 +1786,38 @@ export class Runner {
    * stojí skupinka stromů a keřů, ať rybník plynule přechází do krajiny a nikde nevisí ve vzduchu.
    */
   private drawPondEndTrees(ctx: CanvasRenderingContext2D) {
-    const feet = this.groundY + 2;
-    // [druh, výška v u, posun od kraje rybníka ven (+) či dovnitř (-) v u, zrcadlit, zadní řada]
-    const group: [string, number, number, boolean, boolean][] = [
-      ["forest-oak", 1.55, 0.35, false, true],
-      ["forest-birch", 1.6, -0.55, true, true],
-      ["forest-willow", 1.75, -0.05, false, false],
-      ["forest-linden", 1.5, 0.95, true, false],
-      ["bush", 0.5, -0.75, false, false],
-      ["bush", 0.48, 0.45, true, false],
-    ];
     for (const ent of this.ents) {
       if (!ent.alive || ent.kind !== "pond") continue;
       const half = this.pondHalf();
       const center = ent.x - this.camera;
       if (center + half < -this.cullMargin || center - half > this.viewW + this.cullMargin) continue;
-      for (const side of [-1, 1] as const) {
-        const edge = center + side * half;
-        for (const [kind, size, out, mirror, far] of group) {
-          const img = this.art[kind];
-          if (!(img instanceof HTMLImageElement) || !img.height) continue;
-          const h = size * this.u;
-          const w = h * (img.width / img.height);
-          const x = edge + side * out * this.u;
-          const baked = far ? this.bakedFar(img, h * this.scale) : this.baked(img, h * this.scale);
-          // Na pravém konci zrcadlově, ať skupinka není dvakrát stejná.
-          const flip = (side === 1) !== mirror;
-          if (flip) {
-            ctx.save();
-            ctx.translate(this.snap(x), 0);
-            ctx.scale(-1, 1);
-            ctx.drawImage(baked, -w / 2, this.snap(feet - h), w, h);
-            ctx.restore();
-          } else {
-            ctx.drawImage(baked, this.snap(x - w / 2), this.snap(feet - h), w, h);
-          }
-        }
+      this.drawEndGroup(ctx, center - half, -1, POND_END);
+      this.drawEndGroup(ctx, center + half, 1, POND_END);
+    }
+  }
+
+  /**
+   * Skupinka stromů a keřů přes konec kulisy (rybník, obora). `side` je směr ven z kulisy: -1 levý konec,
+   * 1 pravý; na pravém konci je skupinka zrcadlově, ať oba konce nejsou stejné.
+   */
+  private drawEndGroup(ctx: CanvasRenderingContext2D, edge: number, side: -1 | 1, group: readonly EndPiece[]) {
+    const feet = this.groundY + 2;
+    for (const [kind, size, out, mirror, far] of group) {
+      const img = this.art[kind];
+      if (!(img instanceof HTMLImageElement) || !img.height) continue;
+      const h = size * this.u;
+      const w = h * (img.width / img.height);
+      const x = edge + side * out * this.u;
+      if (x + w < -40 || x - w > this.viewW + 40) continue;
+      const baked = far ? this.bakedFar(img, h * this.scale) : this.baked(img, h * this.scale);
+      if ((side === 1) !== mirror) {
+        ctx.save();
+        ctx.translate(this.snap(x), 0);
+        ctx.scale(-1, 1);
+        ctx.drawImage(baked, -w / 2, this.snap(feet - h), w, h);
+        ctx.restore();
+      } else {
+        ctx.drawImage(baked, this.snap(x - w / 2), this.snap(feet - h), w, h);
       }
     }
   }
@@ -1834,20 +1853,17 @@ export class Runner {
     }
   }
 
+  /** Začátek a konec obory: obrázek se ven ztrácí do průhledna a přes kraj stojí jehličnany a keře. */
   private drawOboraEndTrees(ctx: CanvasRenderingContext2D) {
-    const img = this.art.tree;
-    if (!(img instanceof HTMLImageElement) || !img.height) return;
-    const h = SPEC.tree.h * this.u;
-    const tw = h * (img.width / img.height);
-    const baked = this.baked(img, h * this.scale);
-    const feet = this.groundY;
     for (const span of this.oboraSpans) {
-      const edge = span.to - this.camera;
-      if (edge < -this.cullMargin || edge > this.viewW + this.cullMargin) continue;
-      const x = edge - tw * 0.28;
-      ctx.drawImage(baked, this.snap(x - tw / 2), this.snap(feet - h), tw, h);
+      const from = span.from - this.camera;
+      const to = span.to - this.camera;
+      if (to < -this.cullMargin || from > this.viewW + this.cullMargin) continue;
+      this.drawEndGroup(ctx, from, -1, OBORA_END);
+      this.drawEndGroup(ctx, to, 1, OBORA_END);
     }
   }
+
 
   private pondGapEnd(x: number): number | null {
     const cycle = CYCLE_LEN;
