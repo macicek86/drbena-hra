@@ -703,11 +703,19 @@ export class Runner {
     if (this.phase !== "erb-quiz" || !this.erbQuiz) return;
     const result = answerErbQuiz(this.erbQuiz, index);
     if (result === this.erbQuiz) return;
-    this.erbQuiz = result;
+    if (index === result.correct) {
+      // Stejné odpuštění jedné příhody jako u ryby: nejvýše čtyři životy.
+      const healed = healFromBonus(this.lives);
+      this.lives = healed.lives;
+      this.erbQuiz = { ...result, lifeGranted: healed.gained };
+    } else {
+      this.erbQuiz = result;
+    }
     if (result.earned > 0) {
       this.gossipScore += result.earned;
       this.pops.push({ x: this.playerX, y: this.feet - this.u * 0.8, text: "+" + result.earned, life: 0.9 });
       this.sfx.collect(4);
+      if (this.erbQuiz.lifeGranted) this.sfx.collect(2);
     }
     this.pushHud(true);
   }
