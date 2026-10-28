@@ -103,6 +103,7 @@ type Kind =
   | "apple-2"
   | "linden"
   | "pseves-house"
+  | "radnice"
   | "pseves-heart"
   | "obora"
   | "stag"
@@ -165,10 +166,10 @@ function safeBottom(): number {
 
 const HAZARDS = new Set<Kind>(["fence", "pot", "dog", "gardener", "car", "branch", "cyclist", "laundry"]);
 const PICKUPS = new Set<Kind>(["gossip", "heart", "scroll", "firefly"]);
-const LANDMARKS = new Set<Kind>(["houses", "castle", "greenhouse", "pond", "mlynec-cross", "mlynec-house", "mlynec-bell", "mlynec-school", "mlynec-pond", "ledkov-a", "ledkov-b", "drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2", "linden", "pseves-house", "pseves-heart", "obora", "stag"]);
+const LANDMARKS = new Set<Kind>(["radnice", "houses", "castle", "greenhouse", "pond", "mlynec-cross", "mlynec-house", "mlynec-bell", "mlynec-school", "mlynec-pond", "ledkov-a", "ledkov-b", "drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2", "linden", "pseves-house", "pseves-heart", "obora", "stag"]);
 // Cedule na začátku obcí: jen kulisa, nikdy překážka (src/game/runner.ts, approachAfter).
 const SIGNS = ["sign-mlynec", "sign-ledkov", "sign-drahoraz", "sign-pseves", "sign-kopidlno"] as const;
-const PLACES = new Set<Kind>([...SIGNS, "houses", "castle", "greenhouse", "pond", "mlynec-cross", "mlynec-house", "mlynec-bell", "mlynec-school", "mlynec-pond", "ledkov-a", "ledkov-b", "drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2", "linden", "pseves-house", "pseves-heart", "column", "church", "school", "info"]);
+const PLACES = new Set<Kind>([...SIGNS, "houses", "castle", "greenhouse", "pond", "mlynec-cross", "mlynec-house", "mlynec-bell", "mlynec-school", "mlynec-pond", "ledkov-a", "ledkov-b", "drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2", "linden", "pseves-house", "pseves-heart", "radnice", "column", "church", "school", "info"]);
 const MLYNEC = new Set<Kind>(["mlynec-cross", "mlynec-house", "mlynec-bell", "mlynec-school", "mlynec-pond"]);
 const LEDKOV = new Set<Kind>(["ledkov-a", "ledkov-b"]);
 const DRAHORAZ = new Set<Kind>(["drahoraz-church", "drahoraz-tower", "apple-0", "apple-1", "apple-2"]);
@@ -365,6 +366,8 @@ const SPEC: Record<Kind, { h: number; hitW: number; hitH: number; lift: number }
   linden: { h: 1.72, hitW: 0, hitH: 0, lift: 0 },
   "pseves-heart": { h: 1.02, hitW: 0, hitH: 0, lift: 0 },
   "pseves-house": { h: 1.5, hitW: 0, hitH: 0, lift: 0 },
+  // Radnice na kraji Kopidlna (jen při návratu z vesnic): vysoká trojpatrová budova s erbem ve štítu.
+  radnice: { h: 1.85, hitW: 0, hitH: 0, lift: 0 },
   obora: { h: 2.2, hitW: 0, hitH: 0, lift: 0 },
   stag: { h: 1.5, hitW: 0, hitH: 0, lift: 0 },
   firefly: { h: 0.22, hitW: 1, hitH: 1, lift: 0.9 },
@@ -384,7 +387,7 @@ function hash(n: number): number {
   return x - Math.floor(x);
 }
 
-const ART_REV = "40";
+const ART_REV = "41";
 
 async function loadImage(src: string): Promise<HTMLImageElement | null> {
   try {
@@ -792,6 +795,7 @@ export class Runner {
       "apple-2",
       "linden",
       "pseves-house",
+      "radnice",
       "pseves-heart",
       "column",
       "church",
@@ -1627,7 +1631,7 @@ export class Runner {
         this.decorCursor += this.u * (1.5 + Math.random() * 1.2);
         continue;
       }
-      if (this.ents.some((ent) => ent.alive && VILLAGES.has(ent.kind) && Math.abs(ent.x - this.decorCursor) < this.visualHalf(ent.kind) + this.visualHalf(kind) + this.u * 0.35)) {
+      if (this.ents.some((ent) => ent.alive && (VILLAGES.has(ent.kind) || ent.kind === "radnice") && Math.abs(ent.x - this.decorCursor) < this.visualHalf(ent.kind) + this.visualHalf(kind) + this.u * 0.35)) {
         this.decorCursor += this.u * (1.5 + Math.random() * 1.2);
         continue;
       }
@@ -1742,7 +1746,9 @@ export class Runner {
                             ? 863 / 1000
                             : kind === "linden"
                               ? 1334 / 440
-                              : kind === "pseves-house"
+                              : kind === "radnice"
+                                ? 1187 / 760
+                                : kind === "pseves-house"
                                 ? 1400 / 516
                               : kind === "pseves-heart"
                                 ? 1028 / 1309
@@ -2926,7 +2932,10 @@ export class Runner {
     if (this.approaches.some((row) => Math.abs(row.from - end) < 12)) return;
     const u = this.u;
     const houses = this.nextTown(end + 1) + u * 2.2;
-    const limit = houses - this.infoOffset() - this.visualHalf("info") - u * 0.35;
+    // Při návratu do Kopidlna: cedule, chvíle volna, radnice, krátká pauza a pak infocentrum a náměstí.
+    const infoLeft = houses - this.infoOffset() - this.visualHalf("info");
+    const radnice = infoLeft - u * 0.9 - this.visualHalf("radnice");
+    const limit = radnice - this.visualHalf("radnice") - u * 1.6;
     const room = limit - end;
 
     // Po rybníku / oboře následují čtyři samostatné vsi, poté návrat do Kopidlna.
@@ -2996,7 +3005,7 @@ export class Runner {
     this.approaches.push({ from: ends[ends.length - 1]!, to: limit, village: houses, label: "Cesta do Kopidlna", place: "namesti" });
     // Cedule obcí stojí kousek před první stavbou vsi.
     // Kopidlno má ceduli jen při návratu na konci „Cesty do Kopidlna“ (na úplném začátku hry ne).
-    // Až přibude budova na začátek Kopidlna, postaví se mezi ceduli a infocentrum (posunout `limit`).
+    // Mezi cedulí a infocentrem stojí radnice (`radnice`, `limit` končí před ní).
     const signs: (Kind | null)[] = ["sign-mlynec", "sign-ledkov", "sign-drahoraz", "sign-pseves"];
     const signGap = u * 0.35;
     signs.forEach((kind, i) => {
@@ -3004,6 +3013,13 @@ export class Runner {
       this.ents.push({ kind, x: starts[i]! - signGap - this.visualHalf(kind), lift: 0, anim: 0, alive: true });
     });
     this.ents.push({ kind: "sign-kopidlno", x: limit - signGap - this.visualHalf("sign-kopidlno"), lift: 0, anim: 0, alive: true });
+    this.ents.push({ kind: "radnice", x: radnice, lift: 0, anim: 0, alive: true });
+    // Před radnicí nic velkého a žádná dekorace přes ni.
+    const keep = this.visualHalf("radnice") + u * 0.6;
+    for (const ent of this.ents) {
+      if (!ent.alive || Math.abs(ent.x - radnice) > keep + this.visualHalf(ent.kind)) continue;
+      if (PROPS.has(ent.kind) || BIG_HAZARDS.has(ent.kind)) ent.alive = false;
+    }
 
     // Odstranit předem náhodně vygenerované dekorace; vrátit jen venkovskou zeleň
     // v mezerách. V obcích se nesmí objevit ani překážka překrývající budovu.
