@@ -211,8 +211,11 @@ const OBORA_END: readonly EndPiece[] = [
   ["bush", 0.5, 0.05, false, false],
   ["bush", 0.4, 0.75, true, false],
 ];
-/** Jak dlouho Drběna u radnice kouká na erb (sekundy); posledních LOOK_DOWN sklání hlavu. */
-const RADNICE_GAZE = 2.6;
+/**
+ * Jak dlouho Drběna u radnice kouká na erb (sekundy): 0,9 s zvedá hlavu, pak asi 1,6 s jen kouká
+ * (hráč si všimne, kam se dívá), teprve potom hádanka; posledních LOOK_DOWN sklání hlavu.
+ */
+const RADNICE_GAZE = 2.98;
 const LOOK_DOWN = 0.48;
 /** Snímky zvednutí hlavy (`public/game/look`). */
 const LOOK_FRAMES = 8;

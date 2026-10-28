@@ -17,7 +17,7 @@ export function ErbQuizCard({
   return (
     <section role="dialog" aria-label={quiz.title}
       className="w-full max-w-[27rem] rounded-3xl border-[3px] border-gold bg-cream p-4 text-ink shadow-xl sm:p-6">
-      <p className="text-center text-xs font-extrabold tracking-widest text-bow">U ERBU KOPIDLNA</p>
+      <p className="text-center text-xs font-extrabold tracking-widest text-bow">U RADNICE NA NÁMĚSTÍ</p>
       <h2 className="mt-1 text-center font-display text-2xl leading-tight">{quiz.title}</h2>
       <p className="mt-2 text-center text-sm font-semibold leading-snug text-ink-soft">
         <span aria-hidden="true">🐐 </span><strong>Drběna:</strong> {quiz.intro.join(" ")}
