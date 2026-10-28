@@ -2608,7 +2608,8 @@ export class Runner {
     } else if (ducking) {
       sheet = this.art.duck;
       index = this.duckLock > 0.2 ? 1 + (Math.floor(this.time * 8) % 2) : 0;
-    } else if (this.fish > 0) {
+    } else if (this.fish > 0 && (this.phase !== "play" || this.talk > 0)) {
+      // U ryby Drběna stojí; jakmile se po rozhovoru zase rozběhne (ryba se teprve potápí), běží.
       sheet = this.art.idle;
       index = Math.floor(this.time * 3) % 4;
     } else if (!this.onGround && this.phase === "play") {
