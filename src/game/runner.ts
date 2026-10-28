@@ -1176,7 +1176,7 @@ export class Runner {
     // Pomalý a dlouhý rozjezd: plná rychlost až ve třetím kole, pak ještě kousek navíc (difficulty.ts).
     const { fraction, extra } = speedShape(this.run / CYCLE_LEN, this.warm);
     const base = this.speed0 + (this.speedMax - this.speed0) * fraction;
-    return base * (1 + extra) * mercySlow(this.mercy) * this.oboraPace() * this.stagWonder();
+    return base * (1 + extra) * mercySlow(this.mercy) * this.oboraPace() * this.stagWonder() * this.radnicePace();
   }
 
   private stagWonder(): number {
@@ -1326,6 +1326,37 @@ export class Runner {
     }
   }
 
+  /** Místo pod štítem radnice, kde Drběna zastaví a kouká na erb. */
+  private radniceSpot(ent: Ent): number {
+    return ent.x - this.u * 0.55;
+  }
+
+  /** Klidný úsek před radnicí (před místem zastavení): bez překážek, bez skoku a přikrčení, zpomaluje se. */
+  private radniceCalm(): number {
+    return Math.max(this.viewW * 0.9, this.u * 5);
+  }
+
+  /** Kolik zbývá k místu zastavení u radnice, když je Drběna v klidném úseku před ní; jinak null. */
+  private radniceAhead(): number | null {
+    const here = this.camera + this.playerX;
+    const calm = this.radniceCalm();
+    for (const ent of this.ents) {
+      if (!ent.alive || ent.kind !== "radnice" || this.gazed.has(ent)) continue;
+      const left = this.radniceSpot(ent) - here;
+      if (left >= 0 && left <= calm) return left;
+    }
+    return null;
+  }
+
+  /** Před radnicí Drběna plynule zpomalí (posledních ~3 u na 55 %), ať zastavení nepůsobí jako náraz. */
+  private radnicePace(): number {
+    if (this.phase !== "play") return 1;
+    const left = this.radniceAhead();
+    if (left === null) return 1;
+    const k = Math.min(1, left / (this.u * 3));
+    return 0.55 + 0.45 * k * k * (3 - 2 * k);
+  }
+
   /** Drběna stojí na místě: u jelena, nebo u radnice. */
   private holds(): boolean {
     return this.gaze > 0 || this.stagHolds();
@@ -1352,7 +1383,7 @@ export class Runner {
     for (const ent of this.ents) {
       if (!ent.alive || ent.kind !== "radnice" || this.gazed.has(ent)) continue;
       // Koza se zastaví kousek vlevo od štítu, ať erb vidí šikmo nad sebou.
-      const spot = ent.x - this.u * 0.55;
+      const spot = this.radniceSpot(ent);
       if (here < spot || !this.onGround) continue;
       this.gazed.add(ent);
       if (here > ent.x + this.visualHalf("radnice")) continue;
@@ -1458,7 +1489,10 @@ export class Runner {
     this.jumpEdge = false;
     this.jumpBuffer = Math.max(0, this.jumpBuffer - dt);
 
-    const wantJump = this.jumpBuffer > 0 && !ducking && (this.onGround || this.coyote > 0);
+    // Před radnicí se neskáče: Drběna dojde pod erb po zemi.
+    const calm = this.radniceAhead() !== null;
+    if (calm) this.jumpBuffer = 0;
+    const wantJump = !calm && this.jumpBuffer > 0 && !ducking && (this.onGround || this.coyote > 0);
     if (wantJump) {
       this.vy = -this.jumpSpeed;
       this.onGround = false;
@@ -2048,8 +2082,7 @@ export class Runner {
     // Před radnicí a pod ní žádná překážka: Drběna musí doběhnout pod erb po zemi.
     for (const ent of this.ents) {
       if (!ent.alive || ent.kind !== "radnice") continue;
-      const half = this.visualHalf("radnice");
-      const from = ent.x - half - this.u * 2.4;
+      const from = Math.min(ent.x - this.visualHalf("radnice") - this.u * 2.4, this.radniceSpot(ent) - this.radniceCalm() - this.u);
       const to = ent.x + this.u * 0.6;
       if (x >= from && x < to) return to;
     }
@@ -2368,6 +2401,7 @@ export class Runner {
     return (
       this.phase === "play" &&
       this.onGround &&
+      this.radniceAhead() === null &&
       (this.keyDuck || this.touchDuck || this.padDuck || this.duckLock > 0)
     );
   }
@@ -3217,7 +3251,8 @@ export class Runner {
     for (const ent of this.ents) {
       if (!ent.alive) continue;
       // Žádná překážka těsně před radnicí (koza by ji přeskakovala a nezastavila pod erbem).
-      if (HAZARDS.has(ent.kind) && ent.x > radnice - this.visualHalf("radnice") - u * 2.4 && ent.x < radnice + u * 0.6) {
+      const calmFrom = Math.min(radnice - this.visualHalf("radnice") - u * 2.4, radnice - u * 0.55 - this.radniceCalm() - u);
+      if ((HAZARDS.has(ent.kind) || ent.kind === "gossip" || ent.kind === "scroll" || ent.kind === "heart") && ent.x > calmFrom && ent.x < radnice + u * 0.6) {
         ent.alive = false;
         continue;
       }
