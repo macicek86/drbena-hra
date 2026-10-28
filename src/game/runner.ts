@@ -211,8 +211,9 @@ const OBORA_END: readonly EndPiece[] = [
   ["bush", 0.5, 0.05, false, false],
   ["bush", 0.4, 0.75, true, false],
 ];
-/** Jak dlouho Drběna u radnice kouká na erb (sekundy). */
+/** Jak dlouho Drběna u radnice kouká na erb (sekundy); posledních LOOK_DOWN sklání hlavu. */
 const RADNICE_GAZE = 2.6;
+const LOOK_DOWN = 0.48;
 /** Snímky zvednutí hlavy (`public/game/look`). */
 const LOOK_FRAMES = 8;
 const PROPS = new Set<Kind>([...FOREST, "bush", "lamp", "tree", "bench", "pigeon", "bin"]);
@@ -511,6 +512,7 @@ export class Runner {
   private gaze = 0;
   private gazeAt: Ent | null = null;
   private gazed = new WeakSet<Ent>();
+  private gazeAsked = false;
   /** Zavolá se, když Drběna u radnice dokouká na erb (sem se napojí budoucí minihra u radnice). */
   onRadnice: (() => void) | null = null;
   private erbQuiz: ErbQuizRound | null = null;
@@ -1333,10 +1335,14 @@ export class Runner {
   private watchRadnice(dt: number) {
     if (this.gaze > 0) {
       this.gaze = Math.max(0, this.gaze - dt);
-      if (this.gaze === 0) {
-        this.gazeAt = null;
+      // S hlavou nahoře se otevře minihra (onRadnice); hlavu skloní až po ní (finishErbQuiz vrátí běh).
+      if (!this.gazeAsked && this.gaze <= LOOK_DOWN) {
+        this.gazeAsked = true;
+        this.gaze = LOOK_DOWN;
         this.onRadnice?.();
+        return;
       }
+      if (this.gaze === 0) this.gazeAt = null;
       return;
     }
     const here = this.camera + this.playerX;
@@ -1348,6 +1354,7 @@ export class Runner {
       this.gazed.add(ent);
       if (here > ent.x + this.visualHalf("radnice")) continue;
       this.gaze = RADNICE_GAZE;
+      this.gazeAsked = false;
       this.gazeAt = ent;
       this.releaseInputs();
       const to = here + this.viewW * 1.2;
@@ -2035,6 +2042,14 @@ export class Runner {
 
 
   private pondGapEnd(x: number): number | null {
+    // Před radnicí a pod ní žádná překážka: Drběna musí doběhnout pod erb po zemi.
+    for (const ent of this.ents) {
+      if (!ent.alive || ent.kind !== "radnice") continue;
+      const half = this.visualHalf("radnice");
+      const from = ent.x - half - this.u * 2.4;
+      const to = ent.x + this.u * 0.6;
+      if (x >= from && x < to) return to;
+    }
     const cycle = CYCLE_LEN;
     const base = Math.floor(x / cycle);
     for (let i = base - 1; i <= base + 1; i += 1) {
@@ -2224,7 +2239,9 @@ export class Runner {
     if (stage >= 8) bag.push("car", "branch", "gardener");
     // Na cestách mezi vesnicemi občas přijede naproti cyklista.
     const road = this.approaches.some((gap) => x >= gap.from && x < gap.to);
-    if (road && this.lastHazard !== "cyclist" && Math.random() < 0.3) return "cyclist";
+    // Cyklista jede naproti: nesmí dojet až k radnici, kde Drběna zastavuje pod erbem.
+    const nearRadnice = this.ents.some((ent) => ent.alive && ent.kind === "radnice" && x > ent.x - this.viewW * 0.2 && x - ent.x < this.viewW * 1.6);
+    if (road && !nearRadnice && this.lastHazard !== "cyclist" && Math.random() < 0.3) return "cyclist";
     let kind = bag[Math.floor(Math.random() * bag.length)]!;
     if (kind === this.lastHazard) kind = "pot";
     if (kind === "branch" && this.lastHazard === "gardener") kind = "fence";
@@ -2698,7 +2715,7 @@ export class Runner {
   private lookIndex(): number {
     const n = Array.isArray(this.art.look) ? this.art.look.length : 1;
     const up = 0.9;
-    const down = 0.48;
+    const down = LOOK_DOWN;
     const elapsed = RADNICE_GAZE - this.gaze;
     const k = elapsed < up ? elapsed / up : this.gaze < down ? this.gaze / down : 1;
     return Math.min(n - 1, Math.max(0, Math.floor(k * n - 1e-6)));
@@ -3195,7 +3212,13 @@ export class Runner {
     // Před radnicí nic velkého a žádná dekorace přes ni.
     const keep = this.visualHalf("radnice") + u * 0.6;
     for (const ent of this.ents) {
-      if (!ent.alive || Math.abs(ent.x - radnice) > keep + this.visualHalf(ent.kind)) continue;
+      if (!ent.alive) continue;
+      // Žádná překážka těsně před radnicí (koza by ji přeskakovala a nezastavila pod erbem).
+      if (HAZARDS.has(ent.kind) && ent.x > radnice - this.visualHalf("radnice") - u * 2.4 && ent.x < radnice + u * 0.6) {
+        ent.alive = false;
+        continue;
+      }
+      if (Math.abs(ent.x - radnice) > keep + this.visualHalf(ent.kind)) continue;
       if (PROPS.has(ent.kind) || BIG_HAZARDS.has(ent.kind)) ent.alive = false;
     }
 
