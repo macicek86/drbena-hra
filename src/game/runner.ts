@@ -1,5 +1,6 @@
 import { knownIds, pageIds, rememberFact } from "@/game/chronicle";
 import { Sfx } from "@/game/audio";
+import { answerErbQuiz, createErbQuiz, type ErbQuizRound } from "@/game/erb-quiz";
 import { STAG_STORIES, stagStoryFor, type StagStory } from "@/game/stag-stories";
 import { bonusAct as actBonus, bonusHud, BONUS_PARDON_TALE, createOfferedMini, fishOffersMini, healFromBonus, type AnyBonus, type BonusAction, type BonusHud } from "@/game/minigames";
 import { tickAlarm, type AlarmEvent } from "./goatAlarm.ts";
@@ -19,7 +20,7 @@ import {
   type RGB,
 } from "@/game/content";
 
-export type Phase = "loading" | "splash" | "menu" | "play" | "pause" | "fish-intro" | "bonus" | "dialogue" | "over";
+export type Phase = "loading" | "splash" | "menu" | "play" | "pause" | "fish-intro" | "bonus" | "dialogue" | "erb-quiz" | "over";
 
 export type Hud = {
   phase: Phase;
@@ -57,6 +58,7 @@ export type Hud = {
     chapters: number;
   } | null;
   fishDialogue: string | null;
+  erbQuiz: ErbQuizRound | null;
 };
 
 type Kind =
@@ -433,6 +435,7 @@ export function emptyHud(): Hud {
     bonus: null,
     stagDialogue: null,
     fishDialogue: null,
+    erbQuiz: null,
   };
 }
 
@@ -510,6 +513,8 @@ export class Runner {
   private gazed = new WeakSet<Ent>();
   /** Zavolá se, když Drběna u radnice dokouká na erb (sem se napojí budoucí minihra u radnice). */
   onRadnice: (() => void) | null = null;
+  private erbQuiz: ErbQuizRound | null = null;
+  private lastErbQuestionId: string | null = null;
   private bits: Bit[] = Array.from({ length: 80 }, () => ({
     on: false,
     x: 0,
@@ -627,7 +632,7 @@ export class Runner {
   }
 
   togglePause() {
-    if (this.phase === "bonus" || this.phase === "dialogue" || this.phase === "fish-intro") return;
+    if (this.phase === "bonus" || this.phase === "dialogue" || this.phase === "fish-intro" || this.phase === "erb-quiz") return;
     if (this.phase === "play") this.phase = "pause";
     else if (this.phase === "pause") this.phase = "play";
     this.pushHud(true);
@@ -683,6 +688,39 @@ export class Runner {
     }
   }
 
+  /** Volá onRadnice po animaci pohledu na erb. Běh zůstane zastavený do odpovědi. */
+  openErbQuiz() {
+    if (this.phase !== "play" || this.erbQuiz) return;
+    this.erbQuiz = createErbQuiz(this.lastErbQuestionId);
+    this.lastErbQuestionId = this.erbQuiz.id;
+    this.phase = "erb-quiz";
+    this.releaseInputs();
+    this.sfx.fact();
+    this.pushHud(true);
+  }
+
+  answerErb(index: number) {
+    if (this.phase !== "erb-quiz" || !this.erbQuiz) return;
+    const result = answerErbQuiz(this.erbQuiz, index);
+    if (result === this.erbQuiz) return;
+    this.erbQuiz = result;
+    if (result.earned > 0) {
+      this.gossipScore += result.earned;
+      this.pops.push({ x: this.playerX, y: this.feet - this.u * 0.8, text: "+" + result.earned, life: 0.9 });
+      this.sfx.collect(4);
+    }
+    this.pushHud(true);
+  }
+
+  finishErbQuiz() {
+    if (this.phase !== "erb-quiz") return;
+    this.erbQuiz = null;
+    this.phase = "play";
+    this.suppress = Math.max(this.suppress, 0.65);
+    this.releaseInputs();
+    this.pushHud(true);
+  }
+
   /** Lets the UI hold the first start from the menu (e.g. to ask for a name). Return false to stay in the menu. */
   startGate: (() => boolean) | null = null;
 
@@ -709,6 +747,7 @@ export class Runner {
     this.lastHit = -100;
     this.gaze = 0;
     this.gazeAt = null;
+    this.erbQuiz = null;
     this.mercy = 0;
     this.mercyUntil = 0;
     this.warm = this.best >= WARM_BEST;
@@ -957,6 +996,15 @@ export class Runner {
       }
       return;
     }
+    if (this.phase === "erb-quiz") {
+      if (["Space", "Enter", "Escape", "Digit1", "Digit2", "Digit3", "Numpad1", "Numpad2", "Numpad3"].includes(code)) event.preventDefault();
+      // Tlačítka v dialogu mají vlastní nativní klávesové ovládání.
+      if (target?.closest("button, a")) return;
+      if (!event.repeat && /^((Digit|Numpad)[1-3])$/.test(code)) this.answerErb(Number(code.slice(-1)) - 1);
+      else if (!event.repeat && code === "Escape") this.finishErbQuiz();
+      else if (!event.repeat && (code === "Space" || code === "Enter") && this.erbQuiz?.selected !== null) this.finishErbQuiz();
+      return;
+    }
     if (this.phase === "bonus" || this.phase === "fish-intro") return;
     if (this.phase === "splash") {
       if (!event.repeat && (code === "Space" || code === "Enter" || code === "ArrowUp" || code === "KeyW")) this.continueSplash();
@@ -1084,7 +1132,7 @@ export class Runner {
         steps += 1;
       }
       this.draw();
-      const mode = this.phase === "menu" ? "intro" : this.phase === "play" || this.phase === "dialogue" || this.phase === "fish-intro" ? "loop" : "off";
+      const mode = this.phase === "menu" ? "intro" : this.phase === "play" || this.phase === "dialogue" || this.phase === "fish-intro" || this.phase === "erb-quiz" ? "loop" : "off";
       let tempo = 1;
       if (this.phase === "play") {
         const pace = this.speed0 > 0 ? this.speed / this.speed0 : 1;
@@ -1169,7 +1217,7 @@ export class Runner {
       this.decayJuice(dt);
       return;
     }
-    if (this.phase === "pause" || this.phase === "bonus" || this.phase === "dialogue") {
+    if (this.phase === "pause" || this.phase === "bonus" || this.phase === "dialogue" || this.phase === "erb-quiz") {
       if (this.phase === "dialogue") {
         this.anim += dt * 2;
         // Hláška ryby už nemá časový limit; ryba zůstane nad vodou do potvrzení.
@@ -3215,6 +3263,7 @@ export class Runner {
           }
         : null,
       fishDialogue: this.phase === "dialogue" ? this.fishDialogue : null,
+      erbQuiz: this.phase === "erb-quiz" ? this.erbQuiz : null,
     });
   }
 
