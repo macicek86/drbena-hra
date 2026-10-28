@@ -13,6 +13,7 @@ export type ErbQuizRound = {
   explanation: string;
   reaction: string;
   earned: number;
+  lifeGranted: boolean;
   history: ErbQuizLink;
   legend: ErbQuizLink;
 };
@@ -61,6 +62,7 @@ export function createErbQuiz(lastId: string | null, random: () => number = Math
     explanation: chosen.explanation,
     reaction: "",
     earned: 0,
+    lifeGranted: false,
     history: data.links.history,
     legend: data.links.legend,
   };
