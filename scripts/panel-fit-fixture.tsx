@@ -2,18 +2,21 @@ import React, { useState } from "react";
 import { createRoot } from "react-dom/client";
 import { BookOpen, RotateCcw, Share2 } from "lucide-react";
 import { FitOverlay } from "../src/game/FitOverlay";
+import { UntangleCard } from "../src/game/UntangleCard";
 import "../src/styles.css";
 
 function Fixture() {
   const [mode, setMode] = useState<"over" | "bonus">("over");
   const [rows, setRows] = useState(5);
+  const [bonusStage, setBonusStage] = useState<"play" | "done" | "offer">("play");
   return (
     <div className="relative h-dvh w-full bg-day font-sans">
       <div className="absolute right-1 top-1 z-40 flex gap-2">
         <button type="button" className="bg-white p-1" data-testid="switch-mode" onClick={() => setMode(mode === "over" ? "bonus" : "over")}>Přepnout</button>
         <button type="button" className="bg-white p-1" data-testid="add-row" onClick={() => setRows(Math.min(10, rows + 1))}>Více</button>
+        <button type="button" className="bg-white p-1" data-testid="switch-bonus-stage" onClick={() => setBonusStage(bonusStage === "play" ? "done" : bonusStage === "done" ? "offer" : "play")}>Fáze</button>
       </div>
-      <FitOverlay testId={mode} fitKey={`${mode}:${rows}`} className="bg-ink/35">
+      <FitOverlay testId={mode} fitKey={`${mode}:${rows}:${bonusStage}`} className="bg-ink/35">
         {mode === "over" ? (
           <section className="w-full max-w-sm rounded-3xl border-2 border-ink bg-cream p-6 text-center" data-testid="actual-panel">
             <p className="text-sm font-extrabold text-bow">Příhoda</p>
@@ -40,17 +43,26 @@ function Fixture() {
             <a href="https://www.kopidlenskadrbna.org" className="mt-4 inline-block text-sm font-extrabold text-bow underline">www.kopidlenskadrbna.org</a>
           </section>
         ) : (
-          <section className="bonus-fit w-full max-w-[28em] rounded-[1.5em] border-2 border-ink bg-cream p-[1em] text-center shadow-lg sm:p-[1.5em]" data-testid="actual-panel">
-            <p className="text-[0.75em] font-extrabold tracking-wide text-bow">Ryba z rybníka</p>
-            <h2 className="mt-[0.25em] font-display text-[2.25em] leading-none">Rozplétej drb</h2>
-            <p className="mt-[0.75em] text-[0.875em] leading-snug text-ink-soft">Seřaď události tak, jak se skutečně odehrály ve starém Kopidlně.</p>
-            <div className="mt-[1em] flex flex-col gap-[0.5em]">
-              {Array.from({length:Math.max(4, rows)},(_,i)=><button type="button" key={i} className="rounded-[0.75em] border-2 bg-[#fff8ea] px-[0.75em] py-[0.3em] text-left font-extrabold">Událost číslo {i+1} z historie Kopidlna</button>)}
-            </div>
-            <p className="mt-[0.75em] text-[0.75em] font-extrabold text-ink-soft">Klepni na dvě kartičky a prohoď je.</p>
-            <button type="button" className="mt-[1em] flex h-[3.5em] w-full items-center justify-center rounded-full border-2 border-ink bg-bow font-extrabold text-cream">Zkontrolovat</button>
-            <button type="button" className="mt-[0.5em] flex h-[3em] w-full items-center justify-center rounded-full border-2 border-ink bg-cream font-extrabold">Přeskočit</button>
-          </section>
+          <UntangleCard
+            bonus={{
+              stage: bonusStage,
+              id: "untangle",
+              title: "Rozpleť drb!",
+              prompt: "Drběno! Mám drb tak zamotaný, že se mi do něj chytily vlastní ploutve! Pomůžeš?",
+              cards: [
+                "V Kopidlně stojí známá radnice na náměstí, " + "všichni to moc dobře vědí, ".repeat(Math.max(0, rows - 4)),
+                "nad kterou se tyčí místní erb s kozlí hlavou, " + "tak prý to bylo odjakživa, ".repeat(Math.max(0, rows - 4)),
+                "a Drběna tam má podle svých slov příbuzného!",
+              ],
+              picked: 1,
+              wrong: rows > 5 ? "Bubliny moje! Takhle zamotaný drb jsem ještě neviděla!" : "",
+              success: "Drběna tvrdí, že na radnici má příbuzného! A ryba se tomu pořád směje.",
+              reward: 50,
+            }}
+            lives={3}
+            gained={true}
+            onAct={() => undefined}
+          />
         )}
       </FitOverlay>
     </div>
