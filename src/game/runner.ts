@@ -211,6 +211,8 @@ const OBORA_END: readonly EndPiece[] = [
 ];
 /** Jak dlouho Drběna u radnice kouká na erb (sekundy). */
 const RADNICE_GAZE = 2.6;
+/** Snímky zvednutí hlavy (`public/game/look`). */
+const LOOK_FRAMES = 8;
 const PROPS = new Set<Kind>([...FOREST, "bush", "lamp", "tree", "bench", "pigeon", "bin"]);
 const DECOR = new Set<Kind>([...FOREST, "bush", "lamp", "tree", "bench", "pigeon", "bin", "column", "church", "school", "info", ...SIGNS]);
 
@@ -829,7 +831,7 @@ export class Runner {
     ] as const;
     const frames = ["jump", "duck", "run", "idle"] as const;
     this.loaded = 0;
-    this.loadTotal = names.length + frames.length * 4 + 13;
+    this.loadTotal = names.length + frames.length * 4 + 13 + LOOK_FRAMES;
     this.ready = false;
     const rest = Promise.all([
       this.loadFramesCounted("jump"),
@@ -865,12 +867,14 @@ export class Runner {
       this.loadFramesCounted("idle"),
       this.loadFramesCounted("stag-run"),
       this.loadFramesCounted("stag-idle"),
-    ]).then(([run, idle, stagRun, stagIdle]) => {
+      this.loadFramesCounted("look", LOOK_FRAMES),
+    ]).then(([run, idle, stagRun, stagIdle, look]) => {
       if (!this.alive) return;
       this.art.run = run;
       this.art.idle = idle;
       this.art.stagRun = stagRun;
       this.art.stagIdle = stagIdle;
+      this.art.look = look;
     });
     if (!this.alive) return;
     this.openMenu();
@@ -885,10 +889,10 @@ export class Runner {
     });
   }
 
-  private loadFramesCounted(name: string) {
-    return Promise.all([0, 1, 2, 3].map((i) => this.loadCounted(publicUrl(`/game/${name}/${i}.webp`)))).then((frames) =>
-      frames.filter((frame): frame is HTMLImageElement => frame !== null),
-    );
+  private loadFramesCounted(name: string, count = 4) {
+    return Promise.all(
+      Array.from({ length: count }, (_, i) => this.loadCounted(publicUrl(`/game/${name}/${i}.webp`))),
+    ).then((frames) => frames.filter((frame): frame is HTMLImageElement => frame !== null));
   }
 
   private openMenu() {
@@ -1267,7 +1271,7 @@ export class Runner {
   }
 
   /**
-   * U radnice Drběna zastaví pod štítem a chvíli kouká nahoru na kopidlenský erb s kozlí hlavou.
+   * U radnice Drběna zastaví pod štítem a zvedne hlavu k kopidlenskému erbu s kozlí hlavou.
    * Zastaví až na zemi; překážky těsně před ní se uklidí, ať do ní nic nevjede.
    */
   private watchRadnice(dt: number) {
@@ -2612,6 +2616,9 @@ export class Runner {
       if (this.vy < -this.jumpSpeed * 0.25) index = 1;
       else if (this.vy > this.jumpSpeed * 0.12) index = 3;
       else index = 2;
+    } else if (this.gaze > 0 && Array.isArray(this.art.look) && this.art.look.length > 0) {
+      sheet = this.art.look;
+      index = this.lookIndex();
     } else if (this.holds()) {
       sheet = this.art.idle;
       index = Math.floor(this.time * 2) % 4;
@@ -2627,18 +2634,17 @@ export class Runner {
       return;
     }
     const w = h * (img.width / img.height);
-    if (this.gaze > 0) {
-      // Pohled nahoru: celá koza se zakloní kolem zadních nohou.
-      const t = 1 - this.gaze / RADNICE_GAZE;
-      const lean = -0.16 * Math.min(1, t * 6, (1 - t) * 5);
-      ctx.save();
-      ctx.translate(this.playerX - w * 0.22, this.feet);
-      ctx.rotate(lean);
-      ctx.drawImage(this.baked(img, h * this.scale), -w / 2 + w * 0.22, -h, w, h);
-      ctx.restore();
-      return;
-    }
     ctx.drawImage(this.baked(img, h * this.scale), this.snap(this.playerX - w / 2), this.snap(this.feet - h), w, h);
+  }
+
+  /** Zvednutí hlavy u radnice: nahoru, chvíli držet pohled, před rozběhem zase dolů. */
+  private lookIndex(): number {
+    const n = Array.isArray(this.art.look) ? this.art.look.length : 1;
+    const up = 0.9;
+    const down = 0.48;
+    const elapsed = RADNICE_GAZE - this.gaze;
+    const k = elapsed < up ? elapsed / up : this.gaze < down ? this.gaze / down : 1;
+    return Math.min(n - 1, Math.max(0, Math.floor(k * n - 1e-6)));
   }
 
   private drawObora(ctx: CanvasRenderingContext2D, ent: Ent) {
