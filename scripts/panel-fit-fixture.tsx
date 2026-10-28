@@ -59,7 +59,6 @@ function Fixture() {
               success: "Drběna tvrdí, že na radnici má příbuzného! A ryba se tomu pořád směje.",
               reward: 50,
             }}
-            lives={3}
             gained={true}
             onAct={() => undefined}
           />
