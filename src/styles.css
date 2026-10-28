@@ -18,9 +18,9 @@ html,
 body {
   height: 100%;
   overflow: hidden;
-  /* Under the game (main is fixed to the whole window). If a phone ever shows a sliver of the page during
-     a keyboard or toolbar change, it is the dark ground colour of the scene rather than a bright sky stripe. */
-  background: #598d3f;
+  /* Under the game (main is fixed to the whole window). Same sky as the splash screen, so nothing flashes
+     green before the game loads. */
+  background: #8ecae6 linear-gradient(180deg, #3f8ec4 0%, #8ecae6 34%, #f6d7a0 72%, #f3e0b8 100%) fixed;
   color: var(--color-ink);
   font-family: var(--font-sans);
 }
