@@ -1,5 +1,5 @@
 import { CheckCircle2, Heart } from "lucide-react";
-import { BONUS_CALM, BONUS_PARDON, type BonusAction, type BonusHud } from "./minigames";
+import { type BonusAction, type BonusHud } from "./minigames";
 
 type UntangleHud = Extract<BonusHud, { id: "untangle" }>;
 
@@ -111,9 +111,6 @@ export function UntangleCard({
           <p className="mt-1 text-center font-extrabold text-[#3b814f]">
             <Heart className="mr-1 inline size-4 fill-bow text-bow" aria-hidden="true" />
             {gained ? "+1 život! Jedna příhoda se nepočítá." : "Životy máš naplno (max. 4)."}
-          </p>
-          <p className="mt-1 text-center text-xs font-semibold text-ink-soft" aria-label={gained ? BONUS_PARDON : BONUS_CALM}>
-            {gained ? BONUS_PARDON : BONUS_CALM}
           </p>
           <button
             type="button"
