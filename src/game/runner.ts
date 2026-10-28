@@ -209,6 +209,8 @@ const OBORA_END: readonly EndPiece[] = [
   ["bush", 0.5, 0.05, false, false],
   ["bush", 0.4, 0.75, true, false],
 ];
+/** Jak dlouho Drběna u radnice kouká na erb (sekundy). */
+const RADNICE_GAZE = 2.6;
 const PROPS = new Set<Kind>([...FOREST, "bush", "lamp", "tree", "bench", "pigeon", "bin"]);
 const DECOR = new Set<Kind>([...FOREST, "bush", "lamp", "tree", "bench", "pigeon", "bin", "column", "church", "school", "info", ...SIGNS]);
 
@@ -500,6 +502,12 @@ export class Runner {
   private readonly scrollsTotal = pageIds().length;
   private ents: Ent[] = [];
   private pops: Pop[] = [];
+  /** Drběna stojí u radnice a kouká nahoru na erb (zbývající sekundy); u každé radnice jednou. */
+  private gaze = 0;
+  private gazeAt: Ent | null = null;
+  private gazed = new WeakSet<Ent>();
+  /** Zavolá se, když Drběna u radnice dokouká na erb (sem se napojí budoucí minihra u radnice). */
+  onRadnice: (() => void) | null = null;
   private bits: Bit[] = Array.from({ length: 80 }, () => ({
     on: false,
     x: 0,
@@ -697,6 +705,8 @@ export class Runner {
     this.flash = 0;
     this.lives = 3;
     this.lastHit = -100;
+    this.gaze = 0;
+    this.gazeAt = null;
     this.mercy = 0;
     this.mercyUntil = 0;
     this.warm = this.best >= WARM_BEST;
@@ -1217,7 +1227,8 @@ export class Runner {
       this.fishAge += dt;
     }
 
-    const speed = this.phase === "play" && this.stagHolds() ? 0 : this.currentSpeed();
+    if (this.phase === "play") this.watchRadnice(dt);
+    const speed = this.phase === "play" && this.holds() ? 0 : this.currentSpeed();
     this.speed = speed;
     this.camera += speed * dt;
     if (this.phase === "play") {
@@ -1250,6 +1261,98 @@ export class Runner {
     }
   }
 
+  /** Drběna stojí na místě: u jelena, nebo u radnice. */
+  private holds(): boolean {
+    return this.gaze > 0 || this.stagHolds();
+  }
+
+  /**
+   * U radnice Drběna zastaví pod štítem a chvíli kouká nahoru na kopidlenský erb s kozlí hlavou.
+   * Zastaví až na zemi; překážky těsně před ní se uklidí, ať do ní nic nevjede.
+   */
+  private watchRadnice(dt: number) {
+    if (this.gaze > 0) {
+      this.gaze = Math.max(0, this.gaze - dt);
+      if (this.gaze === 0) {
+        this.gazeAt = null;
+        this.onRadnice?.();
+      }
+      return;
+    }
+    const here = this.camera + this.playerX;
+    for (const ent of this.ents) {
+      if (!ent.alive || ent.kind !== "radnice" || this.gazed.has(ent)) continue;
+      // Koza se zastaví kousek vlevo od štítu, ať erb vidí šikmo nad sebou.
+      const spot = ent.x - this.u * 0.55;
+      if (here < spot || !this.onGround) continue;
+      this.gazed.add(ent);
+      if (here > ent.x + this.visualHalf("radnice")) continue;
+      this.gaze = RADNICE_GAZE;
+      this.gazeAt = ent;
+      this.releaseInputs();
+      const to = here + this.viewW * 1.2;
+      for (const other of this.ents) {
+        if (other.alive && HAZARDS.has(other.kind) && other.x > here - this.u * 0.3 && other.x < to) other.alive = false;
+      }
+      this.hazardCursor = Math.max(this.hazardCursor, to);
+      return;
+    }
+  }
+
+  /** Zlaté zablesknutí kolem erbu a bublina „?!“ nad Drběnou, dokud kouká nahoru. */
+  private drawRadniceGaze(ctx: CanvasRenderingContext2D) {
+    const ent = this.gazeAt;
+    if (!ent || this.gaze <= 0) return;
+    const img = this.art.radnice;
+    if (!(img instanceof HTMLImageElement) || !img.height) return;
+    const t = 1 - this.gaze / RADNICE_GAZE;
+    const h = SPEC.radnice.h * this.u;
+    const w = h * (img.width / img.height);
+    const ex = ent.x - this.camera + w * (0.496 - 0.5);
+    const ey = this.groundY - h + h * 0.105;
+    const show = Math.min(1, t * 5, (1 - t) * 4);
+    const pulse = 1 + Math.sin(this.time * 6) * 0.12;
+    ctx.save();
+    ctx.globalAlpha = show;
+    ctx.strokeStyle = "rgba(255, 214, 92, 0.95)";
+    ctx.lineWidth = Math.max(2, this.u * 0.02);
+    ctx.beginPath();
+    ctx.arc(ex, ey, h * 0.04 * pulse, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.lineWidth = Math.max(1, this.u * 0.012);
+    for (let i = 0; i < 8; i += 1) {
+      const a = (i / 8) * Math.PI * 2 + this.time * 0.8;
+      const r0 = h * 0.055 * pulse;
+      const r1 = r0 + h * 0.03;
+      ctx.beginPath();
+      ctx.moveTo(ex + Math.cos(a) * r0, ey + Math.sin(a) * r0);
+      ctx.lineTo(ex + Math.cos(a) * r1, ey + Math.sin(a) * r1);
+      ctx.stroke();
+    }
+    // Bublina nad hlavou Drběny.
+    const bx = this.playerX + this.u * 0.28;
+    const by = this.feet - this.u * 1.18 - Math.sin(this.time * 3) * this.u * 0.03;
+    const bw = this.u * 0.42;
+    const bh = this.u * 0.3;
+    ctx.fillStyle = "#fff6e8";
+    ctx.strokeStyle = "#241c16";
+    ctx.lineWidth = Math.max(1.5, this.u * 0.014);
+    ctx.beginPath();
+    ctx.roundRect(bx - bw / 2, by - bh / 2, bw, bh, bh * 0.45);
+    ctx.fill();
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.arc(bx - bw * 0.32, by + bh * 0.72, bh * 0.12, 0, Math.PI * 2);
+    ctx.arc(bx - bw * 0.46, by + bh * 1.02, bh * 0.07, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#e4577a";
+    ctx.font = `900 ${Math.round(bh * 0.72)}px Nunito, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText("?!", bx, by + bh * 0.04);
+    ctx.restore();
+  }
+
   private stagHolds(): boolean {
     for (const ent of this.ents) {
       if (ent.alive && ent.kind === "stag" && (ent.face ?? 0) === 1 && (ent.sway ?? 0) === 2) return true;
@@ -1258,7 +1361,7 @@ export class Runner {
   }
 
   private simPlayer(dt: number) {
-    if (this.stagHolds()) {
+    if (this.holds()) {
       this.jumpBuffer = 0;
       this.jumpEdge = false;
       if (this.feet < this.groundY) {
@@ -2337,6 +2440,7 @@ export class Runner {
 
     this.drawFish(ctx);
     this.drawPlayer(ctx);
+    this.drawRadniceGaze(ctx);
     for (const ent of this.ents) {
       if (!ent.alive || ent.kind !== "stag" || (ent.face ?? 0) !== 1) continue;
       const phase = ent.sway ?? 0;
@@ -2508,7 +2612,7 @@ export class Runner {
       if (this.vy < -this.jumpSpeed * 0.25) index = 1;
       else if (this.vy > this.jumpSpeed * 0.12) index = 3;
       else index = 2;
-    } else if (this.stagHolds()) {
+    } else if (this.holds()) {
       sheet = this.art.idle;
       index = Math.floor(this.time * 2) % 4;
     } else if (this.phase === "menu") {
@@ -2523,6 +2627,17 @@ export class Runner {
       return;
     }
     const w = h * (img.width / img.height);
+    if (this.gaze > 0) {
+      // Pohled nahoru: celá koza se zakloní kolem zadních nohou.
+      const t = 1 - this.gaze / RADNICE_GAZE;
+      const lean = -0.16 * Math.min(1, t * 6, (1 - t) * 5);
+      ctx.save();
+      ctx.translate(this.playerX - w * 0.22, this.feet);
+      ctx.rotate(lean);
+      ctx.drawImage(this.baked(img, h * this.scale), -w / 2 + w * 0.22, -h, w, h);
+      ctx.restore();
+      return;
+    }
     ctx.drawImage(this.baked(img, h * this.scale), this.snap(this.playerX - w / 2), this.snap(this.feet - h), w, h);
   }
 
