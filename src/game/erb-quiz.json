@@ -1,0 +1,371 @@
+{
+  "version": 1,
+  "id": "kopidlno-erb",
+  "title": "Drběnina erbovní hádanka",
+  "intro": [
+    "Počkat… To jsem já? Ne, ten má vousy!",
+    "Tak schválně, co o tom kozlovi vlastně víš?"
+  ],
+  "outro": {
+    "correct": [
+      "Méé, správně! Ty se vyznáš!",
+      "Vida! Tak to si budu pamatovat.",
+      "Správně! Ten kozel by z tebe měl radost."
+    ],
+    "wrong": [
+      "Tak to byl vedlejší roh. Teď už to víme!",
+      "Nevadí! Já jsem se to taky právě naučila.",
+      "Méé, nevadí. I z omylu je dobrý drb."
+    ]
+  },
+  "settings": {
+    "questionsPerEncounter": 1,
+    "answersPerQuestion": 3,
+    "rewardCorrectPoints": 12,
+    "rewardWrongPoints": 0,
+    "avoidImmediateRepeat": true,
+    "difficultyWeights": {
+      "easy": 3,
+      "medium": 3,
+      "hard": 2,
+      "fun": 2
+    }
+  },
+  "links": {
+    "history": {
+      "label": "Přečíst v kronice: Znak Kopidlna",
+      "href": "https://www.kopidlenskadrbna.org/o-kopidlne/znak-kopidlna"
+    },
+    "legend": {
+      "label": "Přečíst pověst: Kterak se kozel do znaku dostal",
+      "href": "https://www.kopidlenskadrbna.org/povidacky/kterak-se-kozel-do-znaku-dostal"
+    }
+  },
+  "questions": [
+    {
+      "id": "e01",
+      "difficulty": "easy",
+      "question": "Jaké zvíře je ve znaku Kopidlna?",
+      "answers": [
+        "Kozel",
+        "Beran",
+        "Jelen"
+      ],
+      "correct": 0,
+      "explanation": "Ve znaku je hlava kozla s krkem a dvěma rohy.",
+      "link": "history"
+    },
+    {
+      "id": "e02",
+      "difficulty": "easy",
+      "question": "Jakou barvu má štít kopidlenského znaku?",
+      "answers": [
+        "Zelenou",
+        "Modrou",
+        "Červenou"
+      ],
+      "correct": 1,
+      "explanation": "Kozlí hlava je na modrém, původně popsaném jako blankytném, štítě.",
+      "link": "history"
+    },
+    {
+      "id": "e03",
+      "difficulty": "easy",
+      "question": "Jaké dvě barvy má kozlí hlava?",
+      "answers": [
+        "Černou a bílou",
+        "Hnědou a žlutou",
+        "Zelenou a šedou"
+      ],
+      "correct": 0,
+      "explanation": "Jedna polovina hlavy je černá a druhá bílá.",
+      "link": "history"
+    },
+    {
+      "id": "e04",
+      "difficulty": "easy",
+      "question": "Co všechno je z kozla na znaku?",
+      "answers": [
+        "Celý kozel s kopýtky",
+        "Hlava s krkem a rohy",
+        "Jen jeho ocas"
+      ],
+      "correct": 1,
+      "explanation": "Na znaku je kozlí hlava, krk a rohy, nikoli celé zvíře.",
+      "link": "history"
+    },
+    {
+      "id": "e05",
+      "difficulty": "easy",
+      "question": "Kolik rohů má kozel ve znaku?",
+      "answers": [
+        "Jeden",
+        "Tři",
+        "Dva"
+      ],
+      "correct": 2,
+      "explanation": "Každý roh má jinou barvu: jeden černou, druhý bílou.",
+      "link": "history"
+    },
+    {
+      "id": "e06",
+      "difficulty": "easy",
+      "question": "Jaké jsou městské barvy Kopidlna?",
+      "answers": [
+        "Modrá, černá a bílá",
+        "Žlutá, zelená a černá",
+        "Červená, žlutá a modrá"
+      ],
+      "correct": 0,
+      "explanation": "Městské barvy vycházejí právě ze znaku.",
+      "link": "history"
+    },
+    {
+      "id": "e07",
+      "difficulty": "easy",
+      "question": "Čím se liší dvě poloviny kozlí hlavy?",
+      "answers": [
+        "Velikostí uší",
+        "Barvou",
+        "Počtem očí"
+      ],
+      "correct": 1,
+      "explanation": "Hlava je svisle rozdělená na černou a bílou polovinu.",
+      "link": "history"
+    },
+    {
+      "id": "m01",
+      "difficulty": "medium",
+      "question": "Ve kterém roce získalo Kopidlno erbovní listinu?",
+      "answers": [
+        "1423",
+        "1523",
+        "1623"
+      ],
+      "correct": 1,
+      "explanation": "Královská erbovní listina nese datum 9. března 1523.",
+      "link": "history"
+    },
+    {
+      "id": "m02",
+      "difficulty": "medium",
+      "question": "Který král udělil Kopidlnu znak?",
+      "answers": [
+        "Karel IV.",
+        "Rudolf II.",
+        "Ludvík Jagellonský"
+      ],
+      "correct": 2,
+      "explanation": "Městský znak udělil král Ludvík Jagellonský.",
+      "link": "history"
+    },
+    {
+      "id": "m03",
+      "difficulty": "medium",
+      "question": "Kolik let znaku Kopidlno slavilo v roce 2023?",
+      "answers": [
+        "500 let",
+        "300 let",
+        "700 let"
+      ],
+      "correct": 0,
+      "explanation": "Pětisté výročí městského znaku se slavilo roku 2023.",
+      "link": "history"
+    },
+    {
+      "id": "m04",
+      "difficulty": "medium",
+      "question": "Který rod používal kozlí hlavu ještě před městem?",
+      "answers": [
+        "Šlikové",
+        "Kopidlanští z Kopidlna",
+        "Trčkové z Lípy"
+      ],
+      "correct": 1,
+      "explanation": "Kozlí hlava patřila už ke znaku vladyckého rodu Kopidlanských z Kopidlna.",
+      "link": "history"
+    },
+    {
+      "id": "m05",
+      "difficulty": "medium",
+      "question": "Co městečko získalo spolu s městským znakem?",
+      "answers": [
+        "Znak a pečeť",
+        "Zámek a rybník",
+        "Most a bránu"
+      ],
+      "correct": 0,
+      "explanation": "Král udělil městečku erb i právo používat pečeť.",
+      "link": "history"
+    },
+    {
+      "id": "m06",
+      "difficulty": "medium",
+      "question": "Byla kozlí hlava místním symbolem už před rokem 1523?",
+      "answers": [
+        "Ano, používal ji šlechtický rod",
+        "Ne, vznikla až v roce 2023",
+        "Ne, vytvořila ji Drběna"
+      ],
+      "correct": 0,
+      "explanation": "Městský znak převzal symbol staršího rodu Kopidlanských.",
+      "link": "history"
+    },
+    {
+      "id": "m07",
+      "difficulty": "medium",
+      "question": "Kde se zachovala středověká vyobrazení kozlí hlavy?",
+      "answers": [
+        "V kostele sv. Prokopa v Nadslavi",
+        "Na pražském orloji",
+        "Na jičínské Valdické bráně"
+      ],
+      "correct": 0,
+      "explanation": "Kozlí symbol je na sklomalbách v kostele svatého Prokopa v Nadslavi.",
+      "link": "history"
+    },
+    {
+      "id": "h01",
+      "difficulty": "hard",
+      "question": "Kterého dne dostalo Kopidlno erbovní listinu?",
+      "answers": [
+        "1. června 1998",
+        "9. března 1523",
+        "28. října 1918"
+      ],
+      "correct": 1,
+      "explanation": "Dochovaná listina byla vydána 9. března 1523.",
+      "link": "history"
+    },
+    {
+      "id": "h02",
+      "difficulty": "hard",
+      "question": "Na čí žádost byl znak Kopidlnu udělen?",
+      "answers": [
+        "Zikmunda z Kopidlna",
+        "Františka Matěje Hilmara",
+        "Albrechta z Valdštejna"
+      ],
+      "correct": 0,
+      "explanation": "O udělení znaku požádal krále Zikmund z Kopidlna.",
+      "link": "history"
+    },
+    {
+      "id": "h03",
+      "difficulty": "hard",
+      "question": "Ze kterého století pocházejí sklomalby s kozlí hlavou v Nadslavi?",
+      "answers": [
+        "Z 18. století",
+        "Ze 16. století",
+        "Ze 14. století"
+      ],
+      "correct": 2,
+      "explanation": "Sklomalby připomínají kozlí erb už ve druhé polovině 14. století.",
+      "link": "history"
+    },
+    {
+      "id": "h04",
+      "difficulty": "hard",
+      "question": "Co víme o úplném počátku kozla v kopidlenském erbu?",
+      "answers": [
+        "Přesný původ není jistý",
+        "Vymyslel ho král při hostině",
+        "Pochází z městského loga roku 1998"
+      ],
+      "correct": 0,
+      "explanation": "Historici znají staré užívání symbolu, ale přesný původ motivu není jistý.",
+      "link": "history"
+    },
+    {
+      "id": "h05",
+      "difficulty": "hard",
+      "question": "Ve kterém městě byla vydána erbovní listina z roku 1523?",
+      "answers": [
+        "Ve Vídni",
+        "V Praze",
+        "V Jičíně"
+      ],
+      "correct": 1,
+      "explanation": "Historický záznam uvádí vydání královské listiny v Praze.",
+      "link": "history"
+    },
+    {
+      "id": "h06",
+      "difficulty": "hard",
+      "question": "Jak je Kopidlno označeno přímo v listině z roku 1523?",
+      "answers": [
+        "Jako hlavní město",
+        "Jako královské město",
+        "Jako městečko"
+      ],
+      "correct": 2,
+      "explanation": "Původní listina mluví o městečku Kopidlno, nikoliv o královském městě.",
+      "link": "history"
+    },
+    {
+      "id": "h07",
+      "difficulty": "hard",
+      "question": "Co listina obyvatelům Kopidlna výslovně dovolila?",
+      "answers": [
+        "Používat erb a pečeť",
+        "Vybírat daně v celých Čechách",
+        "Razít vlastní zlaté mince"
+      ],
+      "correct": 0,
+      "explanation": "Král potvrdil právo obyvatel užívat udělený erb a pečeť.",
+      "link": "history"
+    },
+    {
+      "id": "f01",
+      "difficulty": "fun",
+      "question": "Co má kozel ve znaku a Drběna ne?",
+      "answers": [
+        "Rohy",
+        "Vousy",
+        "Uši"
+      ],
+      "correct": 1,
+      "explanation": "Drběna má rohy i uši, ale vousy svému erbovnímu příbuznému nechává.",
+      "link": "history"
+    },
+    {
+      "id": "f02",
+      "difficulty": "fun",
+      "question": "Co bys na kopidlenském znaku hledal marně?",
+      "answers": [
+        "Kozlí rohy",
+        "Modrý štít",
+        "Kozlí tenisky"
+      ],
+      "correct": 2,
+      "explanation": "Kozel má rohy a modrý štít. Tenisky se do znaku nějak nevešly.",
+      "link": "history"
+    },
+    {
+      "id": "f03",
+      "difficulty": "fun",
+      "question": "Co bys v erbovní listině z roku 1523 určitě nenašel?",
+      "answers": [
+        "QR kód",
+        "Jméno krále",
+        "Popis kozlí hlavy"
+      ],
+      "correct": 0,
+      "explanation": "Erbovní listina má královské potvrzení i popis znaku. QR kódy tenkrát ještě nikdo neznal.",
+      "link": "history"
+    },
+    {
+      "id": "f04",
+      "difficulty": "fun",
+      "question": "Jaký převlek by Drběně nejvíc pomohl podobat se kozlovi v erbu?",
+      "answers": [
+        "Potápěčské brýle",
+        "Černobílá kozlí maska s vousy",
+        "Klobouk s peřím"
+      ],
+      "correct": 1,
+      "explanation": "Kozlí hlava na erbu je černobílá a vousatá. Ale Drběna si naštěstí vystačí sama.",
+      "link": "history"
+    }
+  ]
+}
