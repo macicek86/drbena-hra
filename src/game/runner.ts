@@ -226,6 +226,20 @@ const LOOK_FRAMES = 8;
 const PIGEON_FLY_FRAMES = 4;
 /** Snímky mávání husy (`public/game/goose-flap`). */
 const GOOSE_FLAP_FRAMES = 4;
+/** Snímky zalévání sousedky (`public/game/gardener-water`). */
+const GARDENER_WATER_FRAMES = 4;
+/**
+ * Vrstvy původního cyklisty (připravené z cyclist.webp): obrázky mají kolem okraj `pad` px,
+ * kola mají střed a poloměr v pixelech té vrstvy. Kola se kreslí otočená, nad ně rám, nohy a řetěz.
+ */
+const CYCLIST_LAYER = {
+  pad: 8,
+  srcH: 720,
+  wheels: [
+    { key: "cyclistFront", x: 151, y: 586, half: 148 },
+    { key: "cyclistRear", x: 616, y: 587, half: 146 },
+  ],
+} as const;
 const PROPS = new Set<Kind>([...FOREST, "bush", "lamp", "tree", "bench", "pigeon", "bin"]);
 const DECOR = new Set<Kind>([...FOREST, "bush", "lamp", "tree", "bench", "pigeon", "bin", "column", "church", "school", "info", ...SIGNS]);
 
@@ -898,7 +912,7 @@ export class Runner {
     ] as const;
     const frames = ["jump", "duck", "run", "idle"] as const;
     this.loaded = 0;
-    this.loadTotal = names.length + frames.length * 4 + 13 + LOOK_FRAMES + PIGEON_FLY_FRAMES + GOOSE_FLAP_FRAMES;
+    this.loadTotal = names.length + frames.length * 4 + 13 + LOOK_FRAMES + PIGEON_FLY_FRAMES + GOOSE_FLAP_FRAMES + GARDENER_WATER_FRAMES + 4;
     this.ready = false;
     const rest = Promise.all([
       this.loadFramesCounted("jump"),
@@ -937,7 +951,10 @@ export class Runner {
       this.loadFramesCounted("look", LOOK_FRAMES),
       this.loadFramesCounted("pigeon-fly", PIGEON_FLY_FRAMES),
       this.loadFramesCounted("goose-flap", GOOSE_FLAP_FRAMES),
-    ]).then(([run, idle, stagRun, stagIdle, look, pigeonFly, gooseFlap]) => {
+      this.loadFramesCounted("gardener-water", GARDENER_WATER_FRAMES),
+      // Původní cyklista po vrstvách: kola se točí zvlášť (cyclist-base, -wheel-front/-rear, -over).
+      Promise.all(["base", "wheel-front", "wheel-rear", "over"].map((part) => this.loadCounted(publicUrl(`/game/cyclist-${part}.webp`)))),
+    ]).then(([run, idle, stagRun, stagIdle, look, pigeonFly, gooseFlap, gardenerWater, cyclistParts]) => {
       if (!this.alive) return;
       this.art.run = run;
       this.art.idle = idle;
@@ -946,6 +963,12 @@ export class Runner {
       this.art.look = look;
       this.art.pigeonFly = pigeonFly;
       this.art.gooseFlap = gooseFlap;
+      this.art.gardenerWater = gardenerWater;
+      const [base, front, rear, over] = cyclistParts;
+      this.art.cyclistBase = base ?? null;
+      this.art.cyclistFront = front ?? null;
+      this.art.cyclistRear = rear ?? null;
+      this.art.cyclistOver = over ?? null;
     });
     if (!this.alive) return;
     this.openMenu();
@@ -2699,7 +2722,7 @@ export class Runner {
         bob = Math.abs(Math.sin(this.time * 5 + ent.anim)) * this.u * 0.012;
       }
     } else if (ent.kind === "cyclist") {
-      // Původní cyklista (snímky šlapání z cyclist-pedal jsou jiná postava): jen se pohupuje.
+      // Původní cyklista: pohupuje se a kola se točí (drawCyclist).
       bob = Math.abs(Math.sin(this.time * 9 + ent.anim)) * this.u * 0.018;
       rot = Math.sin(this.time * 4.5 + ent.anim) * 0.025;
     } else if (ent.kind === "car") {
@@ -2713,12 +2736,15 @@ export class Runner {
       drawHeart(ctx, cx, feet - h * 0.55, h * 0.42);
       return;
     }
+    if (ent.kind === "cyclist" && this.drawCyclist(ctx, ent, cx, feet, h, rot)) return;
     const img =
       ent.kind === "pigeon" && ent.fly
         ? (this.pigeonFlap(ent) ?? this.spriteFor(ent))
         : ent.kind === "dog"
           ? (this.gooseFlap(ent) ?? this.spriteFor(ent))
-          : this.spriteFor(ent);
+          : ent.kind === "gardener"
+            ? (this.gardenerWater(ent) ?? this.spriteFor(ent))
+            : this.spriteFor(ent);
     if (!img) return;
     const flyScale = ent.kind === "pigeon" && ent.fly ? 1.65 : 1;
     const drawH = h * flyScale;
@@ -2745,6 +2771,47 @@ export class Runner {
     return sheet[index] ?? null;
   }
 
+
+  /** Sousedka stojí a občas nakloní konev. Tělo zůstává. */
+  private gardenerWater(ent: Ent): HTMLImageElement | null {
+    const sheet = this.art.gardenerWater;
+    if (!Array.isArray(sheet) || sheet.length === 0) return null;
+    const index = Math.floor(this.time * 3 + ent.anim) % sheet.length;
+    return sheet[index] ?? null;
+  }
+
+  /**
+   * Původní cyklista s točícími se koly: spodní vrstva (tělo bez kol), otočená kola, nahoře rám,
+   * vidlice, řetěz a nohy, které přes kola vedou. Vrací false, dokud vrstvy nejsou načtené.
+   */
+  private drawCyclist(ctx: CanvasRenderingContext2D, ent: Ent, cx: number, feet: number, h: number, rot: number): boolean {
+    const base = this.art.cyclistBase;
+    const over = this.art.cyclistOver;
+    if (!(base instanceof HTMLImageElement) || !(over instanceof HTMLImageElement) || !base.height) return false;
+    const k = h / CYCLIST_LAYER.srcH;
+    const pad = CYCLIST_LAYER.pad;
+    const left = -(base.width - 2 * pad) * k / 2 - pad * k;
+    const top = -h - pad * k;
+    ctx.save();
+    ctx.translate(this.snap(cx), this.snap(feet));
+    if (rot) ctx.rotate(rot);
+    ctx.drawImage(this.baked(base, base.height * k * this.scale), left, top, base.width * k, base.height * k);
+    // Jede doleva, kola se točí proti směru hodinových ručiček.
+    const spin = -(this.time * 4.2 + ent.anim);
+    for (const wheel of CYCLIST_LAYER.wheels) {
+      const img = this.art[wheel.key];
+      if (!(img instanceof HTMLImageElement) || !img.height) continue;
+      const size = img.width * k;
+      ctx.save();
+      ctx.translate(left + wheel.x * k, top + wheel.y * k);
+      ctx.rotate(spin);
+      ctx.drawImage(this.baked(img, img.height * k * this.scale), -size / 2, -size / 2, size, size);
+      ctx.restore();
+    }
+    ctx.drawImage(this.baked(over, over.height * k * this.scale), left, top, over.width * k, over.height * k);
+    ctx.restore();
+    return true;
+  }
 
   /** Husa stojí a mává křídly. Tělo, krk a nohy zůstávají na místě. */
   private gooseFlap(ent: Ent): HTMLImageElement | null {
