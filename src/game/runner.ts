@@ -422,7 +422,7 @@ function hash(n: number): number {
   return x - Math.floor(x);
 }
 
-const ART_REV = "41";
+const ART_REV = "42";
 
 async function loadImage(src: string): Promise<HTMLImageElement | null> {
   try {
