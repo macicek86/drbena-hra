@@ -1,7 +1,9 @@
 import { INTRO, INTRO_DUR, LOOP, LOOP_DUR } from "@/game/esmeraldaScore";
+import { MINI, MINI_DUR } from "@/game/minigameScore";
 
 type Note = readonly [number, number, number, number, number];
-type SongId = "intro" | "loop";
+type SongId = "intro" | "loop" | "mini";
+export type MusicMode = "off" | "intro" | "loop" | "mini";
 type Live = {
   when: number;
   gain: GainNode;
@@ -43,6 +45,8 @@ export class Sfx {
   private held = true;
   private introDone = false;
   private restartLoop = false;
+  /** Kde se hlavní smyčka zastavila kvůli minihře: po minihře hraje dál odtud, ne od začátku. */
+  private loopResume: number | null = null;
   muted = false;
 
   unlock() {
@@ -118,7 +122,7 @@ export class Sfx {
     this.suspend();
   }
 
-  tick(mode: "off" | "intro" | "loop", tempo = 1) {
+  tick(mode: MusicMode, tempo = 1) {
     if (!this.ctx || !this.musicBus) return;
     if (!mode || mode === "off" || this.muted) {
       this.suspend();
@@ -126,8 +130,15 @@ export class Sfx {
     }
     if (this.ctx.state === "suspended") void this.ctx.resume();
     if (mode === "loop" && (this.restartLoop || this.song !== "loop")) {
+      const resume = this.restartLoop ? null : this.loopResume;
       this.restartLoop = false;
       this.useSong("loop");
+      if (resume !== null) this.startAt(resume);
+    } else if (mode === "mini") {
+      // Minihry (ryba, erbovní hádanka) mají vlastní krátkou smyčku Strejček Škrhola.
+      if (this.song !== "mini") this.useSong("mini");
+      this.pump(1);
+      return;
     } else if (mode === "intro") {
       if (this.introDone) return;
       if (this.song !== "intro") this.useSong("intro");
@@ -168,10 +179,15 @@ export class Sfx {
   }
 
   private useSong(id: SongId) {
+    if (this.song === "loop" && id !== "loop" && this.ctx && this.dur > 0) {
+      this.loopResume = (this.held ? this.anchorSong : this.songNow(this.ctx.currentTime)) % this.dur;
+    } else if (id === "loop") {
+      this.loopResume = null;
+    }
     this.hush();
     this.song = id;
-    this.notes = id === "intro" ? INTRO : LOOP;
-    this.dur = id === "intro" ? INTRO_DUR : LOOP_DUR;
+    this.notes = id === "intro" ? INTRO : id === "mini" ? MINI : LOOP;
+    this.dur = id === "intro" ? INTRO_DUR : id === "mini" ? MINI_DUR : LOOP_DUR;
     this.looping = true;
     this.index = 0;
     this.wrap = 0;
@@ -179,6 +195,12 @@ export class Sfx {
     this.anchorAudio = (this.ctx?.currentTime ?? 0) + 0.04;
     this.tempo = 1;
     this.held = false;
+  }
+
+  /** Hrát právě nastavenou píseň od času `at` (sekundy). */
+  private startAt(at: number) {
+    this.anchorSong = at;
+    this.index = this.seek(at);
   }
 
   private songNow(now: number) {

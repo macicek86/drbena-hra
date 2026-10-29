@@ -1161,7 +1161,14 @@ export class Runner {
         steps += 1;
       }
       this.draw();
-      const mode = this.phase === "menu" ? "intro" : this.phase === "play" || this.phase === "dialogue" || this.phase === "fish-intro" || this.phase === "erb-quiz" ? "loop" : "off";
+      // Minihry (ryba i erbovní hádanka u radnice) mají vlastní hudbu, po nich hlavní smyčka pokračuje.
+      const mode = this.phase === "menu"
+        ? "intro"
+        : this.phase === "bonus" || this.phase === "erb-quiz"
+          ? "mini"
+          : this.phase === "play" || this.phase === "dialogue" || this.phase === "fish-intro"
+            ? "loop"
+            : "off";
       let tempo = 1;
       if (this.phase === "play") {
         const pace = this.speed0 > 0 ? this.speed / this.speed0 : 1;
