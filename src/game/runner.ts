@@ -1161,12 +1161,14 @@ export class Runner {
         steps += 1;
       }
       this.draw();
-      // Minihry (ryba i erbovní hádanka u radnice) mají vlastní hudbu, po nich hlavní smyčka pokračuje.
+      // Minihry (ryba i erbovní hádanka u radnice) a rozhovor s jelenem mají vlastní hudbu, potom hlavní smyčka pokračuje.
       const mode = this.phase === "menu"
         ? "intro"
         : this.phase === "bonus" || this.phase === "erb-quiz"
           ? "mini"
-          : this.phase === "play" || this.phase === "dialogue" || this.phase === "fish-intro"
+          : this.phase === "dialogue" && this.stagDialogueStory
+            ? "stag"
+            : this.phase === "play" || this.phase === "dialogue" || this.phase === "fish-intro"
             ? "loop"
             : "off";
       let tempo = 1;

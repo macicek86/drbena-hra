@@ -1,9 +1,10 @@
 import { INTRO, INTRO_DUR, LOOP, LOOP_DUR } from "@/game/esmeraldaScore";
 import { MINI, MINI_DUR } from "@/game/minigameScore";
+import { STAG, STAG_DUR } from "@/game/stagScore";
 
 type Note = readonly [number, number, number, number, number];
-type SongId = "intro" | "loop" | "mini";
-export type MusicMode = "off" | "intro" | "loop" | "mini";
+type SongId = "intro" | "loop" | "mini" | "stag";
+export type MusicMode = "off" | "intro" | "loop" | "mini" | "stag";
 type Live = {
   when: number;
   gain: GainNode;
@@ -134,9 +135,9 @@ export class Sfx {
       this.restartLoop = false;
       this.useSong("loop");
       if (resume !== null) this.startAt(resume);
-    } else if (mode === "mini") {
-      // Minihry (ryba, erbovní hádanka) mají vlastní krátkou smyčku Strejček Škrhola.
-      if (this.song !== "mini") this.useSong("mini");
+    } else if (mode === "mini" || mode === "stag") {
+      // Minihry (ryba, erbovní hádanka) mají smyčku Strejček Škrhola, rozhovor s bílým jelenem Modlitbu.
+      if (this.song !== mode) this.useSong(mode);
       this.pump(1);
       return;
     } else if (mode === "intro") {
@@ -186,8 +187,8 @@ export class Sfx {
     }
     this.hush();
     this.song = id;
-    this.notes = id === "intro" ? INTRO : id === "mini" ? MINI : LOOP;
-    this.dur = id === "intro" ? INTRO_DUR : id === "mini" ? MINI_DUR : LOOP_DUR;
+    this.notes = id === "intro" ? INTRO : id === "mini" ? MINI : id === "stag" ? STAG : LOOP;
+    this.dur = id === "intro" ? INTRO_DUR : id === "mini" ? MINI_DUR : id === "stag" ? STAG_DUR : LOOP_DUR;
     this.looping = true;
     this.index = 0;
     this.wrap = 0;
