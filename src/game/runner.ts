@@ -1733,10 +1733,11 @@ export class Runner {
   private rideCyclists(dt: number) {
     if (this.phase !== "play") return;
     // Pomalu (šestina rychlosti kozy): hráč má na reakci skoro stejně času jako u stojící překážky.
-    const pace = Math.max(this.speed, this.speed0) * 0.16;
+    // Muž na horském kole jede o něco rychleji, babička s košíky pomaleji (průměr zůstává 0,16).
+    const pace = Math.max(this.speed, this.speed0);
     for (const ent of this.ents) {
       if (!ent.alive || ent.kind !== "cyclist") continue;
-      if (ent.x - this.camera < this.viewW * 0.98) ent.x -= pace * dt;
+      if (ent.x - this.camera < this.viewW * 0.98) ent.x -= pace * (ent.alt ? 0.12 : 0.2) * dt;
     }
   }
 
