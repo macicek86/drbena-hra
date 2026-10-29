@@ -135,6 +135,8 @@ type Ent = {
   size?: number;
   /** Zadní řada lesa: kreslí se dřív a ztmavená. */
   far?: boolean;
+  /** Druhá podoba postavy: babička místo mladé sousedky / cyklisty (střídají se). */
+  alt?: boolean;
 };
 
 type Bit = {
@@ -226,6 +228,8 @@ const LOOK_FRAMES = 8;
 const PIGEON_FLY_FRAMES = 4;
 /** Snímky mávání husy (`public/game/goose-flap`). */
 const GOOSE_FLAP_FRAMES = 4;
+/** Snímky šlapání babičky na kole (`public/game/cyclist-pedal`). */
+const CYCLIST_PEDAL_FRAMES = 4;
 /** Snímky zalévání sousedky (`public/game/gardener-water`). */
 const GARDENER_WATER_FRAMES = 4;
 /**
@@ -816,6 +820,7 @@ export class Runner {
     this.decorCursor = -20;
     this.nextChunk = 0;
     this.lastHazard = null;
+    this.altFlip = {};
     this.hitKind = null;
     this.tale = "";
     this.taleTitle = "";
@@ -912,7 +917,7 @@ export class Runner {
     ] as const;
     const frames = ["jump", "duck", "run", "idle"] as const;
     this.loaded = 0;
-    this.loadTotal = names.length + frames.length * 4 + 13 + LOOK_FRAMES + PIGEON_FLY_FRAMES + GOOSE_FLAP_FRAMES + GARDENER_WATER_FRAMES + 4;
+    this.loadTotal = names.length + frames.length * 4 + 13 + LOOK_FRAMES + PIGEON_FLY_FRAMES + GOOSE_FLAP_FRAMES + GARDENER_WATER_FRAMES + CYCLIST_PEDAL_FRAMES + 4;
     this.ready = false;
     const rest = Promise.all([
       this.loadFramesCounted("jump"),
@@ -952,9 +957,10 @@ export class Runner {
       this.loadFramesCounted("pigeon-fly", PIGEON_FLY_FRAMES),
       this.loadFramesCounted("goose-flap", GOOSE_FLAP_FRAMES),
       this.loadFramesCounted("gardener-water", GARDENER_WATER_FRAMES),
+      this.loadFramesCounted("cyclist-pedal", CYCLIST_PEDAL_FRAMES),
       // Původní cyklista po vrstvách: kola se točí zvlášť (cyclist-base, -wheel-front/-rear, -over).
       Promise.all(["base", "wheel-front", "wheel-rear", "over"].map((part) => this.loadCounted(publicUrl(`/game/cyclist-${part}.webp`)))),
-    ]).then(([run, idle, stagRun, stagIdle, look, pigeonFly, gooseFlap, gardenerWater, cyclistParts]) => {
+    ]).then(([run, idle, stagRun, stagIdle, look, pigeonFly, gooseFlap, gardenerWater, cyclistPedal, cyclistParts]) => {
       if (!this.alive) return;
       this.art.run = run;
       this.art.idle = idle;
@@ -964,6 +970,7 @@ export class Runner {
       this.art.pigeonFly = pigeonFly;
       this.art.gooseFlap = gooseFlap;
       this.art.gardenerWater = gardenerWater;
+      this.art.cyclistPedal = cyclistPedal;
       const [base, front, rear, over] = cyclistParts;
       this.art.cyclistBase = base ?? null;
       this.art.cyclistFront = front ?? null;
@@ -2269,12 +2276,12 @@ export class Runner {
       // Cyklista jede koze naproti, až když je vidět, a proto startuje o kus dál: z mezery
       // před ním si cestou ujede asi desetinu obrazovky, takže předchozí překážku nedožene.
       const lead = this.viewW * 0.16;
-      this.ents.push({ kind, x: x + lead, lift: 0, anim: Math.random() * 6, alive: true });
+      this.ents.push({ kind, x: x + lead, lift: 0, anim: Math.random() * 6, alive: true, alt: this.nextAlt(kind) });
       this.hazardCursor += lead + u * 1.1 + speed * cyclistGap(loop);
       this.lastHazard = kind;
       return;
     }
-    this.ents.push({ kind, x, lift: 0, anim: Math.random() * 6, alive: true });
+    this.ents.push({ kind, x, lift: 0, anim: Math.random() * 6, alive: true, alt: this.nextAlt(kind) });
     this.pondsDirty = true;
     if (kind === "fence") {
       [0.48, 0.95, 0.48].forEach((lift, i) => {
@@ -2494,6 +2501,15 @@ export class Runner {
       return { l: cx - W * 0.35, r: cx + W * 0.39, t: feet - h * 0.86, b: feet - h * 0.34 };
     }
     return box(cx, feet, w * spec.hitW, h * spec.hitH);
+  }
+
+  /** Sousedka i cyklista se střídají: mladá paní / babička s konví, muž na kole / babička na kole. */
+  private altFlip: Partial<Record<Kind, boolean>> = {};
+  private nextAlt(kind: Kind): boolean | undefined {
+    if (kind !== "gardener" && kind !== "cyclist") return undefined;
+    const alt = !this.altFlip[kind];
+    this.altFlip[kind] = alt;
+    return alt;
   }
 
   private spriteFor(ent: Ent): HTMLImageElement | null {
@@ -2721,8 +2737,8 @@ export class Runner {
       } else {
         bob = Math.abs(Math.sin(this.time * 5 + ent.anim)) * this.u * 0.012;
       }
-    } else if (ent.kind === "cyclist") {
-      // Původní cyklista: pohupuje se a kola se točí (drawCyclist).
+    } else if (ent.kind === "cyclist" && !ent.alt) {
+      // Původní cyklista: pohupuje se a kola se točí (drawCyclist). Babička na kole šlape (cyclist-pedal).
       bob = Math.abs(Math.sin(this.time * 9 + ent.anim)) * this.u * 0.018;
       rot = Math.sin(this.time * 4.5 + ent.anim) * 0.025;
     } else if (ent.kind === "car") {
@@ -2736,15 +2752,17 @@ export class Runner {
       drawHeart(ctx, cx, feet - h * 0.55, h * 0.42);
       return;
     }
-    if (ent.kind === "cyclist" && this.drawCyclist(ctx, ent, cx, feet, h, rot)) return;
+    if (ent.kind === "cyclist" && !ent.alt && this.drawCyclist(ctx, ent, cx, feet, h, rot)) return;
     const img =
       ent.kind === "pigeon" && ent.fly
         ? (this.pigeonFlap(ent) ?? this.spriteFor(ent))
         : ent.kind === "dog"
           ? (this.gooseFlap(ent) ?? this.spriteFor(ent))
-          : ent.kind === "gardener"
+          : ent.kind === "gardener" && ent.alt
             ? (this.gardenerWater(ent) ?? this.spriteFor(ent))
-            : this.spriteFor(ent);
+            : ent.kind === "cyclist" && ent.alt
+              ? (this.cyclistPedal(ent) ?? this.spriteFor(ent))
+              : this.spriteFor(ent);
     if (!img) return;
     const flyScale = ent.kind === "pigeon" && ent.fly ? 1.65 : 1;
     const drawH = h * flyScale;
@@ -2771,6 +2789,14 @@ export class Runner {
     return sheet[index] ?? null;
   }
 
+
+  /** Babička na kole šlape; kolo stojí na místě. */
+  private cyclistPedal(ent: Ent): HTMLImageElement | null {
+    const sheet = this.art.cyclistPedal;
+    if (!Array.isArray(sheet) || sheet.length === 0) return null;
+    const index = Math.floor(this.time * 4 + ent.anim) % sheet.length;
+    return sheet[index] ?? null;
+  }
 
   /** Sousedka stojí a občas nakloní konev. Tělo zůstává. */
   private gardenerWater(ent: Ent): HTMLImageElement | null {
