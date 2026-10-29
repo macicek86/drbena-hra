@@ -1,8 +1,9 @@
 import { knownIds, pageIds, rememberFact } from "@/game/chronicle";
 import { Sfx } from "@/game/audio";
-import { answerErbQuiz, createErbQuiz, type ErbQuizRound } from "@/game/erb-quiz";
+import { answerErbQuiz, createErbQuiz, erbQuestionIds, type ErbQuizRound } from "@/game/erb-quiz";
+import { loadProgress, saveProgress } from "@/game/progress";
 import { STAG_STORIES, stagStoryFor, type StagStory } from "@/game/stag-stories";
-import { bonusAct as actBonus, bonusHud, BONUS_PARDON_TALE, createOfferedMini, fishOffersMini, healFromBonus, type AnyBonus, type BonusAction, type BonusHud } from "@/game/minigames";
+import { bonusAct as actBonus, bonusHud, BONUS_PARDON_TALE, createOfferedMini, healFromBonus, type AnyBonus, type BonusAction, type BonusHud } from "@/game/minigames";
 import { tickAlarm, type AlarmEvent } from "./goatAlarm.ts";
 import { reportPlayer, submitScore } from "@/game/plays";
 import { currentProfile, ensureProfile, recordGame } from "@/game/profiles";
@@ -217,6 +218,8 @@ const OBORA_END: readonly EndPiece[] = [
  */
 const RADNICE_GAZE = 2.98;
 const LOOK_DOWN = 0.48;
+/** Krátký pohled na erb v kolech bez hádanky: hlavu nahoru, chvilku, dolů a dál. */
+const RADNICE_GLANCE = 1.45;
 /** Snímky zvednutí hlavy (`public/game/look`). */
 const LOOK_FRAMES = 8;
 /** Snímky mávání křídel (`public/game/pigeon-fly`). */
@@ -524,6 +527,7 @@ export class Runner {
   private gazeAt: Ent | null = null;
   private gazed = new WeakSet<Ent>();
   private gazeAsked = false;
+  private gazeTotal = RADNICE_GAZE;
   /** Zavolá se, když Drběna u radnice dokouká na erb (sem se napojí budoucí minihra u radnice). */
   onRadnice: (() => void) | null = null;
   private erbQuiz: ErbQuizRound | null = null;
@@ -602,6 +606,7 @@ export class Runner {
     this.loadSave();
     // Migrates the old one-record-per-device save into the first player on first run.
     this.useRecordOf(currentProfile());
+    this.stagMeetings = loadProgress().stagMeetings;
   }
 
   start() {
@@ -674,7 +679,7 @@ export class Runner {
     // Postup zachovat i po přeskočení: další setkání má přinést nové povídání.
     if (this.stagDialogueStory) {
       this.stagMeetings += 1;
-      this.save();
+      saveProgress({ ...loadProgress(), stagMeetings: this.stagMeetings });
     }
     const deer = this.stagDialogueDeer;
     if (deer?.alive) {
@@ -704,8 +709,13 @@ export class Runner {
   /** Volá onRadnice po animaci pohledu na erb. Běh zůstane zastavený do odpovědi. */
   openErbQuiz() {
     if (this.phase !== "play" || this.erbQuiz) return;
-    this.erbQuiz = createErbQuiz(this.lastErbQuestionId);
+    // Hádanky se neopakují, dokud hráč neprojde všechny (pamatuje se u hráče, progress.ts).
+    const progress = loadProgress();
+    this.erbQuiz = createErbQuiz(this.lastErbQuestionId, Math.random, progress.erbSeen);
     this.lastErbQuestionId = this.erbQuiz.id;
+    const all = erbQuestionIds();
+    const seen = all.every((id) => progress.erbSeen.includes(id) || id === this.erbQuiz!.id) ? [this.erbQuiz.id] : [...progress.erbSeen, this.erbQuiz.id];
+    saveProgress({ ...loadProgress(), erbSeen: seen });
     this.phase = "erb-quiz";
     this.releaseInputs();
     this.sfx.fact();
@@ -772,6 +782,7 @@ export class Runner {
     this.mercy = 0;
     this.mercyUntil = 0;
     this.warm = this.best >= WARM_BEST;
+    this.stagMeetings = loadProgress().stagMeetings;
     this.bonusLife = false;
     this.gossips = 0;
     this.gossipScore = 0;
@@ -1412,8 +1423,11 @@ export class Runner {
       if (here < spot || !this.onGround) continue;
       this.gazed.add(ent);
       if (here > ent.x + this.visualHalf("radnice")) continue;
-      this.gaze = RADNICE_GAZE;
-      this.gazeAsked = false;
+      // V kole s rybníkem (1., 3., 5. …) hádanka, v kole s oborou jen krátký pohled na erb.
+      const quiz = ent.anim % 2 === 0 && this.onRadnice !== null;
+      this.gazeTotal = quiz ? RADNICE_GAZE : RADNICE_GLANCE;
+      this.gaze = this.gazeTotal;
+      this.gazeAsked = !quiz;
       this.gazeAt = ent;
       this.releaseInputs();
       const to = here + this.viewW * 1.2;
@@ -1431,7 +1445,7 @@ export class Runner {
     if (!ent || this.gaze <= 0) return;
     const img = this.art.radnice;
     if (!(img instanceof HTMLImageElement) || !img.height) return;
-    const t = 1 - this.gaze / RADNICE_GAZE;
+    const t = 1 - this.gaze / this.gazeTotal;
     const h = SPEC.radnice.h * this.u;
     const w = h * (img.width / img.height);
     const ex = ent.x - this.camera + w * (0.496 - 0.5);
@@ -1731,12 +1745,10 @@ export class Runner {
   }
 
   private isOboraChunk(chunk: number): boolean {
-    // První obora na druhém okruhu je vždy přístupná.
-    // Ostatní se dále střídají s rybníkem, aby hra neztratila pestrost.
     if (chunk === 7) return true;
+    // Rytmus kol: lichá kola (1., 3., 5. …) rybník s rybou, sudá (2., 4. …) obora s bílým jelenem.
     if (chunk < 7 || chunk % 4 !== 3) return false;
-    const n = Math.sin(chunk * 127.1) * 43758.5453;
-    return n - Math.floor(n) < 0.5;
+    return Math.floor(chunk / 4) % 2 === 1;
   }
 
   private oboraLayout(chunk: number) {
@@ -1785,7 +1797,8 @@ export class Runner {
       alive: true,
       fly: 0,
       sway: 0,
-      face: this.forceMeet || this.stagMeetings < STAG_STORIES.length ? 1 : hash(chunk + 19) < 0.5 ? 1 : 0,
+      // Jelen se zastaví vždy: napřed kapitoly příběhu, pak krátká povídání (stag-stories.ts).
+      face: 1,
     });
     for (const piece of pieces) {
       this.ents.push({ kind: "obora", x: piece.x, lift: h, anim: piece.part, alive: true });
@@ -2814,9 +2827,10 @@ export class Runner {
   /** Zvednutí hlavy u radnice: nahoru, chvíli držet pohled, před rozběhem zase dolů. */
   private lookIndex(): number {
     const n = Array.isArray(this.art.look) ? this.art.look.length : 1;
-    const up = 0.9;
+    const glance = this.gazeTotal < RADNICE_GAZE;
+    const up = glance ? 0.45 : 0.9;
     const down = LOOK_DOWN;
-    const elapsed = RADNICE_GAZE - this.gaze;
+    const elapsed = this.gazeTotal - this.gaze;
     const k = elapsed < up ? elapsed / up : this.gaze < down ? this.gaze / down : 1;
     return Math.min(n - 1, Math.max(0, Math.floor(k * n - 1e-6)));
   }
@@ -3308,7 +3322,8 @@ export class Runner {
       this.ents.push({ kind, x: starts[i]! - signGap - this.visualHalf(kind), lift: 0, anim: 0, alive: true });
     });
     this.ents.push({ kind: "sign-kopidlno", x: limit - signGap - this.visualHalf("sign-kopidlno"), lift: 0, anim: 0, alive: true });
-    this.ents.push({ kind: "radnice", x: radnice, lift: 0, anim: 0, alive: true });
+    // anim = kolo, ve kterém radnice stojí (podle vesnic před ní): hádanka jen v kolech s rybníkem.
+    this.ents.push({ kind: "radnice", x: radnice, lift: 0, anim: Math.floor(end / CYCLE_LEN), alive: true });
     // Před radnicí nic velkého a žádná dekorace přes ni.
     const keep = this.visualHalf("radnice") + u * 0.6;
     for (const ent of this.ents) {
@@ -3407,7 +3422,10 @@ export class Runner {
       const id = stageIndex(ent.x);
       if (id === this.lastFish) continue;
       const fishAt = ent.x + this.u * 1.15;
-      if (here > fishAt - this.u * 1.7 && here < fishAt - this.u * 0.55) {
+      // Když ryba jen volá (Drběna nezastavuje), vykoukne dřív, ať je chvíli vidět před kozou.
+      const talking = Math.floor(Math.floor(fishAt / CYCLE_LEN) / 2) % 2 === 1;
+      const from = talking ? fishAt - this.viewW * 0.55 : fishAt - this.u * 1.7;
+      if (here > from && here < fishAt - this.u * 0.55) {
         this.lastFish = id;
         this.startFish(fishAt);
         return;
@@ -3418,16 +3436,20 @@ export class Runner {
   private startFish(x: number) {
     this.fishX = x;
     this.fishAge = 0;
-    this.vy = 0;
-    this.onGround = true;
-    this.feet = this.groundY;
-    this.releaseInputs();
     for (const ent of this.ents) {
       if ((ent.kind === "tree" || FOREST.includes(ent.kind)) && Math.abs(ent.x - (x - this.u * 1.15)) < this.u * 2.6) ent.alive = false;
       if (!HAZARDS.has(ent.kind) || !ent.alive) continue;
       if (ent.x > x - this.u * 9.2 && ent.x < x + this.u * 8) ent.alive = false;
     }
-    if (fishOffersMini()) {
+    // Rybník je v lichých kolech (0, 2, 4 … od nuly): v 1., 5., 9. kole ryba nabídne minihru,
+    // ve 3., 7. … jen zavolá z vody vtipnou hlášku a Drběna běží dál.
+    const pondLoop = Math.floor(x / CYCLE_LEN);
+    if (Math.floor(pondLoop / 2) % 2 === 0) {
+      // Drběna u ryby zastaví (i ze skoku rovnou na zem).
+      this.vy = 0;
+      this.onGround = true;
+      this.feet = this.groundY;
+      this.releaseInputs();
       this.bonus = createOfferedMini();
       this.fishDialogue = null;
       this.phase = "fish-intro";
@@ -3444,13 +3466,15 @@ export class Runner {
     if (FISH.length > 1 && index === this.fishTold) index = (index + 1) % FISH.length;
     this.fishTold = index;
     this.bonus = null;
-    this.fishDialogue = FISH[index] ?? FISH[0]!;
+    this.fishDialogue = null;
+    // Hláška ryby hru nezastavuje: ryba vykoukne z vody a její vtip je na kartičce příhody.
     this.fish = 5.2;
+    this.fishAge = 0;
     this.talk = 0;
-    this.tale = "";
-    this.taleTag = "Příhoda";
-    this.taleLife = 0;
-    this.phase = "fish-intro";
+    this.tale = FISH[index] ?? FISH[0]!;
+    this.taleTag = "Ryba z rybníka";
+    this.taleTitle = "Ryba volá z vody";
+    this.taleLife = 2.6;
     this.sfx.fact();
     this.pushHud(true);
   }
@@ -3701,6 +3725,8 @@ export class Runner {
   /** The selected player changed (menu): show their record and Chronicle. */
   refreshRecord() {
     this.useRecordOf(currentProfile());
+    // Kapitoly jelena patří hráči.
+    this.stagMeetings = loadProgress().stagMeetings;
     // Každý hráč má svou kroniku.
     this.scrollsKnown = knownIds().length;
     this.pushHud(true);
@@ -3715,14 +3741,10 @@ export class Runner {
     try {
       const raw = localStorage.getItem(SAVE_KEY);
       if (!raw) return;
-      const data = JSON.parse(raw) as { v?: number; best?: number; gossips?: number; mute?: boolean; scrolls?: number; stagMeetings?: number };
+      const data = JSON.parse(raw) as { v?: number; best?: number; gossips?: number; mute?: boolean; scrolls?: number };
       if (data.v !== 1) return;
       this.muted = Boolean(data.mute);
       this.scrolls = data.scrolls ?? 0;
-      // Stejná lokální pozice jako skóre; staré uložené hry mají výchozí nulu.
-      this.stagMeetings = typeof data.stagMeetings === "number" && Number.isFinite(data.stagMeetings)
-        ? Math.max(0, Math.floor(data.stagMeetings))
-        : 0;
     } catch {
       /* ignore broken saves */
     }
@@ -3732,7 +3754,7 @@ export class Runner {
     try {
       localStorage.setItem(
         SAVE_KEY,
-        JSON.stringify({ v: 1, best: this.best, gossips: this.bestGossips, mute: this.muted, scrolls: this.scrolls, stagMeetings: this.stagMeetings }),
+        JSON.stringify({ v: 1, best: this.best, gossips: this.bestGossips, mute: this.muted, scrolls: this.scrolls }),
       );
     } catch {
       /* private mode */
