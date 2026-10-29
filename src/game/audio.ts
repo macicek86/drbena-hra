@@ -14,6 +14,14 @@ type Live = {
 };
 
 const MIDI = 440;
+/** Hlasitost hudby; vložené skladby (minihry, jelen) se prolínají ztlumením a náběhem. */
+const MUSIC_GAIN = 0.42;
+const FADE_OUT = 0.45;
+const FADE_IN = 0.9;
+
+function episode(id: SongId | MusicMode | null) {
+  return id === "mini" || id === "stag";
+}
 
 function freq(pitch: number) {
   return MIDI * 2 ** ((pitch - 69) / 12);
@@ -48,6 +56,9 @@ export class Sfx {
   private restartLoop = false;
   /** Kde se hlavní smyčka zastavila kvůli minihře: po minihře hraje dál odtud, ne od začátku. */
   private loopResume: number | null = null;
+  /** Probíhá ztlumení před přepnutím na tuhle skladbu (konec ztlumení `fadeAt`). */
+  private fadeTo: SongId | null = null;
+  private fadeAt = 0;
   muted = false;
 
   unlock() {
@@ -67,7 +78,7 @@ export class Sfx {
       comp.ratio.value = 2.6;
       comp.attack.value = 0.004;
       comp.release.value = 0.14;
-      this.musicBus.gain.value = 0.42;
+      this.musicBus.gain.value = MUSIC_GAIN;
       this.sfxBus.gain.value = 0.85;
       this.musicBus.connect(comp);
       comp.connect(air);
@@ -115,6 +126,8 @@ export class Sfx {
 
   restartMusic() {
     this.restartLoop = true;
+    this.fadeTo = null;
+    this.rampMusic(MUSIC_GAIN, 0);
     this.introDone = false;
     this.suspend();
   }
@@ -130,6 +143,33 @@ export class Sfx {
       return;
     }
     if (this.ctx.state === "suspended") void this.ctx.resume();
+    const now = this.ctx.currentTime;
+    // Plynulý přechod mezi hlavní hudbou a vloženou skladbou: stará se nejdřív ztlumí, nová pak nabíhá.
+    const target = mode === "intro" ? null : mode;
+    let fadeIn = false;
+    if (this.fadeTo && target === this.song) {
+      // Rozmyšleno (fáze se vrátila dřív, než ztlumení doběhlo): hudba zase zesílí.
+      this.fadeTo = null;
+      this.rampMusic(MUSIC_GAIN, FADE_IN * 0.5);
+    }
+    if (target && this.song && target !== this.song && !this.restartLoop && (episode(target) || episode(this.song))) {
+      if (!this.held) {
+        if (this.fadeTo !== target) {
+          this.fadeTo = target;
+          this.fadeAt = now + FADE_OUT;
+          this.rampMusic(0.0001, FADE_OUT);
+        }
+        if (now < this.fadeAt) {
+          this.pump(this.song === "loop" ? this.tempo : 1);
+          return;
+        }
+      }
+      this.fadeTo = null;
+      fadeIn = true;
+    } else if (!this.fadeTo && target && target !== this.song) {
+      this.rampMusic(MUSIC_GAIN, 0);
+    }
+    if (fadeIn) this.musicBus.gain.setValueAtTime(0.0001, now);
     if (mode === "loop" && (this.restartLoop || this.song !== "loop")) {
       const resume = this.restartLoop ? null : this.loopResume;
       this.restartLoop = false;
@@ -138,13 +178,30 @@ export class Sfx {
     } else if (mode === "mini" || mode === "stag") {
       // Minihry (ryba, erbovní hádanka) mají smyčku Strejček Škrhola, rozhovor s bílým jelenem Modlitbu.
       if (this.song !== mode) this.useSong(mode);
+      if (fadeIn) this.rampMusic(MUSIC_GAIN, FADE_IN);
       this.pump(1);
       return;
     } else if (mode === "intro") {
       if (this.introDone) return;
-      if (this.song !== "intro") this.useSong("intro");
+      if (this.song !== "intro") {
+        this.fadeTo = null;
+        this.rampMusic(MUSIC_GAIN, 0);
+        this.useSong("intro");
+      }
     }
+    if (fadeIn) this.rampMusic(MUSIC_GAIN, FADE_IN);
     this.pump(Math.min(1.12, Math.max(0.94, tempo)));
+  }
+
+  /** Plynulá změna hlasitosti hudby na `to` za `seconds` (0 = hned). */
+  private rampMusic(to: number, seconds: number) {
+    if (!this.ctx || !this.musicBus) return;
+    const g = this.musicBus.gain;
+    const now = this.ctx.currentTime;
+    g.cancelScheduledValues(now);
+    g.setValueAtTime(Math.max(0.0001, g.value), now);
+    if (seconds <= 0) g.setValueAtTime(to, now);
+    else g.linearRampToValueAtTime(Math.max(0.0001, to), now + seconds);
   }
 
   jump() {
