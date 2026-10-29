@@ -224,12 +224,8 @@ const RADNICE_GLANCE = 1.45;
 const LOOK_FRAMES = 8;
 /** Snímky mávání křídel (`public/game/pigeon-fly`). */
 const PIGEON_FLY_FRAMES = 4;
-/** Snímky šlapání (`public/game/cyclist-pedal`). */
-const CYCLIST_PEDAL_FRAMES = 4;
 /** Snímky mávání husy (`public/game/goose-flap`). */
 const GOOSE_FLAP_FRAMES = 4;
-/** Snímky zalévání sousedky (`public/game/gardener-water`). */
-const GARDENER_WATER_FRAMES = 4;
 const PROPS = new Set<Kind>([...FOREST, "bush", "lamp", "tree", "bench", "pigeon", "bin"]);
 const DECOR = new Set<Kind>([...FOREST, "bush", "lamp", "tree", "bench", "pigeon", "bin", "column", "church", "school", "info", ...SIGNS]);
 
@@ -902,7 +898,7 @@ export class Runner {
     ] as const;
     const frames = ["jump", "duck", "run", "idle"] as const;
     this.loaded = 0;
-    this.loadTotal = names.length + frames.length * 4 + 13 + LOOK_FRAMES + PIGEON_FLY_FRAMES + CYCLIST_PEDAL_FRAMES + GOOSE_FLAP_FRAMES + GARDENER_WATER_FRAMES;
+    this.loadTotal = names.length + frames.length * 4 + 13 + LOOK_FRAMES + PIGEON_FLY_FRAMES + GOOSE_FLAP_FRAMES;
     this.ready = false;
     const rest = Promise.all([
       this.loadFramesCounted("jump"),
@@ -940,10 +936,8 @@ export class Runner {
       this.loadFramesCounted("stag-idle"),
       this.loadFramesCounted("look", LOOK_FRAMES),
       this.loadFramesCounted("pigeon-fly", PIGEON_FLY_FRAMES),
-      this.loadFramesCounted("cyclist-pedal", CYCLIST_PEDAL_FRAMES),
       this.loadFramesCounted("goose-flap", GOOSE_FLAP_FRAMES),
-      this.loadFramesCounted("gardener-water", GARDENER_WATER_FRAMES),
-    ]).then(([run, idle, stagRun, stagIdle, look, pigeonFly, cyclistPedal, gooseFlap, gardenerWater]) => {
+    ]).then(([run, idle, stagRun, stagIdle, look, pigeonFly, gooseFlap]) => {
       if (!this.alive) return;
       this.art.run = run;
       this.art.idle = idle;
@@ -951,9 +945,7 @@ export class Runner {
       this.art.stagIdle = stagIdle;
       this.art.look = look;
       this.art.pigeonFly = pigeonFly;
-      this.art.cyclistPedal = cyclistPedal;
       this.art.gooseFlap = gooseFlap;
-      this.art.gardenerWater = gardenerWater;
     });
     if (!this.alive) return;
     this.openMenu();
@@ -2706,6 +2698,10 @@ export class Runner {
       } else {
         bob = Math.abs(Math.sin(this.time * 5 + ent.anim)) * this.u * 0.012;
       }
+    } else if (ent.kind === "cyclist") {
+      // Původní cyklista (snímky šlapání z cyclist-pedal jsou jiná postava): jen se pohupuje.
+      bob = Math.abs(Math.sin(this.time * 9 + ent.anim)) * this.u * 0.018;
+      rot = Math.sin(this.time * 4.5 + ent.anim) * 0.025;
     } else if (ent.kind === "car") {
       bob = Math.abs(Math.sin(this.time * 8 + ent.anim)) * this.u * 0.035;
       rot = Math.sin(this.time * 8 + ent.anim) * 0.045;
@@ -2720,13 +2716,9 @@ export class Runner {
     const img =
       ent.kind === "pigeon" && ent.fly
         ? (this.pigeonFlap(ent) ?? this.spriteFor(ent))
-        : ent.kind === "cyclist"
-          ? (this.cyclistPedal(ent) ?? this.spriteFor(ent))
-          : ent.kind === "dog"
-            ? (this.gooseFlap(ent) ?? this.spriteFor(ent))
-            : ent.kind === "gardener"
-              ? (this.gardenerWater(ent) ?? this.spriteFor(ent))
-              : this.spriteFor(ent);
+        : ent.kind === "dog"
+          ? (this.gooseFlap(ent) ?? this.spriteFor(ent))
+          : this.spriteFor(ent);
     if (!img) return;
     const flyScale = ent.kind === "pigeon" && ent.fly ? 1.65 : 1;
     const drawH = h * flyScale;
@@ -2753,13 +2745,6 @@ export class Runner {
     return sheet[index] ?? null;
   }
 
-  /** Jedno pomalé šlápnutí: nohy se střídají, kolo stojí na místě. */
-  private cyclistPedal(ent: Ent): HTMLImageElement | null {
-    const sheet = this.art.cyclistPedal;
-    if (!Array.isArray(sheet) || sheet.length === 0) return null;
-    const index = Math.floor(this.time * 4 + ent.anim) % sheet.length;
-    return sheet[index] ?? null;
-  }
 
   /** Husa stojí a mává křídly. Tělo, krk a nohy zůstávají na místě. */
   private gooseFlap(ent: Ent): HTMLImageElement | null {
@@ -2769,13 +2754,6 @@ export class Runner {
     return sheet[index] ?? null;
   }
 
-  /** Sousedka stojí a občas nakloní konev. Tělo zůstává. */
-  private gardenerWater(ent: Ent): HTMLImageElement | null {
-    const sheet = this.art.gardenerWater;
-    if (!Array.isArray(sheet) || sheet.length === 0) return null;
-    const index = Math.floor(this.time * 3 + ent.anim) % sheet.length;
-    return sheet[index] ?? null;
-  }
 
   private drawPlayer(ctx: CanvasRenderingContext2D) {
     if (this.invuln > 0 && Math.floor(this.time * 18) % 2 === 0) return;
