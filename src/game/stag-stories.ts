@@ -138,6 +138,58 @@ const SMALL_TALK: readonly StagStory[] = [
       { speaker: "Drběna", text: "Tohle si Drběna zapamatuje. A žádný lístek z aleje neukousne!" },
     ],
   },
+  {
+    id: "radnice",
+    title: "Kozel ve štítu",
+    lines: [
+      { speaker: "Drběna", text: "Na kopidlenské radnici má Drběna příbuzného. Kozla, přímo ve štítu!" },
+      { speaker: "Bílý jelen", text: "Tak to je v rodině slavnější než já. Mě nikdo do znaku nedal." },
+      { speaker: "Drběna", text: "Neboj, Drběna o tobě aspoň poví celému Kopidlnu." },
+    ],
+  },
+  {
+    id: "ryba",
+    title: "Zpráva od rybníka",
+    lines: [
+      { speaker: "Drběna", text: "Ryba ze zámeckého rybníka tě pozdravuje. Prý víš, proč." },
+      { speaker: "Bílý jelen", text: "Jednou jsem se nad ní napil a ona mi celou dobu vyprávěla o kaprech." },
+      { speaker: "Drběna", text: "To je celá ona. Drběna má konkurenci i pod vodou!" },
+    ],
+  },
+  {
+    id: "rano",
+    title: "Ranní mlha",
+    lines: [
+      { speaker: "Bílý jelen", text: "Ráno, když leží nad oborou mlha, vypadá všechno jako z pohádky." },
+      { speaker: "Drběna", text: "Ráno Drběna spí. Ale zítra si přivstane. Možná. Spíš ne." },
+    ],
+  },
+  {
+    id: "jablka",
+    title: "Jablka z Drahorazi",
+    lines: [
+      { speaker: "Drběna", text: "Neviděl jsi tu košík jablek? Drběna se ptá jen tak, ze zvědavosti." },
+      { speaker: "Bílý jelen", text: "Ten, co jsi v Drahorazi převrhla? Ten už si odnesli zpátky." },
+      { speaker: "Drběna", text: "Škoda. Tedy, chtěla jsem říct: to je dobře!" },
+    ],
+  },
+  {
+    id: "hvezdy",
+    title: "Hvězdy nad oborou",
+    lines: [
+      { speaker: "Bílý jelen", text: "V noci je nad oborou vidět víc hvězd než nad náměstím." },
+      { speaker: "Drběna", text: "Drběna je počítala. Došla do tří a pak jí jedna mrkla a musela začít znovu." },
+    ],
+  },
+  {
+    id: "slovo",
+    title: "Na slovíčko",
+    lines: [
+      { speaker: "Drběna", text: "Mám pro tebe drb. Ale nesmíš ho nikomu říct!" },
+      { speaker: "Bílý jelen", text: "Komu bych ho tady v oboře říkal? Snad jen stromům." },
+      { speaker: "Drběna", text: "No právě. Stromy jsou ty nejhorší drbny. Šumí o všem!" },
+    ],
+  },
 ];
 
 /** První setkání mají návazný děj; pak se opakují krátká, různá povídání. */

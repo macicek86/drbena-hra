@@ -108,6 +108,7 @@ export function removeProfile(id: string): Profiles {
   const list = profiles.list.filter((p) => p.id !== id);
   try {
     localStorage.removeItem(`${CHRONICLE_KEY}:${id}`);
+    localStorage.removeItem(`drbena-postup-v1:${id}`);
   } catch {
     /* private mode */
   }

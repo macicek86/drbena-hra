@@ -18,13 +18,23 @@ export type ErbQuizRound = {
   legend: ErbQuizLink;
 };
 
-/** Jedna náhodná otázka; obtížnosti vážíme jako skupiny, nikoli podle počtu otázek v souboru. */
-export function createErbQuiz(lastId: string | null, random: () => number = Math.random): ErbQuizRound {
+/** Počet platných otázek (když je hráč viděl všechny, začne se znovu). */
+export function erbQuestionIds(): string[] {
+  return data.questions.map((q) => q.id);
+}
+
+/**
+ * Jedna náhodná otázka; obtížnosti vážíme jako skupiny, nikoli podle počtu otázek v souboru.
+ * `seen` jsou otázky, které hráč už měl: dokud nějaké zbývají, vybírá se jen z nich nových.
+ */
+export function createErbQuiz(lastId: string | null, random: () => number = Math.random, seen: readonly string[] = []): ErbQuizRound {
   const valid = data.questions.filter(
     (q) => q.answers.length === data.settings.answersPerQuestion && q.correct >= 0 && q.correct < q.answers.length,
   );
-  const fresh = data.settings.avoidImmediateRepeat ? valid.filter((q) => q.id !== lastId) : valid;
-  const pool = fresh.length ? fresh : valid;
+  const unseen = valid.filter((q) => !seen.includes(q.id));
+  const base = unseen.length ? unseen : valid;
+  const fresh = data.settings.avoidImmediateRepeat ? base.filter((q) => q.id !== lastId) : base;
+  const pool = fresh.length ? fresh : base;
   if (!pool.length) throw new Error("Erbovní hádanka nemá platné otázky.");
   const counts = new Map<string, number>();
   for (const q of pool) counts.set(q.difficulty, (counts.get(q.difficulty) ?? 0) + 1);
