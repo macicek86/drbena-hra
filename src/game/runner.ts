@@ -3206,7 +3206,10 @@ export class Runner {
       index = Math.floor(this.time * 8) % 4;
     }
     const img = frameOf(sheet, index) ?? frameOf(this.art.idle, 0);
-    const h = this.u;
+    // Skok je nakreslený na vyšším plátně než běh. Stejná výška na obrazovce by kozu zmenšila.
+    const runRef = frameOf(this.art.run, 0);
+    const refH = runRef && runRef.height ? runRef.height : img && img.height ? img.height : 1;
+    const h = img && sheet === this.art.jump ? this.u * (img.height / refH) : this.u;
     if (!img) {
       ctx.fillStyle = "#241c16";
       ctx.fillRect(this.playerX - 16, this.feet - h * 0.7, 32, h * 0.7);
