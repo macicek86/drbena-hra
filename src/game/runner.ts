@@ -1038,7 +1038,7 @@ export class Runner {
 
   private loadFramesCounted(name: string, count = 4) {
     // Bradka je pryč ze snímků. Staré webp prohlížeč drží 4 hodiny, verze to obejde.
-    const v = name === "stag-run" ? "?v=6" : name === "run" || name === "idle" || name === "look" ? "?v=5" : "";
+    const v = name === "stag-run" ? "?v=7" : name === "run" || name === "idle" || name === "look" ? "?v=5" : "";
     return Promise.all(
       Array.from({ length: count }, (_, i) => this.loadCounted(publicUrl(`/game/${name}/${i}.webp${v}`))),
     ).then((frames) => frames.filter((frame): frame is HTMLImageElement => frame !== null));
