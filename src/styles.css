@@ -25,6 +25,30 @@ body {
   font-family: var(--font-sans);
 }
 
+html.vanoce,
+html.vanoce body {
+  background: #1a3260 linear-gradient(180deg, #1a3260 0%, #4a6e9e 36%, #e4cfc8 72%, #eef3f7 100%) fixed;
+}
+
+.snow-dot {
+  position: absolute;
+  top: -12px;
+  border-radius: 999px;
+  background: #fff;
+  animation-name: snow-fall;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+@keyframes snow-fall {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(18px, 110vh, 0);
+  }
+}
+
 /* Under the gesture bar of the phone (below the game, see main in GameApp): while a dimmed panel is open
    (kronika, kdo hraje, žebříček), the strip is dimmed the same way, so it does not shine as bright green. */
 html:has(main .bg-ink\/55),

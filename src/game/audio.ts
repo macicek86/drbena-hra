@@ -1,4 +1,5 @@
 import { INTRO, INTRO_DUR, LOOP, LOOP_DUR } from "@/game/esmeraldaScore";
+import { XMAS_INTRO, XMAS_INTRO_DUR, XMAS_LOOP, XMAS_LOOP_DUR } from "@/game/esmeraldaXmasScore";
 import { MINI, MINI_DUR } from "@/game/minigameScore";
 import { STAG, STAG_DUR } from "@/game/stagScore";
 
@@ -59,7 +60,16 @@ export class Sfx {
   /** Probíhá ztlumení před přepnutím na tuhle skladbu (konec ztlumení `fadeAt`). */
   private fadeTo: SongId | null = null;
   private fadeAt = 0;
+  /** Vánoční Esmeralda místo běžné, jen dokud je zapnutý vánoční vzhled. */
+  private festive = false;
   muted = false;
+
+  /** Přepne vánoční smyčky. Když právě hraje úvod nebo hra, naskočí hned ta druhá verze. */
+  setFestive(on: boolean) {
+    if (this.festive === on) return;
+    this.festive = on;
+    if (this.song === "intro" || this.song === "loop") this.useSong(this.song);
+  }
 
   unlock() {
     const Ctx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
@@ -244,8 +254,9 @@ export class Sfx {
     }
     this.hush();
     this.song = id;
-    this.notes = id === "intro" ? INTRO : id === "mini" ? MINI : id === "stag" ? STAG : LOOP;
-    this.dur = id === "intro" ? INTRO_DUR : id === "mini" ? MINI_DUR : id === "stag" ? STAG_DUR : LOOP_DUR;
+    const xmas = this.festive;
+    this.notes = id === "intro" ? (xmas ? XMAS_INTRO : INTRO) : id === "mini" ? MINI : id === "stag" ? STAG : xmas ? XMAS_LOOP : LOOP;
+    this.dur = id === "intro" ? (xmas ? XMAS_INTRO_DUR : INTRO_DUR) : id === "mini" ? MINI_DUR : id === "stag" ? STAG_DUR : xmas ? XMAS_LOOP_DUR : LOOP_DUR;
     this.looping = true;
     this.index = 0;
     this.wrap = 0;

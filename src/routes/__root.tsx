@@ -3,10 +3,14 @@ import { AuthProvider } from "@/lib/auth/provider";
 import { PreviewHostBridge } from "@/components/preview-host-bridge";
 import appCss from "../styles.css?url";
 
+import { christmasLook } from "@/game/christmas";
+
 const APP_NAME = "Drběna sbírá drby";
 
 export const Route = createRootRoute({
-  head: () => ({
+  head: () => {
+    const vanoce = christmasLook();
+    return {
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
@@ -16,7 +20,7 @@ export const Route = createRootRoute({
         content:
           "Drběna sbírá drby — skákej s kopidlnskou kozou přes ploty a pejsky a chytej drby o městě.",
       },
-      { name: "theme-color", content: "#FFF6E8" },
+      { name: "theme-color", content: vanoce ? "#1a3260" : "#FFF6E8" },
     ],
     links: [
       { rel: "icon", type: "image/png", href: "/favicon.png" },
@@ -30,9 +34,12 @@ export const Route = createRootRoute({
         href: "https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,560;9..144,700&family=Nunito:wght@600;800&display=swap",
       },
     ],
-  }),
-  component: () => (
-    <html lang="cs" suppressHydrationWarning>
+  };
+  },
+  component: () => {
+    const vanoce = christmasLook();
+    return (
+    <html lang="cs" className={vanoce ? "vanoce" : undefined} suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
@@ -44,5 +51,6 @@ export const Route = createRootRoute({
         <Scripts />
       </body>
     </html>
-  ),
+    );
+  },
 });

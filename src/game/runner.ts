@@ -9,6 +9,7 @@ import { reportPlayer, submitScore } from "@/game/plays";
 import { currentProfile, ensureProfile, recordGame } from "@/game/profiles";
 import { cyclistGap, gossipChance, gossipGap, hazardGap, pairGap, scrollGap, MERCY_SECONDS, MERCY_COOLDOWN, mercyDue, mercySlow, pairChance, roadZone, speedShape, WARM_BEST, type Zone } from "@/game/difficulty";
 import { publicUrl } from "@/lib/public-url";
+import { christmasLook, winterTint } from "@/game/christmas";
 import {
   CYCLE_LEN,
   stageIndex,
@@ -246,6 +247,27 @@ const CYCLIST_LAYER = {
 } as const;
 const PROPS = new Set<Kind>([...FOREST, "bush", "lamp", "tree", "bench", "pigeon", "bin"]);
 const DECOR = new Set<Kind>([...FOREST, "bush", "lamp", "tree", "bench", "pigeon", "bin", "column", "church", "school", "info", ...SIGNS]);
+/** Postavy a sbíratelné věci sníh nenasazuje, ať zůstanou čitelné. */
+const BARE = new Set<Kind>(["gossip", "heart", "scroll", "dog", "gardener", "cyclist", "car", "pigeon", "stag"]);
+/** Střechy: sníh leží na ploše, ne po každé hraně kresby. */
+const ROOFS = new Set<string>([
+  "houses",
+  "radnice",
+  "castle",
+  "greenhouse",
+  "church",
+  "school",
+  "info",
+  "mlynec-house",
+  "mlynec-school",
+  "mlynec-bell",
+  "ledkov-a",
+  "ledkov-b",
+  "drahoraz-church",
+  "drahoraz-tower",
+  "pseves-house",
+  "column",
+]);
 
 // Nejdřív se ryba celá vynoří; až pak otevřít dialog či nabídku minihry.
 const FISH_RISE_SECONDS = 0.85;
@@ -475,6 +497,11 @@ export class Runner {
   private farBakes = new WeakMap<HTMLImageElement, Map<number, HTMLCanvasElement>>();
   /** Předkreslené obrázky podle výšky; víc výšek na obrázek (stromy v lese mají několik velikostí). */
   private bakes = new WeakMap<HTMLImageElement, Map<number, HTMLCanvasElement>>();
+  private snowCaps = new WeakMap<HTMLImageElement, HTMLCanvasElement>();
+  private roofCaps = new WeakMap<HTMLImageElement, HTMLCanvasElement>();
+  private snowyBakes = new WeakMap<HTMLCanvasElement, HTMLCanvasElement>();
+  /** Rychlost posledního kroku. Zbytek času mezi snímky se o ni dokreslí, ať běh neskáče. */
+  private moved = 0;
   private raf = 0;
   private alive = true;
   private last = 0;
@@ -611,6 +638,8 @@ export class Runner {
   private skyGround = -1;
   private flowerX: [number[], number[], number[]] = [[], [], []];
   private playerX = 160;
+  private festive = christmasLook();
+  private flakes: { x: number; y: number; z: number; s: number; p: number; k: number }[] = [];
 
   constructor(
     private canvas: HTMLCanvasElement,
@@ -624,12 +653,26 @@ export class Runner {
   }
 
   start() {
+    this.sfx.setFestive(this.festive);
     this.resize();
     this.bind();
     this.last = performance.now();
     this.loop = this.loop.bind(this);
     this.raf = requestAnimationFrame(this.loop);
     void this.bootstrap();
+  }
+
+  /** Přepne vánoční krajinu za běhu (náhled před adventem). */
+  setFestive(on: boolean) {
+    if (this.festive === on) return;
+    this.festive = on;
+    this.sfx.setFestive(on);
+    this.skyGrad = null;
+    this.flakes = [];
+    this.snowCaps = new WeakMap();
+    this.roofCaps = new WeakMap();
+    this.snowyBakes = new WeakMap();
+    if (on) this.warmSnow();
   }
 
   destroy() {
@@ -917,7 +960,7 @@ export class Runner {
     ] as const;
     const frames = ["jump", "duck", "run", "idle"] as const;
     this.loaded = 0;
-    this.loadTotal = names.length + frames.length * 4 + 13 + LOOK_FRAMES + PIGEON_FLY_FRAMES + GOOSE_FLAP_FRAMES + GARDENER_WATER_FRAMES + CYCLIST_PEDAL_FRAMES + 4;
+    this.loadTotal = names.length + frames.length * 4 + 14 + LOOK_FRAMES + PIGEON_FLY_FRAMES + GOOSE_FLAP_FRAMES + GARDENER_WATER_FRAMES + CYCLIST_PEDAL_FRAMES + 4;
     this.ready = false;
     const rest = Promise.all([
       this.loadFramesCounted("jump"),
@@ -940,6 +983,7 @@ export class Runner {
       this.loadCounted(publicUrl("/game/obora-end.webp")),
       this.loadCounted(publicUrl("/game/stag.webp")),
       this.loadCounted(publicUrl("/game/oak.webp")),
+      this.loadCounted(publicUrl("/game/xmas-tree.webp")),
     ]).then((loaded) => {
       if (!this.alive) return;
       this.art.oboraStart = loaded[0];
@@ -947,6 +991,7 @@ export class Runner {
       this.art.oboraEnd = loaded[2];
       this.art.stag = loaded[3];
       this.art.oak = loaded[4];
+      this.art.xmasTree = loaded[5] ?? null;
     });
     const hero = Promise.all([
       this.loadFramesCounted("run"),
@@ -980,6 +1025,7 @@ export class Runner {
     if (!this.alive) return;
     this.openMenu();
     await Promise.all([hero, rest, scenery]);
+    this.warmSnow();
   }
 
   private loadCounted(src: string) {
@@ -1193,28 +1239,36 @@ export class Runner {
         this.acc -= 1 / 60;
         steps += 1;
       }
-      this.draw();
-      // Minihry (ryba i erbovní hádanka u radnice) a rozhovor s jelenem mají vlastní hudbu, potom hlavní smyčka pokračuje.
-      const mode = this.phase === "menu"
-        ? "intro"
-        : this.phase === "bonus" || this.phase === "erb-quiz"
-          ? "mini"
-          : this.phase === "dialogue" && this.stagDialogueStory
-            ? "stag"
-            : this.phase === "play" || this.phase === "dialogue" || this.phase === "fish-intro"
-            ? "loop"
-            : "off";
-      let tempo = 1;
-      if (this.phase === "play") {
-        const pace = this.speed0 > 0 ? this.speed / this.speed0 : 1;
-        const running = this.talk <= 0 && this.fish <= 0;
-        tempo = running ? 1 + Math.min(0.1, Math.max(0, (pace - 1) * 0.06)) : 0.98;
-      }
-      this.sfx.tick(mode, tempo);
-      this.emitAcc += dt;
-      if (this.emitAcc > 0.12) {
-        this.emitAcc = 0;
-        this.pushHud(false);
+      if (steps === 5) this.acc = Math.min(this.acc, 1 / 60);
+      const extra = this.moved * this.acc;
+      this.camera += extra;
+      try {
+        this.tickSnow(dt);
+        this.draw();
+        // Minihry (ryba i erbovní hádanka u radnice) a rozhovor s jelenem mají vlastní hudbu, potom hlavní smyčka pokračuje.
+        const mode = this.phase === "menu"
+          ? "intro"
+          : this.phase === "bonus" || this.phase === "erb-quiz"
+            ? "mini"
+            : this.phase === "dialogue" && this.stagDialogueStory
+              ? "stag"
+              : this.phase === "play" || this.phase === "dialogue" || this.phase === "fish-intro"
+              ? "loop"
+              : "off";
+        let tempo = 1;
+        if (this.phase === "play") {
+          const pace = this.speed0 > 0 ? this.speed / this.speed0 : 1;
+          const running = this.talk <= 0 && this.fish <= 0;
+          tempo = running ? 1 + Math.min(0.1, Math.max(0, (pace - 1) * 0.06)) : 0.98;
+        }
+        this.sfx.tick(mode, tempo);
+        this.emitAcc += dt;
+        if (this.emitAcc > 0.12) {
+          this.emitAcc = 0;
+          this.pushHud(false);
+        }
+      } finally {
+        this.camera -= extra;
       }
     } catch {
       const lost = !this.ctx || this.ctx.isContextLost();
@@ -1275,6 +1329,7 @@ export class Runner {
 
   private step(dt: number) {
     this.time += dt;
+    this.moved = 0;
     this.pollPad();
     if (this.phase === "loading" || this.phase === "splash") return;
     if (this.phase === "fish-intro") {
@@ -1353,6 +1408,7 @@ export class Runner {
     if (this.phase === "play") this.watchRadnice(dt);
     const speed = this.phase === "play" && this.holds() ? 0 : this.currentSpeed();
     this.speed = speed;
+    this.moved = speed;
     this.camera += speed * dt;
     if (this.phase === "play") {
       this.run += speed * dt;
@@ -2083,7 +2139,7 @@ export class Runner {
       const w = h * (img.width / img.height);
       const x = edge + side * out * this.u;
       if (x + w < -40 || x - w > this.viewW + 40) continue;
-      const baked = far ? this.bakedFar(img, h * this.scale) : this.baked(img, h * this.scale);
+      const baked = this.sceneBake(img, h * this.scale, far);
       if ((side === 1) !== mirror) {
         ctx.save();
         ctx.translate(this.snap(x), 0);
@@ -2119,7 +2175,7 @@ export class Runner {
       for (const [size, inset] of bushes) {
         const h = size * this.u;
         const w = h * aspect;
-        const baked = this.baked(img, h * this.scale);
+        const baked = this.sceneBake(img, h * this.scale, false);
         for (const x of [left + inset * this.u, right - inset * this.u]) {
           ctx.drawImage(baked, this.snap(x - w / 2), this.snap(feet - h), w, h);
         }
@@ -2522,7 +2578,10 @@ export class Runner {
     const ctx = this.ctx;
     if (!ctx) return;
     const mix = biomeMix(this.camera);
-    const col = (key: ColorKey) => rgbCss(lerpRgb(mix.biome[key], mix.tint[key], mix.t));
+    const col = (key: ColorKey) => {
+      const mixed = lerpRgb(mix.biome[key], mix.tint[key], mix.t);
+      return rgbCss(this.festive ? winterTint(key, mixed) : mixed);
+    };
     const mag = this.shake * this.u * 0.1;
     const ox = Math.sin(this.time * 46) * mag;
     const oy = Math.cos(this.time * 33) * mag * 0.45;
@@ -2546,17 +2605,42 @@ export class Runner {
     ctx.fillStyle = this.skyGrad;
     ctx.fillRect(-20, -20, this.viewW + 40, this.viewH + 40);
 
-    ctx.fillStyle = "rgba(255, 236, 180, 0.95)";
-    ctx.beginPath();
-    ctx.arc(this.viewW * 0.8, this.u * 0.42, this.u * 0.22, 0, Math.PI * 2);
-    ctx.fill();
+    if (this.festive) {
+      ctx.fillStyle = "rgba(214, 226, 242, 0.28)";
+      ctx.beginPath();
+      ctx.arc(this.viewW * 0.8, this.u * 0.4, this.u * 0.34, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#f7f4ee";
+      ctx.beginPath();
+      ctx.arc(this.viewW * 0.8, this.u * 0.4, this.u * 0.11, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = top;
+      ctx.beginPath();
+      ctx.arc(this.viewW * 0.8 + this.u * 0.045, this.u * 0.385, this.u * 0.09, 0, Math.PI * 2);
+      ctx.fill();
+      if (this.nightAt(this.camera + this.playerX) < 0.35) this.winterStars(ctx);
+    } else {
+      ctx.fillStyle = "rgba(255, 236, 180, 0.95)";
+      ctx.beginPath();
+      ctx.arc(this.viewW * 0.8, this.u * 0.42, this.u * 0.22, 0, Math.PI * 2);
+      ctx.fill();
+    }
 
     this.clouds(ctx);
     this.hills(ctx, 0.22, this.groundY - this.u * 0.85, this.u * 0.38, col("hillFar"));
+    if (this.festive) {
+      this.drawSpruces(ctx);
+      this.snowRidge(ctx, 0.22, this.groundY - this.u * 0.85, this.u * 0.38);
+    }
     this.hills(ctx, 0.4, this.groundY - this.u * 0.28, this.u * 0.22, col("hill"));
+    if (this.festive) this.snowRidge(ctx, 0.4, this.groundY - this.u * 0.28, this.u * 0.22);
 
     ctx.fillStyle = col("grass");
     ctx.fillRect(-20, this.groundY - 4, this.viewW + 40, this.viewH - this.groundY + 30);
+    if (this.festive) {
+      ctx.fillStyle = "rgba(255,255,255,0.45)";
+      ctx.fillRect(-20, this.groundY - 8, this.viewW + 40, 14);
+    }
 
     const margin = this.cullMargin;
     const cam = this.camera;
@@ -2591,6 +2675,7 @@ export class Runner {
       if (!ent.alive || !PLACES.has(ent.kind)) continue;
       const sx = ent.x - cam;
       if (sx < -margin || sx > this.viewW + margin) continue;
+      if (this.festive && ent.kind === "column") this.drawSquareTree(ctx, ent);
       this.drawEnt(ctx, ent);
     }
     for (const ent of this.ents) {
@@ -2603,17 +2688,23 @@ export class Runner {
     this.drawMirrorPondEnds(ctx);
     this.drawOboraEndTrees(ctx);
 
-    ctx.fillStyle = col("path");
     const pathH = Math.max(22, this.u * 0.2);
-    ctx.fillRect(-20, this.groundY + 1, this.viewW + 40, pathH);
-    ctx.fillStyle = col("pathDark");
-    const stride = 26;
-    for (let x = -(this.camera % stride); x < this.viewW; x += stride) {
-      ctx.fillRect(x, this.groundY + pathH * 0.35, 12, 3);
+    if (this.festive) {
+      ctx.fillStyle = "#f7f9fb";
+      ctx.fillRect(-20, this.groundY + 1, this.viewW + 40, pathH);
+    } else {
+      ctx.fillStyle = col("path");
+      ctx.fillRect(-20, this.groundY + 1, this.viewW + 40, pathH);
+      ctx.fillStyle = col("pathDark");
+      const stride = 26;
+      for (let x = -(this.camera % stride); x < this.viewW; x += stride) {
+        ctx.fillRect(x, this.groundY + pathH * 0.35, 12, 3);
+      }
     }
     ctx.fillStyle = col("grassDark");
     ctx.fillRect(-20, this.groundY - 7, this.viewW + 40, 8);
-    this.flowers(ctx);
+    if (this.festive) this.snowBanks(ctx);
+    else this.flowers(ctx);
 
     for (const ent of this.ents) {
       if (!ent.alive || LANDMARKS.has(ent.kind) || DECOR.has(ent.kind) || ent.kind === "firefly") continue;
@@ -2637,6 +2728,7 @@ export class Runner {
     }
     this.drawDusk(ctx);
     this.drawFireflies(ctx);
+    if (this.festive) this.drawSnow(ctx);
     for (const bit of this.bits) {
       if (!bit.on) continue;
       ctx.globalAlpha = Math.max(0, bit.life / bit.max);
@@ -2665,8 +2757,197 @@ export class Runner {
     }
   }
 
+  private tickSnow(dt: number) {
+    if (!this.festive || this.viewW < 1) return;
+    if (this.flakes.length === 0) {
+      for (let i = 0; i < 42; i += 1) {
+        this.flakes.push({
+          x: Math.random() * this.viewW,
+          y: Math.random() * this.viewH,
+          z: Math.random(),
+          s: 0.75 + Math.random() * 0.7,
+          p: Math.random() * Math.PI * 2,
+          k: Math.random() < 0.72 ? 0 : 1,
+        });
+      }
+    }
+    const t = this.time + this.acc;
+    for (const flake of this.flakes) {
+      flake.y += dt * (18 + flake.z * 70);
+      flake.x += Math.sin(t * 0.45 + flake.p) * dt * (8 + flake.z * 14);
+      if (flake.y > this.viewH + 8) {
+        flake.y = -8;
+        flake.x = Math.random() * this.viewW;
+      }
+      if (flake.x < -12) flake.x = this.viewW + 6;
+      if (flake.x > this.viewW + 12) flake.x = -6;
+    }
+  }
+
+  private snowSprites: HTMLCanvasElement[] | null = null;
+
+  /** Měkká vločka a malá hvězdička, nakreslené jednou. */
+  private snowSprite(kind: number): HTMLCanvasElement {
+    if (!this.snowSprites) {
+      const dot = document.createElement("canvas");
+      dot.width = 24;
+      dot.height = 24;
+      const dg = dot.getContext("2d");
+      if (dg) {
+        const g = dg.createRadialGradient(12, 12, 0, 12, 12, 12);
+        g.addColorStop(0, "rgba(255,255,255,0.95)");
+        g.addColorStop(0.4, "rgba(255,255,255,0.55)");
+        g.addColorStop(1, "rgba(255,255,255,0)");
+        dg.fillStyle = g;
+        dg.fillRect(0, 0, 24, 24);
+      }
+      const star = document.createElement("canvas");
+      star.width = 22;
+      star.height = 22;
+      const sg = star.getContext("2d");
+      if (sg) {
+        sg.translate(11, 11);
+        sg.strokeStyle = "rgba(255,255,255,0.9)";
+        sg.lineWidth = 1.3;
+        sg.lineCap = "round";
+        sg.beginPath();
+        for (let i = 0; i < 6; i += 1) {
+          const a = (Math.PI / 3) * i;
+          sg.moveTo(0, 0);
+          sg.lineTo(Math.cos(a) * 9, Math.sin(a) * 9);
+        }
+        sg.stroke();
+        sg.fillStyle = "rgba(255,255,255,0.95)";
+        sg.beginPath();
+        sg.arc(0, 0, 1.7, 0, Math.PI * 2);
+        sg.fill();
+      }
+      this.snowSprites = [dot, star];
+    }
+    return this.snowSprites[kind] ?? this.snowSprites[0]!;
+  }
+
+  private drawSnow(ctx: CanvasRenderingContext2D) {
+    ctx.globalAlpha = 0.92;
+    for (const flake of this.flakes) {
+      const sprite = this.snowSprite(flake.k);
+      const size = (2.6 + flake.z * 5.2) * flake.s;
+      ctx.drawImage(sprite, flake.x - size / 2, flake.y - size / 2, size, size);
+    }
+    ctx.globalAlpha = 1;
+  }
+
+  private hillY(parallax: number, x: number, base: number, amp: number): number {
+    const wx = this.camera * parallax + x;
+    return base + Math.sin(wx * 0.01) * amp + Math.sin(wx * 0.004 + 1.4) * amp * 0.55;
+  }
+
+  private snowRidge(ctx: CanvasRenderingContext2D, parallax: number, base: number, amp: number) {
+    ctx.save();
+    ctx.strokeStyle = "rgba(198, 214, 224, 0.55)";
+    ctx.lineWidth = Math.max(11, this.u * 0.07);
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    for (let x = -10; x <= this.viewW + 10; x += 14) {
+      const y = this.hillY(parallax, x, base, amp);
+      if (x === -10) ctx.moveTo(x, y + 3);
+      else ctx.lineTo(x, y + 3);
+    }
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(255,255,255,0.94)";
+    ctx.lineWidth = Math.max(7, this.u * 0.045);
+    ctx.beginPath();
+    for (let x = -10; x <= this.viewW + 10; x += 14) {
+      const y = this.hillY(parallax, x, base, amp);
+      if (x === -10) ctx.moveTo(x, y);
+      else ctx.lineTo(x, y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  private drawSpruces(ctx: CanvasRenderingContext2D) {
+    const parallax = 0.22;
+    const base = this.groundY - this.u * 0.85;
+    const amp = this.u * 0.38;
+    const step = 220;
+    const worldStart = this.camera * parallax;
+    const from = Math.floor(worldStart / step) * step - step;
+    const to = worldStart + this.viewW + step;
+    for (let wx = from; wx < to; wx += step) {
+      const n = hash(wx * 0.17 + 3);
+      if (n < 0.38) continue;
+      const x = wx - worldStart;
+      const y = this.hillY(parallax, x, base, amp);
+      const h = this.u * (0.2 + n * 0.18);
+      const w = h * 0.46;
+      ctx.fillStyle = "#6d4c32";
+      ctx.fillRect(x - w * 0.08, y - h * 0.18, w * 0.16, h * 0.2);
+      ctx.fillStyle = n > 0.72 ? "#1d6842" : "#214f36";
+      ctx.beginPath();
+      ctx.moveTo(x, y - h);
+      ctx.lineTo(x + w, y - h * 0.42);
+      ctx.lineTo(x - w, y - h * 0.42);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(x, y - h * 0.62);
+      ctx.lineTo(x + w * 1.2, y);
+      ctx.lineTo(x - w * 1.2, y);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = "rgba(255,255,255,0.94)";
+      ctx.beginPath();
+      ctx.moveTo(x, y - h);
+      ctx.lineTo(x + w * 0.34, y - h * 0.78);
+      ctx.lineTo(x - w * 0.34, y - h * 0.78);
+      ctx.closePath();
+      ctx.fill();
+      if (n > 0.8) {
+        ctx.fillStyle = "#e8a317";
+        ctx.beginPath();
+        ctx.arc(x, y - h - this.u * 0.012, this.u * 0.016, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
+
+  private snowBanks(ctx: CanvasRenderingContext2D) {
+    const step = Math.max(26, this.u * 0.3);
+    const start = Math.floor(this.camera / step) * step;
+    ctx.fillStyle = "rgba(255,255,255,0.98)";
+    ctx.beginPath();
+    for (let wx = start; wx < this.camera + this.viewW; wx += step) {
+      const n = hash(wx);
+      if (n < 0.34) continue;
+      const x = wx - this.camera + (n - 0.5) * 10;
+      const y = this.groundY - 1;
+      const rx = 3.5 + n * 6;
+      ctx.moveTo(x + rx * 1.7, y);
+      ctx.ellipse(x, y, rx * 1.7, rx * 0.62, 0, 0, Math.PI * 2);
+    }
+    ctx.fill();
+  }
+
+  private winterStars(ctx: CanvasRenderingContext2D) {
+    const skyH = Math.max(this.groundY * 0.62, 10);
+    for (let i = 0; i < 26; i += 1) {
+      const n = hash(i * 13.1 + 2);
+      const n2 = hash(i * 5.7 + 9);
+      const sx = ((n * this.viewW * 3 - this.camera * 0.02) % this.viewW + this.viewW) % this.viewW;
+      const sy = 6 + n2 * skyH;
+      const tw = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(this.time * (0.8 + n) + i));
+      ctx.globalAlpha = 0.32 * tw;
+      ctx.fillStyle = "#fffaf0";
+      const s = n > 0.86 ? 2.2 : 1.15;
+      ctx.fillRect(sx, sy, s, s);
+    }
+    ctx.globalAlpha = 1;
+  }
+
   private clouds(ctx: CanvasRenderingContext2D) {
-    ctx.fillStyle = "rgba(255,255,255,0.72)";
+    ctx.fillStyle = this.festive ? "rgba(255,255,255,0.9)" : "rgba(255,255,255,0.72)";
     for (let i = 0; i < 5; i += 1) {
       const base = i * 220 + 30;
       const x = ((base - this.camera * 0.12) % (this.viewW + 180) + this.viewW + 180) % (this.viewW + 180) - 60;
@@ -2721,6 +3002,38 @@ export class Runner {
     }
   }
 
+  /** Vánoční strom přímo za Mariánským sousoším, vyšší než sloup. */
+  private drawSquareTree(ctx: CanvasRenderingContext2D, column: Ent) {
+    const img = this.art.xmasTree;
+    if (!(img instanceof HTMLImageElement) || !img.height) return;
+    const colH = SPEC.column.h * this.u;
+    const h = colH * 1.72;
+    const w = h * (img.width / img.height);
+    const colW = colH * (587 / 820);
+    // Kousek dál po cestě, ať se se sloupem překryje jen okrajem.
+    const cx = column.x - this.camera + colW * 0.55 + w * 0.28;
+    const feet = this.groundY + 1;
+    ctx.drawImage(img, this.snap(cx - w / 2), this.snap(feet - h), w, h);
+    const lights: ReadonlyArray<readonly [number, number, string]> = [
+      [0.5, 0.07, "#ffe38a"],
+      [0.36, 0.3, "#e4577a"],
+      [0.64, 0.38, "#f6e7a8"],
+      [0.42, 0.55, "#fff6e8"],
+      [0.6, 0.68, "#e8a317"],
+    ];
+    const r = Math.max(1.5, this.u * 0.011);
+    for (let i = 0; i < lights.length; i += 1) {
+      const spot = lights[i]!;
+      const tw = 0.35 + 0.65 * (0.5 + 0.5 * Math.sin(this.time * 2.4 + i * 1.6));
+      ctx.globalAlpha = tw;
+      ctx.fillStyle = spot[2];
+      ctx.beginPath();
+      ctx.arc(cx - w / 2 + w * spot[0], feet - h + h * spot[1], r, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+  }
+
   private drawEnt(ctx: CanvasRenderingContext2D, ent: Ent) {
     const spec = SPEC[ent.kind];
     const pulse = ent.kind === "gossip" || ent.kind === "scroll" ? 1 + Math.sin(this.time * 5 + ent.anim) * 0.06 : 1;
@@ -2768,7 +3081,12 @@ export class Runner {
     const flyScale = ent.kind === "pigeon" && ent.fly ? 1.65 : 1;
     const drawH = h * flyScale;
     const w = drawH * (img.width / img.height);
-    const baked = ent.far ? this.bakedFar(img, baseH * flyScale * this.scale) : this.baked(img, baseH * flyScale * this.scale);
+    const deviceH = baseH * flyScale * this.scale;
+    const baked = BARE.has(ent.kind)
+      ? ent.far
+        ? this.bakedFar(img, deviceH)
+        : this.baked(img, deviceH)
+      : this.sceneBake(img, deviceH, !!ent.far, ROOFS.has(ent.kind));
     if (ent.face === -1 && FOREST.includes(ent.kind)) flip = -1;
     if (rot || flip < 0) {
       ctx.save();
@@ -2915,7 +3233,7 @@ export class Runner {
     const w = h * (img.width / img.height);
     const cx = ent.x - this.camera;
     const feet = this.groundY + 6;
-    ctx.drawImage(this.baked(img, h * this.scale), this.snap(cx - w / 2), this.snap(feet - h), w, h);
+    ctx.drawImage(this.sceneBake(img, h * this.scale, false), this.snap(cx - w / 2), this.snap(feet - h), w, h);
   }
 
   private drawOak(ctx: CanvasRenderingContext2D, ent: Ent) {
@@ -2926,7 +3244,7 @@ export class Runner {
     const cx = ent.x - this.camera;
     if (cx < -w || cx > this.viewW + w) return;
     const feet = this.groundY + 2;
-    ctx.drawImage(this.baked(img, h * this.scale), this.snap(cx - w / 2), this.snap(feet - h), w, h);
+    ctx.drawImage(this.sceneBake(img, h * this.scale, false), this.snap(cx - w / 2), this.snap(feet - h), w, h);
   }
 
   private stagFrame(running: boolean, flown = 0): HTMLImageElement | null {
@@ -3735,6 +4053,159 @@ export class Runner {
       }
     }
     ctx.restore();
+  }
+
+  /**
+   * Sníh na obrázku, spočítaný jednou.
+   * U střech leží vrstva po hřebeni a na vodorovných římsách, ze zdí sjede.
+   */
+  private snowCap(img: HTMLImageElement, roof = false): HTMLCanvasElement | null {
+    if (!img.width || !img.height) return null;
+    const store = roof ? this.roofCaps : this.snowCaps;
+    const cached = store.get(img);
+    if (cached) return cached;
+    const maxH = 420;
+    const scale = img.height > maxH ? maxH / img.height : 1;
+    const sw = Math.max(1, Math.round(img.width * scale));
+    const sh = Math.max(1, Math.round(img.height * scale));
+    const src = document.createElement("canvas");
+    src.width = sw;
+    src.height = sh;
+    const sg = src.getContext("2d", { willReadFrequently: true });
+    if (!sg) return null;
+    sg.drawImage(img, 0, 0, sw, sh);
+    const px = sg.getImageData(0, 0, sw, sh).data;
+    const out = document.createElement("canvas");
+    out.width = sw;
+    out.height = sh;
+    const og = out.getContext("2d");
+    if (!og) return null;
+    const snow = og.createImageData(sw, sh);
+    const sp = snow.data;
+    const solid = (x: number, y: number) => {
+      if (x < 0 || y < 0 || x >= sw || y >= sh) return false;
+      return (px[(y * sw + x) * 4 + 3] ?? 0) > 88;
+    };
+    const lay = (x: number, y: number, alpha: number, shadow = false) => {
+      if (x < 0 || y < 0 || x >= sw || y >= sh) return;
+      const i = (y * sw + x) * 4;
+      const under = px[i + 3] ?? 0;
+      if (shadow) {
+        if (under < 50 || (sp[i + 3] ?? 0) > 24) return;
+        sp[i] = 86;
+        sp[i + 1] = 104;
+        sp[i + 2] = 122;
+        sp[i + 3] = 78;
+        return;
+      }
+      const overhang = under < 36;
+      if (overhang && !solid(x, y + 1)) return;
+      const a = Math.round(alpha * (overhang ? 1 : Math.min(1, under / 150)));
+      if (a <= (sp[i + 3] ?? 0)) return;
+      sp[i] = 246;
+      sp[i + 1] = 250;
+      sp[i + 2] = 255;
+      sp[i + 3] = a;
+    };
+    if (roof) {
+      const top = new Int16Array(sw);
+      top.fill(sh);
+      for (let x = 0; x < sw; x += 1) {
+        for (let y = 0; y < sh; y += 1) {
+          if (solid(x, y)) {
+            top[x] = y;
+            break;
+          }
+        }
+      }
+      const blanket = Math.max(5, Math.round(sh * 0.055));
+      const span = 4;
+      for (let x = 0; x < sw; x += 1) {
+        const y0 = top[x] ?? sh;
+        if (y0 >= sh - 2) continue;
+        const l = top[Math.max(0, x - span)] ?? sh;
+        const r = top[Math.min(sw - 1, x + span)] ?? sh;
+        if (l >= sh || r >= sh) continue;
+        const slope = Math.abs(r - l) / (span * 2);
+        const cover = slope < 0.35 ? 1 : slope < 0.9 ? 0.72 : slope < 1.6 ? 0.4 : 0;
+        if (cover <= 0) continue;
+        const depth = Math.max(2, Math.round(blanket * cover));
+        lay(x, y0 - 1, 200);
+        for (let dy = 0; dy < depth; dy += 1) {
+          const t = 1 - dy / depth;
+          lay(x, y0 + dy, 150 + 90 * t * t);
+        }
+        lay(x, y0 + depth, 0, true);
+      }
+      const minRun = Math.max(8, Math.round(sw * 0.018));
+      const sill = Math.max(2, Math.round(sh * 0.016));
+      for (let y = 1; y < sh; y += 1) {
+        let run = -1;
+        for (let x = 0; x <= sw; x += 1) {
+          const ledge = x < sw && solid(x, y) && !solid(x, y - 1) && y > (top[x] ?? 0) + sill + 1;
+          if (ledge) {
+            if (run < 0) run = x;
+          } else if (run >= 0) {
+            if (x - run >= minRun) {
+              for (let xx = run; xx < x; xx += 1) {
+                for (let dy = 0; dy < sill; dy += 1) lay(xx, y + dy, 160 * (1 - dy / (sill + 1)));
+                lay(xx, y + sill, 0, true);
+              }
+            }
+            run = -1;
+          }
+        }
+      }
+    } else {
+      const depth = Math.max(3, Math.round(sh * 0.038));
+      for (let x = 0; x < sw; x += 1) {
+        let clearRun = 99;
+        let left = 0;
+        for (let y = 0; y < sh; y += 1) {
+          if (solid(x, y)) {
+            if (clearRun > 2) left = depth;
+            clearRun = 0;
+            if (left > 0) {
+              const t = left / depth;
+              lay(x, y, 90 + 140 * t * t);
+              left -= 1;
+            }
+          } else {
+            clearRun += 1;
+            left = 0;
+          }
+        }
+      }
+    }
+    og.putImageData(snow, 0, 0);
+    store.set(img, out);
+    return out;
+  }
+
+  /** Obrázek krajiny. Ve vánocích je sníh už v něm, ať se nekreslí podruhé každý snímek. */
+  private sceneBake(img: HTMLImageElement, deviceH: number, far: boolean, roof = false): HTMLCanvasElement {
+    const base = far ? this.bakedFar(img, deviceH) : this.baked(img, deviceH);
+    if (!this.festive) return base;
+    const cached = this.snowyBakes.get(base);
+    if (cached) return cached;
+    const canvas = document.createElement("canvas");
+    canvas.width = base.width;
+    canvas.height = base.height;
+    const g = canvas.getContext("2d");
+    if (g) {
+      g.drawImage(base, 0, 0);
+      const cap = this.snowCap(img, roof);
+      if (cap) g.drawImage(cap, 0, 0, canvas.width, canvas.height);
+    }
+    this.snowyBakes.set(base, canvas);
+    return canvas;
+  }
+
+  private warmSnow() {
+    if (!this.festive) return;
+    for (const [name, img] of Object.entries(this.art)) {
+      if (img instanceof HTMLImageElement) this.snowCap(img, ROOFS.has(name));
+    }
   }
 
   private snap(value: number) {

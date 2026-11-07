@@ -14,6 +14,7 @@ import { PlayersSheet } from "@/game/PlayersSheet";
 import { WhoPlays } from "@/game/WhoPlays";
 import { addProfile, loadProfiles, removeProfile, renameProfile, selectProfile, type Profiles } from "@/game/profiles";
 import { publicUrl } from "@/lib/public-url";
+import { christmasLook, inChristmasSeason } from "@/game/christmas";
 
 function hudReactKey(h: Hud): string {
   const b = h.bonus;
@@ -72,6 +73,28 @@ function hudReactKey(h: Hud): string {
   ].join("\u001f");
 }
 
+function ChristmasVeil() {
+  if (!christmasLook()) return null;
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
+      {Array.from({ length: 16 }, (_, i) => (
+        <span
+          key={i}
+          className="snow-dot"
+          style={{
+            left: `${(i * 61) % 100}%`,
+            animationDelay: `${-(i * 0.85)}s`,
+            animationDuration: `${8 + (i % 5) * 1.4}s`,
+            width: `${4 + (i % 4) * 2}px`,
+            height: `${4 + (i % 4) * 2}px`,
+            opacity: 0.55 + (i % 3) * 0.15,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export function GameApp() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const scoreRef = useRef<HTMLParagraphElement>(null);
@@ -92,6 +115,7 @@ export function GameApp() {
   const [whoOpen, setWhoOpen] = useState(false);
   // Computer with a mouse and keyboard: keyboard hints and no on-screen buttons. Decided after mount (no window on the server).
   const [keyboard, setKeyboard] = useState(false);
+  const [klasika, setKlasika] = useState(false);
   useEffect(() => {
     const query = window.matchMedia("(hover: hover) and (pointer: fine)");
     const decide = () => setKeyboard(query.matches && navigator.maxTouchPoints === 0);
@@ -303,6 +327,12 @@ export function GameApp() {
   }
 
   const playing = hud.phase === "play" || hud.phase === "pause" || hud.phase === "over" || hud.phase === "fish-intro" || hud.phase === "bonus" || hud.phase === "dialogue" || hud.phase === "erb-quiz";
+  const vanoce = christmasLook() && !klasika;
+  const vanoceNahled = vanoce && !inChristmasSeason();
+  useEffect(() => {
+    gameRef.current?.setFestive(vanoce);
+    document.documentElement.classList.toggle("vanoce", vanoce);
+  }, [vanoce]);
 
   return (
     // Chrome na Androidu kreslí hru až k dolnímu okraji displeje (viewport-fit=cover), pod průhledný pruh
@@ -315,9 +345,15 @@ export function GameApp() {
           className={`absolute inset-0 z-20 flex items-center justify-center overflow-hidden ${hud.ready ? "cursor-pointer" : "cursor-wait"}`}
           onClick={() => gameRef.current?.continueSplash()}
         >
-          <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(180deg,#3f8ec4_0%,#8ecae6_34%,#f6d7a0_72%,#f3e0b8_100%)]" />
-          <div className="pointer-events-none absolute right-[16%] top-[14%] size-28 rounded-full bg-[#ffe7a8] sm:size-40" />
-          <div className="pointer-events-none absolute right-[12%] top-[10%] size-48 rounded-full bg-[#ffe29a] opacity-80 blur-3xl sm:size-72" />
+          <div className={`pointer-events-none absolute inset-0 ${vanoce ? "bg-[linear-gradient(180deg,#1a3260_0%,#4a6e9e_36%,#e4cfc8_72%,#eef3f7_100%)]" : "bg-[linear-gradient(180deg,#3f8ec4_0%,#8ecae6_34%,#f6d7a0_72%,#f3e0b8_100%)]"}`} />
+          {vanoce ? (
+            <div className="pointer-events-none absolute right-[18%] top-[12%] size-24 rounded-full bg-[#f4f7fb] shadow-[0_0_40px_18px_rgba(214,226,242,0.55)] sm:size-32" />
+          ) : (
+            <>
+              <div className="pointer-events-none absolute right-[16%] top-[14%] size-28 rounded-full bg-[#ffe7a8] sm:size-40" />
+              <div className="pointer-events-none absolute right-[12%] top-[10%] size-48 rounded-full bg-[#ffe29a] opacity-80 blur-3xl sm:size-72" />
+            </>
+          )}
           <svg
             className="pointer-events-none absolute inset-0 h-full w-full"
             viewBox="0 0 1440 900"
@@ -388,6 +424,7 @@ export function GameApp() {
               </g>
             </g>
           </svg>
+          {vanoce && <ChristmasVeil />}
           <div className="pointer-events-none absolute bottom-[14%] left-1/2 h-16 w-[62%] -translate-x-1/2 rounded-[100%] bg-[#6b4a28]/20 blur-md" />
           <div className="relative z-10 flex w-[min(94vw,680px,84vh)] flex-col items-center">
             <img
@@ -415,6 +452,11 @@ export function GameApp() {
               </div>
             )}
             <p className="mt-2 text-[11px] font-extrabold tracking-wide text-[#3d2c22]/55">© Kopidlenská drbna | Camledian</p>
+            {vanoce && (
+              <p className="mt-1 rounded-full bg-[#1a3260]/75 px-3 py-1 text-[11px] font-extrabold tracking-wide text-[#fff6e8]">
+                {vanoceNahled ? "Náhled vánoc · hráči je uvidí od 1. adventu" : "Vánoční Kopidlno · do Tří králů"}
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -422,7 +464,7 @@ export function GameApp() {
       {hud.phase === "menu" && (
         <div
           ref={menuRef}
-          className="menu-fit absolute inset-0 overflow-hidden bg-[radial-gradient(ellipse_at_50%_42%,rgba(36,28,22,0)_0%,rgba(36,28,22,0.28)_100%)]"
+          className={`menu-fit absolute inset-0 overflow-hidden ${vanoce ? "bg-[radial-gradient(ellipse_at_50%_42%,rgba(18,32,58,0)_0%,rgba(18,32,58,0.42)_100%)]" : "bg-[radial-gradient(ellipse_at_50%_42%,rgba(36,28,22,0)_0%,rgba(36,28,22,0.28)_100%)]"}`}
           onClick={() => gameRef.current?.begin()}
         >
           <div className="flex h-full min-h-0 items-center justify-center px-[1em] py-[0.75em]">
@@ -438,6 +480,23 @@ export function GameApp() {
               <p className="menu-pop mt-[0.6em] rounded-full bg-ink/40 px-[0.9em] py-[0.2em] text-[0.78em] font-extrabold text-cream backdrop-blur-sm [animation-delay:120ms]">
                 ♪ za doprovodu Esmeraldy od Františka Matěje Hilmara
               </p>
+              {vanoce && (
+                <p className="menu-pop mt-[0.45em] rounded-full border-2 border-ink bg-leaf px-[0.9em] py-[0.18em] text-[0.78em] font-extrabold text-cream shadow-[0_0.15em_0_#241c16] [animation-delay:140ms]">
+                  {vanoceNahled ? "Náhled vánoc · od 1. adventu do Tří králů" : "Vánoční běh · do Tří králů"}
+                </p>
+              )}
+              {import.meta.env.DEV && !inChristmasSeason() && (
+                <button
+                  type="button"
+                  className="menu-pop mt-[0.4em] rounded-full bg-ink/75 px-[0.85em] py-[0.2em] text-[0.72em] font-extrabold text-cream [animation-delay:150ms]"
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    setKlasika((on) => !on);
+                  }}
+                >
+                  {klasika ? "Ukázat vánoční Kopidlno" : "Ukázat klasické Kopidlno"}
+                </button>
+              )}
 
               <div
                 className="menu-pop mt-[0.8em] w-full rounded-[1.75em] border-2 border-ink bg-cream/90 p-[1em] shadow-[0_0.4em_0_#241c16] backdrop-blur-md [animation-delay:160ms]"
